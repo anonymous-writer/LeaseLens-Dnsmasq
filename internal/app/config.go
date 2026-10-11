@@ -1,4 +1,4 @@
-package main
+package app
 
 // Load environment-based configuration and parse duration/integer options.
 

@@ -1,11 +1,10 @@
-# Build the complete Go package (all .go files in the repository root).
+# Build the executable; application code lives in internal/app.
 FROM golang:1.25-alpine AS build
 WORKDIR /src
 
 COPY go.mod ./
-# If the project has a go.sum, copy it as well:
-# COPY go.sum ./
-COPY *.go ./
+COPY main.go ./
+COPY internal/ ./internal/
 
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /dnsmasq-leases-ui .
 

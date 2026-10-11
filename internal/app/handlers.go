@@ -1,4 +1,4 @@
-package main
+package app
 
 // HTTP handlers for the web interface and JSON API.
 

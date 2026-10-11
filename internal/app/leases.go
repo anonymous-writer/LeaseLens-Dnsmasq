@@ -1,4 +1,4 @@
-package main
+package app
 
 // Read and parse entries from the dnsmasq lease file.
 

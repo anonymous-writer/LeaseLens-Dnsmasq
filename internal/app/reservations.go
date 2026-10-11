@@ -1,4 +1,4 @@
-package main
+package app
 
 // Parse dnsmasq DHCP host reservations and match them to leases.
 

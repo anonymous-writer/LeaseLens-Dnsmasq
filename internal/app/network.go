@@ -1,4 +1,4 @@
-package main
+package app
 
 // Probe devices and discover their HTTP/HTTPS management URLs.
 

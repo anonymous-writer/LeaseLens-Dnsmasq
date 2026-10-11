@@ -1,10 +1,10 @@
-// Package main provides the application's logging helpers.
+// Package app provides the application's logging helpers.
 //
 // Set LOG_LEVEL to DEBUG, INFO (default), WARN, or ERROR to choose the
 // minimum message severity. Higher-severity messages are always included.
 // This file is compiled automatically with the other .go files in package
 // main; it does not need to be imported from main.go.
-package main
+package app
 
 import (
 	"fmt"

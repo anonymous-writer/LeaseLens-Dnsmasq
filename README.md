@@ -263,11 +263,12 @@ Keep `INFO` for everyday operation and switch to `DEBUG` temporarily when extra 
 
 ## Building from source
 
-Requires Go 1.25 or later. The Go source is split into several files; build the whole package, not only `main.go`.
+Requires Go 1.25 or later. `main.go` is a small entry point; the application implementation is organized under `internal/app/`. Build the module/package rather than an individual source file.
 
 ```bash
-gofmt -w *.go
+gofmt -w main.go internal/app/*.go
 go test ./...
+go vet ./...
 go build -o dnsmasq-leases-ui .
 ```
 
@@ -281,7 +282,7 @@ PORT=3008 ./dnsmasq-leases-ui
 
 ### Build the Docker image locally
 
-The Dockerfile must copy all Go source files and build the package with `go build .` (or equivalent). Do not use `go build ./main.go`, because that compiles only the named file and omits the other source files.
+The Dockerfile copies `main.go` and the `internal/` directory, then builds the root executable with `go build .`. Do not use `go build ./main.go`; this project imports its implementation from `internal/app/`.
 
 ```bash
 docker build -t dnsmasq-leases-ui:local .
@@ -304,20 +305,28 @@ The workflow is triggered by `workflow_dispatch` only. Publishing a GitHub Relea
 
 ## Source layout
 
-The Go application is split into files by responsibility:
+The Go source is organized so the root stays uncluttered while all application implementation is in one internal package:
 
-- `main.go` — application startup and HTTP server
-- `config.go` — environment variables and runtime configuration
-- `models.go` — shared data structures and normalization helpers
-- `reservations.go` — parsing and matching DHCP reservations
-- `leases.go` — reading and parsing the lease file
-- `network.go` — ping, HTTP/HTTPS, DNS resolution, and URL checks
-- `known_macs.go` — persistent remembered-MAC storage and mark/unmark/reset operations
-- `handlers.go` — HTTP handlers for the UI, leases API, and remembered-device actions
-- `templates/index.html` — HTML template for the web interface
-- `static/app.js` — browser-side rendering, filtering, countdown, theme, and device actions
+```text
+.
+├── main.go                    # Small executable entry point
+├── internal/
+│   └── app/                   # Application implementation (package app)
+│       ├── app.go             # Startup, dependency wiring, HTTP server
+│       ├── config.go          # Environment variables and runtime configuration
+│       ├── models.go          # Shared data structures and normalization helpers
+│       ├── reservations.go    # Parsing and matching DHCP reservations
+│       ├── leases.go          # Reading and parsing the dnsmasq lease file
+│       ├── network.go         # Ping, HTTP/HTTPS, DNS resolution, URL checks
+│       ├── known_macs.go      # Persistent remembered-MAC storage and actions
+│       ├── handlers.go        # Web handlers and JSON API endpoints
+│       ├── logging.go         # DEBUG, INFO, WARN, ERROR and FATAL logging
+│       └── leases_ipv6_test.go # DHCP lease parsing tests
+├── templates/index.html       # HTML template for the web interface
+└── static/                    # JavaScript, translations, and icon assets
+```
 
-Keep the `.go` files in the same directory and in the same Go package (`package main`). The Docker build context must include all these files.
+The Go files under `internal/app/` share the `app` package and can use unexported helpers without extra package plumbing. The root `main.go` only calls `app.Run()`. Because this is an `internal` package, Go prevents unrelated modules from importing the application's internal implementation. The Docker build context must include both `main.go` and the `internal/` directory.
 
 ## IPv6 notes
 

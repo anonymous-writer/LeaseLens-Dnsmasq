@@ -1,4 +1,4 @@
-package main
+package app
 
 // Persist devices explicitly marked as known.
 
