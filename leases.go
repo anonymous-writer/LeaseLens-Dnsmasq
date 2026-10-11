@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -31,7 +32,30 @@ func parseLeaseLine(line string, r *Reservations) (LeaseEntry, bool) {
 		return LeaseEntry{}, false
 	}
 	expiry, _ := strconv.ParseInt(p[0], 10, 64)
-	return LeaseEntry{StaticIP: p[0] == "0" || r.matches(p[1], p[2], p[3], p[4]), LeaseTime: end, LeaseExpiry: expiry, MACAddress: strings.ToUpper(p[1]), IPAddress: p[2], Name: p[3]}, true
+
+	// dnsmasq lease formats differ by address family:
+	// IPv4: expiry, MAC, IPv4, hostname, client-id
+	// IPv6: expiry, IAID, IPv6, hostname, DUID
+	macAddress := ""
+	iaid := ""
+	duid := ""
+	if ip := net.ParseIP(p[2]); ip != nil && ip.To4() == nil {
+		iaid = p[1]
+		duid = strings.ToUpper(p[4])
+	} else if macRE.MatchString(p[1]) {
+		macAddress = strings.ToUpper(p[1])
+	}
+
+	return LeaseEntry{
+		StaticIP:    p[0] == "0" || r.matches(p[1], p[2], p[3], p[4]),
+		LeaseTime:   end,
+		LeaseExpiry: expiry,
+		MACAddress:  macAddress,
+		IAID:        iaid,
+		DUID:        duid,
+		IPAddress:   p[2],
+		Name:        p[3],
+	}, true
 }
 
 func readLeaseEntries(leasePath, hostsPath string) ([]LeaseEntry, error) {

@@ -67,7 +67,7 @@ function match(lease, query) {
   if (!query) return true;
   query = query.toLowerCase();
   const reservationTerms = lease.staticIP ? ['yes', 'ja'] : ['no', 'nein'];
-  return [lease.ipAddress, lease.macAddress, lease.name, lease.leasetime, formatLease(lease),
+  return [lease.ipAddress, lease.macAddress, lease.iaid, lease.duid, lease.name, lease.leasetime, formatLease(lease),
     ...reservationTerms, lease.status].some(value => String(value ?? '').toLowerCase().includes(query));
 }
 
@@ -148,10 +148,11 @@ function render() {
     row.tabIndex = 0;
     row.setAttribute('aria-label', t('detailsFor', { device: lease.name || lease.ipAddress }));
     row.appendChild(statusCell(lease));
-    [lease.ipAddress, lease.macAddress, lease.name, lease.staticIP ? t('yes') : t('no'), formatLease(lease)]
+    const displayMAC = validMac(lease.macAddress) ? lease.macAddress : '—';
+    [lease.ipAddress, displayMAC, lease.name, lease.staticIP ? t('yes') : t('no'), formatLease(lease)]
       .forEach((value, index) => {
         const cell = document.createElement('td');
-        if (index === 1 && lease.isNew) {
+        if (index === 1 && lease.isNew && validMac(lease.macAddress)) {
           const badge = document.createElement('span');
           badge.className = 'new-badge';
           badge.textContent = t('newBadge');
@@ -315,13 +316,17 @@ function showDetails(lease) {
   const dialog = document.querySelector('#device-details');
   const content = document.querySelector('#detail-content');
   dialog.dataset.mac = String(lease.macAddress ?? '').trim();
+  dialog.dataset.leaseKey = leaseIdentity(lease);
   content.replaceChildren();
 
   const details = [
     { key: 'status', value: getDetailStatus(lease.status) },
     { key: 'hostname', value: lease.name && lease.name !== '*' ? lease.name : t('notAvailable'), copy: true },
     { key: 'ipAddressV4V6', value: lease.ipAddress, copy: true },
-    { key: 'macAddress', value: lease.macAddress, copy: true },
+    { key: 'macAddress', value: lease.macAddress || t('notAvailable'), copy: Boolean(lease.macAddress) },
+    ...(lease.iaid !== undefined && lease.iaid !== null && String(lease.iaid) !== ''
+      ? [{ key: 'iaid', value: String(lease.iaid), copy: true }] : []),
+    ...(lease.duid ? [{ key: 'duid', value: lease.duid, copy: true }] : []),
     { key: 'dhcpReservation', value: lease.staticIP ? t('yes') : t('no') },
     { key: 'leaseEndsOn', value: lease.leaseExpiry === 0 ? t('never') : lease.leasetime },
     { key: 'webInterface', value: lease.webUrl || t('notDetected'), url: lease.webUrl },
@@ -373,11 +378,17 @@ function showDetails(lease) {
   if (!dialog.open) dialog.showModal();
 }
 
+function leaseIdentity(lease) {
+  return [lease.ipAddress ?? '', lease.name ?? '', lease.iaid ?? '', lease.duid ?? ''].join('|');
+}
+
 function refreshOpenDetails(mac) {
   const dialog = document.querySelector('#device-details');
   if (!dialog.open) return;
   const normalized = String(mac ?? '').trim().toUpperCase();
-  const lease = leases.find(item => String(item.macAddress ?? '').trim().toUpperCase() === normalized);
+  const lease = normalized
+    ? leases.find(item => String(item.macAddress ?? '').trim().toUpperCase() === normalized)
+    : leases.find(item => leaseIdentity(item) === (dialog.dataset.leaseKey || ''));
   if (lease) showDetails(lease);
 }
 
