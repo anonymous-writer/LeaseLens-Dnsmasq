@@ -91,18 +91,35 @@ body {
   opacity:.6;
   cursor:wait
 }
-/* Manuelles Aktualisieren der Lease-Liste. */
+/* Markanter roter Button zum manuellen Aktualisieren der Lease-Liste. */
 #refresh-button {
-  padding:.4rem .7rem;
+  padding:.4rem .8rem;
   font:inherit;
-  background:var(--bg);
-  color:var(--fg);
-  border:1px solid var(--border);
-  border-radius:4px;
-  cursor:pointer
+  font-weight:650;
+  background:#dc2626;
+  color:#fff;
+  border:1px solid #b91c1c;
+  border-radius:5px;
+  cursor:pointer;
+  box-shadow:0 1px 2px #0002;
+  transition:background-color .15s ease, box-shadow .15s ease, transform .15s ease
+}
+#refresh-button:hover:not(:disabled) {
+  background:#b91c1c;
+  box-shadow:0 2px 5px #0003
+}
+#refresh-button:active:not(:disabled) {
+  background:#991b1b;
+  transform:translateY(1px)
+}
+#refresh-button:focus-visible {
+  outline:3px solid #fca5a5;
+  outline-offset:2px
 }
 #refresh-button:disabled {
-  opacity:.6;
+  background:#991b1b;
+  border-color:#7f1d1d;
+  opacity:.75;
   cursor:wait
 }
 /* Runder Umschalter für helles/dunkles Theme. */
@@ -297,6 +314,7 @@ dialog::backdrop {
     <select id="language-select" aria-label="Language" data-i18n-aria-label="language" title="Select language" data-i18n-title="selectLanguage">
       <option value="en">English</option>
       <option value="de">Deutsch</option>
+      <option value="es">Español</option>
     </select>
 
     <!-- Theme-Umschalter: app.js setzt das Theme; CSS zeigt jeweils das passende Symbol. -->

@@ -91,12 +91,59 @@
       markedReservations: '{count} DHCP-Reservierung(en) als bekannt markiert.',
       couldNotMarkReservations: 'DHCP-Reservierungen konnten nicht gemerkt werden: {error}',
       httpError: 'HTTP {status}',
-      sortAscending: 'ascending', sortDescending: 'descending'
+      sortAscending: 'ascending', sortDescending: 'descending'    },
+    es: {
+      language: 'Idioma', selectLanguage: 'Seleccionar idioma',
+      searchPlaceholder: 'Filtrar concesiones DHCP…', ipFilterTitle: 'Filtrar IPv4/IPv6',
+      allIPs: 'Todas las IP', ipv4: 'IPv4', ipv6: 'IPv6',
+      reservationFilterTitle: 'Filtrar reservas DHCP', allLeases: 'Todas las concesiones',
+      reservations: 'Reservas', dynamicOnly: 'Solo concesiones dinámicas',
+      refresh: 'Actualizar', refreshing: 'Actualizando…',
+      markReservationsKnown: 'Marcar reservas como conocidas',
+      markReservationsKnownTitle: 'Marcar todas las reservas DHCP como conocidas',
+      resetRemembered: 'Restablecer dispositivos recordados',
+      resetRememberedTitle: 'Olvidar todos los dispositivos recordados',
+      toggleTheme: 'Cambiar modo oscuro', status: 'Estado', ipAddress: 'Dirección IP',
+      macAddress: 'Dirección MAC', name: 'Nombre', dhcpReservation: 'Reserva DHCP',
+      leaseEndsOn: 'Fin de la concesión', loading: 'Cargando…', close: 'Cerrar',
+      deviceDetails: 'Detalles del dispositivo', released: 'publicado', yes: 'Sí', no: 'No',
+      never: 'Nunca', expired: 'Caducado',
+      inDaysHours: 'En {days} d {hours} h', inHoursMinutes: 'En {hours} h {minutes} min',
+      inMinutes: 'En {minutes} min', inSeconds: 'En {seconds} s', newBadge: 'NUEVO',
+      httpHttpsReachable: 'HTTP/HTTPS accesible', pingReachableNoHTTP: 'Ping responde, sin HTTP/HTTPS',
+      noResponse: 'Sin respuesta a ping ni HTTP/HTTPS', statusUnknown: 'Estado desconocido',
+      httpHttpsGreen: 'HTTP/HTTPS accesible (verde)', pingYellow: 'Ping responde, sin HTTP/HTTPS (amarillo)',
+      noResponseRed: 'Sin respuesta a ping ni HTTP/HTTPS (rojo)', unknown: 'Desconocido',
+      hostname: 'Nombre de host', ipAddressV4V6: 'Dirección IPv4 / IPv6',
+      webInterface: 'Interfaz web', hostnameURL: 'URL del nombre de host',
+      notAvailable: 'No disponible', notDetected: 'No detectado',
+      copy: 'Copiar', copied: 'Copiado', copyFailed: 'Error al copiar',
+      copyValueTitle: 'Copiar {field}',
+      newDevice: 'Dispositivo nuevo', rememberedDevice: 'Dispositivo recordado',
+      markAsKnown: 'Marcar como conocido', markAsNew: 'Marcar como nuevo',
+      saving: 'Guardando…', resetting: 'Restableciendo…', marking: 'Marcando…',
+      detailsFor: 'Detalles de {device}',
+      oneLeaseSummary: '1 concesión · haz clic en una fila para ver los detalles',
+      manyLeasesSummary: '{count} concesiones · haz clic en una fila para ver los detalles',
+      filteredSummary: '{shown} de {total} concesiones',
+      failedToLoadLeases: 'No se pudieron cargar las concesiones: {error}',
+      couldNotUpdateDevice: 'No se pudo actualizar el dispositivo: {error}',
+      confirmReset: '¿Olvidar todos los dispositivos recordados? Los dispositivos con una dirección MAC válida volverán a marcarse como NUEVO.',
+      couldNotReset: 'No se pudo restablecer la lista de dispositivos recordados: {error}',
+      noReservations: 'No se encontraron reservas DHCP con direcciones MAC válidas.',
+      confirmMarkReservations: '¿Marcar {count} dispositivo(s) con reserva DHCP como conocidos?',
+      markedReservations: '{count} dispositivo(s) con reserva DHCP marcado(s) como conocidos.',
+      couldNotMarkReservations: 'No se pudieron marcar las reservas DHCP como conocidas: {error}',
+      httpError: 'HTTP {status}',
+      sortAscending: 'ascendente', sortDescending: 'descendente'
     }
   };
 
   function getBrowserLanguage() {
-    return String(navigator.language || 'en').toLowerCase().startsWith('de') ? 'de' : 'en';
+    const browserLanguage = String(navigator.language || 'en').toLowerCase();
+    if (browserLanguage.startsWith('es')) return 'es';
+    if (browserLanguage.startsWith('de')) return 'de';
+    return 'en';
   }
 
   function readSavedLanguage() {
@@ -161,7 +208,7 @@
     setLanguage,
     applyStaticTranslations,
     get language() { return currentLanguage; },
-    get supportedLanguages() { return ['en', 'de']; }
+    get supportedLanguages() { return ['en', 'de', 'es']; }
   };
 
   initialize();
