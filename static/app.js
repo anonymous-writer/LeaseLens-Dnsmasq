@@ -17,10 +17,15 @@ let leases = [];
 let filterQuery = '';
 let ipFilter = 'all';
 let reservationFilter = 'all';
+let statusFilter = 'all';
 let sort = loadSort();
 let refreshing = false;
 let lastLoadError = null;
+let lastSuccessfulRefresh = null;
+let activeDetailLease = null;
 const status = document.querySelector('#status');
+const lastUpdated = document.querySelector('#last-updated');
+const refreshState = document.querySelector('#refresh-state');
 
 (() => {
   try {
@@ -106,9 +111,11 @@ function statusDescription(statusValue) {
 function statusCell(lease) {
   const cell = document.createElement('td');
   cell.className = 'device-status';
+  cell.title = statusDescription(lease.status);
   const dot = document.createElement('span');
   dot.className = `dot ${lease.status || 'unknown'}`;
   dot.title = statusDescription(lease.status);
+  dot.setAttribute('role', 'img');
   dot.setAttribute('aria-label', dot.title);
   cell.append(dot);
   return cell;
@@ -120,15 +127,11 @@ function matchesFilters(lease) {
   if (ipFilter === 'ipv6' && !isIPv6) return false;
   if (reservationFilter === 'reserved' && !lease.staticIP) return false;
   if (reservationFilter === 'dynamic' && lease.staticIP) return false;
+  if (statusFilter !== 'all' && String(lease.status ?? 'unknown') !== statusFilter) return false;
   return true;
 }
 
 function updateLeaseSummary(shown, total) {
-  if (lastLoadError) {
-    status.textContent = t('failedToLoadLeases', { error: lastLoadError });
-    status.classList.add('error');
-    return;
-  }
   status.classList.remove('error');
   if (shown !== total) {
     status.textContent = t('filteredSummary', { shown, total });
@@ -136,6 +139,26 @@ function updateLeaseSummary(shown, total) {
     status.textContent = t('oneLeaseSummary');
   } else {
     status.textContent = t('manyLeasesSummary', { count: total });
+  }
+}
+
+function formattedTimestamp(date) {
+  const locale = { en: 'en-GB', de: 'de-DE', es: 'es-ES' }[LANGUAGE_API().language] || 'en-GB';
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'medium' }).format(date);
+}
+
+function updateRefreshMeta() {
+  lastUpdated.textContent = lastSuccessfulRefresh
+    ? t('lastUpdated', { time: formattedTimestamp(lastSuccessfulRefresh) })
+    : '';
+  refreshState.classList.remove('error');
+  if (refreshing) {
+    refreshState.textContent = t('loadingLeases');
+  } else if (lastLoadError) {
+    refreshState.textContent = t('refreshFailedKeepingData', { error: lastLoadError });
+    refreshState.classList.add('error');
+  } else {
+    refreshState.textContent = '';
   }
 }
 
@@ -180,6 +203,7 @@ function render() {
     return row;
   }));
   updateLeaseSummary(rows.length, leases.length);
+  updateRefreshMeta();
   document.querySelectorAll('#leases th').forEach(header => {
     const indicator = header.querySelector('.sort-indicator');
     if (header.dataset.key === sort.column) {
@@ -192,12 +216,12 @@ function render() {
   });
 }
 
-async function copyValue(value, button) {
+async function copyValue(value, button, returnLabel = t('copy')) {
   if (!value || value === t('notAvailable')) return;
   const original = button.textContent;
   const showResult = copied => {
     button.textContent = copied ? t('copied') : t('copyFailed');
-    window.setTimeout(() => { button.textContent = t('copy'); }, 1200);
+    window.setTimeout(() => { if (button.isConnected) button.textContent = returnLabel; }, 1200);
   };
   try {
     await navigator.clipboard.writeText(value);
@@ -313,6 +337,7 @@ function getDetailStatus(statusValue) {
 }
 
 function showDetails(lease) {
+  activeDetailLease = lease;
   const dialog = document.querySelector('#device-details');
   const content = document.querySelector('#detail-content');
   dialog.dataset.mac = String(lease.macAddress ?? '').trim();
@@ -378,6 +403,29 @@ function showDetails(lease) {
   if (!dialog.open) dialog.showModal();
 }
 
+function buildDeviceDetailsText(lease) {
+  const hostname = lease.name && lease.name !== '*' ? lease.name : t('notAvailable');
+  const fields = [
+    `${t('deviceDetails')}: ${hostname}`,
+    `${t('status')}: ${getDetailStatus(lease.status)}`,
+    `${t('hostname')}: ${hostname}`,
+    `${t('ipAddressV4V6')}: ${lease.ipAddress || t('notAvailable')}`,
+    `${t('macAddress')}: ${lease.macAddress || t('notAvailable')}`,
+  ];
+  if (lease.iaid !== undefined && lease.iaid !== null && String(lease.iaid) !== '') {
+    fields.push(`${t('iaid')}: ${lease.iaid}`);
+  }
+  if (lease.duid) fields.push(`${t('duid')}: ${lease.duid}`);
+  fields.push(`${t('dhcpReservation')}: ${lease.staticIP ? t('yes') : t('no')}`);
+  fields.push(`${t('leaseEndsOn')}: ${lease.leaseExpiry === 0 ? t('never') : formatLease(lease)}`);
+  fields.push(`${t('webInterface')}: ${lease.webUrl || t('notDetected')}`);
+  fields.push(`${t('hostnameURL')}: ${lease.webHostUrl || t('notDetected')}`);
+  if (validMac(lease.macAddress)) {
+    fields.push(`${t('newDevice')}: ${lease.isNew ? t('yes') : t('no')}`);
+  }
+  return fields.join('\n');
+}
+
 function leaseIdentity(lease) {
   return [lease.ipAddress ?? '', lease.name ?? '', lease.iaid ?? '', lease.duid ?? ''].join('|');
 }
@@ -391,6 +439,12 @@ function refreshOpenDetails(mac) {
     : leases.find(item => leaseIdentity(item) === (dialog.dataset.leaseKey || ''));
   if (lease) showDetails(lease);
 }
+
+document.querySelector('#copy-device-details-button').addEventListener('click', event => {
+  if (activeDetailLease) {
+    copyValue(buildDeviceDetailsText(activeDetailLease), event.currentTarget, t('copyDeviceDetails'));
+  }
+});
 
 document.querySelector('#detail-close').addEventListener('click', () => {
   document.querySelector('#device-details').close();
@@ -410,6 +464,10 @@ document.querySelector('#reservation-filter').addEventListener('change', event =
   reservationFilter = event.target.value;
   render();
 });
+document.querySelector('#status-filter').addEventListener('change', event => {
+  statusFilter = event.target.value;
+  render();
+});
 document.querySelector('#leases thead').addEventListener('click', event => {
   const header = event.target.closest('th');
   if (!header) return;
@@ -427,30 +485,38 @@ async function load() {
   const button = document.querySelector('#refresh-button');
   const label = button.querySelector('[data-i18n]');
   button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
   if (label) label.textContent = t('refreshing');
+  updateRefreshMeta();
   try {
     const response = await fetch(LEASES_API_URL, { cache: 'no-store' });
     if (!response.ok) throw new Error(t('httpError', { status: response.status }));
-    leases = (await response.json()).leases ?? [];
+    const payload = await response.json();
+    if (!payload || !Array.isArray(payload.leases)) throw new Error(t('invalidLeaseResponse'));
+
+    // Replace the table only after a valid response arrives, preserving stale-but-useful data on failure.
+    leases = payload.leases;
+    lastSuccessfulRefresh = new Date();
     lastLoadError = null;
-    status.classList.remove('error');
     render();
   } catch (error) {
-    lastLoadError = error.message;
-    status.textContent = t('failedToLoadLeases', { error: lastLoadError });
-    status.classList.add('error');
+    lastLoadError = error.message || String(error);
+    // Keep the last successful lease list visible and show the refresh error separately.
+    render();
     console.error(error);
   } finally {
     refreshing = false;
     button.disabled = false;
+    button.removeAttribute('aria-busy');
     if (label) label.textContent = t('refresh');
+    updateRefreshMeta();
   }
 }
-
 
 document.querySelector('#refresh-button').addEventListener('click', load);
 window.addEventListener('app-language-change', () => {
   render();
+  updateRefreshMeta();
   const dialog = document.querySelector('#device-details');
   if (dialog.open) refreshOpenDetails(dialog.dataset.mac || '');
 });

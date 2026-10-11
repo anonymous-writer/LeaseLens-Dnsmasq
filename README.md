@@ -157,6 +157,10 @@ After changing the configuration, restart dnsmasq and verify that the files exis
 - Select a table heading to change the sort order.
 - Click a row to open device details. Copy buttons are available for hostname, IP, and MAC values.
 - Click **Refresh** to reload leases and redo device reachability checks. The countdown is updated locally between refreshes; reachability checks are not run every second.
+- Filter by device status: HTTP/HTTPS responds, ping responds without a web interface, or no ping/web response.
+- Hover over a status indicator for an explanation of the result.
+- The page shows the last successful refresh time and a separate loading/error status. If a refresh fails, the previously loaded lease list remains visible.
+- Copy all device details at once from the details dialog.
 - A `NEW` label means the MAC address is not currently in the remembered-device list.
 - In device details, choose **Mark as known** to remember a device or **Mark as new** to remove its MAC from the remembered list.
 - Choose **Mark reservations known** to remember all currently detected DHCP reservations that have valid MAC addresses.
@@ -263,12 +267,11 @@ Keep `INFO` for everyday operation and switch to `DEBUG` temporarily when extra 
 
 ## Building from source
 
-Requires Go 1.25 or later. `main.go` is a small entry point; the application implementation is organized under `internal/app/`. Build the module/package rather than an individual source file.
+Requires Go 1.25 or later. The Go source is split into several files; build the whole package, not only `main.go`.
 
 ```bash
-gofmt -w main.go internal/app/*.go
+gofmt -w *.go
 go test ./...
-go vet ./...
 go build -o dnsmasq-leases-ui .
 ```
 
@@ -282,7 +285,7 @@ PORT=3008 ./dnsmasq-leases-ui
 
 ### Build the Docker image locally
 
-The Dockerfile copies `main.go` and the `internal/` directory, then builds the root executable with `go build .`. Do not use `go build ./main.go`; this project imports its implementation from `internal/app/`.
+The Dockerfile must copy all Go source files and build the package with `go build .` (or equivalent). Do not use `go build ./main.go`, because that compiles only the named file and omits the other source files.
 
 ```bash
 docker build -t dnsmasq-leases-ui:local .
@@ -305,28 +308,20 @@ The workflow is triggered by `workflow_dispatch` only. Publishing a GitHub Relea
 
 ## Source layout
 
-The Go source is organized so the root stays uncluttered while all application implementation is in one internal package:
+The Go application is split into files by responsibility:
 
-```text
-.
-├── main.go                    # Small executable entry point
-├── internal/
-│   └── app/                   # Application implementation (package app)
-│       ├── app.go             # Startup, dependency wiring, HTTP server
-│       ├── config.go          # Environment variables and runtime configuration
-│       ├── models.go          # Shared data structures and normalization helpers
-│       ├── reservations.go    # Parsing and matching DHCP reservations
-│       ├── leases.go          # Reading and parsing the dnsmasq lease file
-│       ├── network.go         # Ping, HTTP/HTTPS, DNS resolution, URL checks
-│       ├── known_macs.go      # Persistent remembered-MAC storage and actions
-│       ├── handlers.go        # Web handlers and JSON API endpoints
-│       ├── logging.go         # DEBUG, INFO, WARN, ERROR and FATAL logging
-│       └── leases_ipv6_test.go # DHCP lease parsing tests
-├── templates/index.html       # HTML template for the web interface
-└── static/                    # JavaScript, translations, and icon assets
-```
+- `main.go` — application startup and HTTP server
+- `config.go` — environment variables and runtime configuration
+- `models.go` — shared data structures and normalization helpers
+- `reservations.go` — parsing and matching DHCP reservations
+- `leases.go` — reading and parsing the lease file
+- `network.go` — ping, HTTP/HTTPS, DNS resolution, and URL checks
+- `known_macs.go` — persistent remembered-MAC storage and mark/unmark/reset operations
+- `handlers.go` — HTTP handlers for the UI, leases API, and remembered-device actions
+- `templates/index.html` — HTML template for the web interface
+- `static/app.js` — browser-side rendering, filtering, countdown, theme, and device actions
 
-The Go files under `internal/app/` share the `app` package and can use unexported helpers without extra package plumbing. The root `main.go` only calls `app.Run()`. Because this is an `internal` package, Go prevents unrelated modules from importing the application's internal implementation. The Docker build context must include both `main.go` and the `internal/` directory.
+Keep the `.go` files in the same directory and in the same Go package (`package main`). The Docker build context must include all these files.
 
 ## IPv6 notes
 

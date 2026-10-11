@@ -68,7 +68,7 @@ body {
   border-radius:4px
 }
 /* Dropdowns für IP-Version und DHCP-Reservierungsfilter. */
-#ip-filter,#reservation-filter,#language-select {
+#ip-filter,#reservation-filter,#status-filter,#language-select {
   padding:.4rem .5rem;
   font:inherit;
   color:var(--fg);
@@ -172,6 +172,32 @@ a {
 #status.error {
   color:#c00
 }
+/* Zeigt letzte erfolgreiche Aktualisierung sowie Lade- oder Fehlerzustand separat. */
+#refresh-meta {
+  display:flex;
+  flex-wrap:wrap;
+  gap:.35rem 1rem;
+  margin-top:.25rem;
+  color:var(--muted);
+  font-size:.85rem
+}
+#refresh-state.error {
+  color:#c00
+}
+.refresh-icon {
+  display:inline-block
+}
+#refresh-button[aria-busy="true"] .refresh-icon {
+  animation:refresh-spin .9s linear infinite
+}
+@keyframes refresh-spin {
+  to { transform:rotate(360deg) }
+}
+/* Bei schmalen Fenstern kann die Werkzeugleiste umbrechen; dann darf sie die Tabelle nicht überdecken. */
+@media (max-width: 900px) {
+  #toolbar { position:static; }
+  th { top:0; }
+}
 /* Versions-/Release-Information am Seitenende. */
 footer {
   margin-top:1rem;
@@ -267,6 +293,10 @@ dialog::backdrop {
   font-size:.8rem;
   margin-bottom:.2rem
 }
+#copy-device-details-button {
+  display:inline-block;
+  margin:.25rem 0 .75rem;
+}
 #detail-close {
   float:right;
   padding:.4rem .7rem;
@@ -301,8 +331,16 @@ dialog::backdrop {
       <option value="dynamic" data-i18n="dynamicOnly">Dynamic only</option>
     </select>
 
+    <!-- Filtert nach dem Ergebnis der letzten Statusprüfung. -->
+    <select id="status-filter" aria-label="Filter by device status" data-i18n-aria-label="statusFilterTitle" title="Filter by device status" data-i18n-title="statusFilterTitle">
+      <option value="all" data-i18n="allStatuses">All statuses</option>
+      <option value="online" data-i18n="webOnlineFilter">HTTP/HTTPS responds</option>
+      <option value="reachable" data-i18n="pingOnlyFilter">Ping responds, no web UI</option>
+      <option value="offline" data-i18n="noResponseFilter">No ping or web response</option>
+    </select>
+
     <!-- Refresh wird in app.js verdrahtet; es ist kein automatischer Polling-Timer. -->
-    <button id="refresh-button" type="button" title="Refresh" data-i18n-title="refresh" aria-label="Refresh" data-i18n-aria-label="refresh"><span aria-hidden="true">↻ </span><span data-i18n="refresh">Refresh</span></button>
+    <button id="refresh-button" type="button" title="Refresh" data-i18n-title="refresh" aria-label="Refresh" data-i18n-aria-label="refresh"><span class="refresh-icon" aria-hidden="true">↻</span> <span data-i18n="refresh">Refresh</span></button>
 
     <!-- Merkt alle aktuell erkannten DHCP-Reservierungen mit gültiger MAC-Adresse. -->
     <button id="mark-reservations-button" type="button" title="Mark all DHCP reservations as known" data-i18n-title="markReservationsKnownTitle"><span data-i18n="markReservationsKnown">Mark reservations known</span></button>
@@ -348,13 +386,18 @@ dialog::backdrop {
     <tbody></tbody>
   </table>
 
-  <!-- Meldungen zum Ladezustand oder zu Fehlern werden von app.js gesetzt. -->
-  <div id="status" data-i18n="loading">Loading…</div>
+  <!-- Tabellenzusammenfassung sowie letzter Erfolg und aktueller Lade-/Fehlerstatus. -->
+  <div id="status" role="status" aria-live="polite" data-i18n="loading">Loading…</div>
+  <div id="refresh-meta" aria-live="polite">
+    <span id="last-updated"></span>
+    <span id="refresh-state"></span>
+  </div>
 
   <!-- Modal: app.js befüllt #detail-content mit den gewählten Gerätedetails. -->
   <dialog id="device-details" aria-labelledby="detail-title">
     <button id="detail-close" type="button" data-i18n="close">Close</button>
     <h2 id="detail-title" data-i18n="deviceDetails">Device details</h2>
+    <button id="copy-device-details-button" class="copy-button" type="button" data-i18n="copyDeviceDetails">Copy device details</button>
     <div id="detail-content" class="detail-grid"></div>
   </dialog>
 
