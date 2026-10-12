@@ -60,10 +60,15 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository }}
+          # Stable releases alone receive semver aliases and latest.
+          # Pre-releases receive their exact version tag and the moving go-beta tag.
+          flavor: latest=false
           tags: |
-            type=semver,pattern={{version}},value=${{ github.event.release.tag_name }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ github.event.release.tag_name }}
-            type=semver,pattern={{major}},value=${{ github.event.release.tag_name }}
+            type=raw,value=${{ steps.vars.outputs.version }},enable=${{ github.event.release.prerelease }}
+            type=raw,value=go-beta,enable=${{ github.event.release.prerelease }}
+            type=semver,pattern={{version}},value=${{ github.event.release.tag_name }},enable=${{ github.event.release.prerelease == false }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ github.event.release.tag_name }},enable=${{ github.event.release.prerelease == false }}
+            type=semver,pattern={{major}},value=${{ github.event.release.tag_name }},enable=${{ github.event.release.prerelease == false }}
             type=raw,value=latest,enable=${{ github.event.release.prerelease == false }}
 
       - name: Build and push

@@ -16,5 +16,6 @@ jobs:
       - name: Create or update release pull request
         uses: googleapis/release-please-action@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Use a PAT or GitHub App token so the resulting tag/release can trigger build workflows.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           release-type: simple
