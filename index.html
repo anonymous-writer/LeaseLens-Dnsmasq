@@ -408,7 +408,7 @@ dialog::backdrop {
   -->
   <footer>
     <a href="{{.RepoURL}}" target="_blank" rel="noopener noreferrer">dnsmasq-leases-ui</a>
-    v{{.Version}}{{if .ReleaseDate}} · <span data-i18n="released">released</span> {{.ReleaseDate}}{{end}}
+    v{{.Version}}{{if .ReleaseDate}} · <span data-i18n="released">released</span> {{.ReleaseDate}}{{end}}{{if .DnsmasqVersion}} · dnsmasq {{.DnsmasqVersion}}{{end}}
   </footer>
 
   <!-- Cache-Busting: Versionswert ändert die URL, wenn ein neues App-Build geladen wird. -->

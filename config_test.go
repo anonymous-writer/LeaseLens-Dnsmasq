@@ -1,8 +1,12 @@
 package app
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
 func TestLoadConfigFromArgsOverridesEnvironment(t *testing.T) {
+	t.Setenv("CONFIG_FILE", "")
 	t.Setenv("HOST", "127.0.0.1")
 	t.Setenv("PORT", "5000")
 	t.Setenv("DNSMASQ_LEASES_FILE", "/env/leases")
@@ -33,6 +37,7 @@ func TestLoadConfigFromArgsOverridesEnvironment(t *testing.T) {
 }
 
 func TestLoadConfigFromArgsUsesEnvironmentDefaults(t *testing.T) {
+	t.Setenv("CONFIG_FILE", "")
 	t.Setenv("HOST", "192.0.2.1")
 	t.Setenv("PORT", "9000")
 	t.Setenv("DNSMASQ_LEASES_FILE", "/custom/leases")
@@ -51,8 +56,49 @@ func TestLoadConfigFromArgsUsesEnvironmentDefaults(t *testing.T) {
 }
 
 func TestLoadConfigFromArgsRejectsPositionalArguments(t *testing.T) {
+	t.Setenv("CONFIG_FILE", "")
 	_, _, err := loadConfigFromArgs([]string{"unexpected"})
 	if err == nil {
 		t.Fatal("expected positional argument to be rejected")
+	}
+}
+
+func TestLoadConfigFromYAMLAndCommandLineOverride(t *testing.T) {
+	t.Setenv("CONFIG_FILE", "")
+	configPath := t.TempDir() + "/config.yaml"
+	content := `host: "127.0.0.1"
+port: "3008"
+leases_file: "/tmp/config.leases"
+hosts_file: "/tmp/config.hosts"
+known_macs_file: "/tmp/known-macs.json"
+log_level: "DEBUG"
+`
+	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	cfg, logLevel, err := loadConfigFromArgs([]string{"--config", configPath, "--port", "8081"})
+	if err != nil {
+		t.Fatalf("loadConfigFromArgs returned an error: %v", err)
+	}
+	if cfg.Host != "127.0.0.1" || cfg.Port != "8081" {
+		t.Fatalf("config/flag values = host %q port %q, want 127.0.0.1 and 8081", cfg.Host, cfg.Port)
+	}
+	if cfg.LeasePath != "/tmp/config.leases" || cfg.HostsPath != "/tmp/config.hosts" || cfg.KnownMACsPath != "/tmp/known-macs.json" {
+		t.Fatalf("config file paths not applied: %+v", cfg)
+	}
+	if logLevel != "DEBUG" {
+		t.Fatalf("logLevel = %q, want DEBUG", logLevel)
+	}
+}
+
+func TestLoadConfigFromArgsRejectsUnknownConfigKey(t *testing.T) {
+	t.Setenv("CONFIG_FILE", "")
+	configPath := t.TempDir() + "/config.yaml"
+	if err := os.WriteFile(configPath, []byte("porrt: 3008\n"), 0600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	if _, _, err := loadConfigFromArgs([]string{"--config=" + configPath}); err == nil {
+		t.Fatal("expected unknown config key to be rejected")
 	}
 }

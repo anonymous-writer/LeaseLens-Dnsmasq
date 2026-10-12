@@ -1,6 +1,6 @@
 # dnsmasq-leases-ui — Go project layout
 
-The root `main.go` is intentionally kept small. It imports `internal/app` and calls `app.Run()`.
+The root `main.go` is intentionally kept small. It imports `internal/app` and calls `app.Run()` with the embedded asset filesystem and a build-mode flag.
 
 The application implementation and its tests live under `internal/app/`, grouped by responsibility. Those files use the same `app` package, so internal helpers can remain unexported and do not need to be wired across many separate packages.
 
@@ -23,4 +23,4 @@ The Dockerfile copies the root `main.go` and the full `internal/` directory befo
 - `linux/amd64`
 - `linux/arm64`
 
-The runtime image expects `templates/index.html` and `static/` relative to the working directory.
+The web UI is embedded into the executable at build time; runtime copies of `templates/` and `static/` are not required.

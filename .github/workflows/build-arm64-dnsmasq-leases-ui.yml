@@ -33,7 +33,7 @@ jobs:
           CGO_ENABLED: "0"
         run: |
           mkdir -p dist
-          go build -trimpath -ldflags="-s -w" -o dist/dnsmasq-leases-ui-linux-arm64 .
+          go build -trimpath -ldflags="-s -w -X main.nativeBuild=true" -o dist/dnsmasq-leases-ui-linux-arm64 .
 
       - name: Package binary (preserve executable permissions)
         run: tar -czf dist/dnsmasq-leases-ui-linux-arm64.tar.gz -C dist dnsmasq-leases-ui-linux-arm64

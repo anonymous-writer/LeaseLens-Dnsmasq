@@ -199,6 +199,7 @@ The `mark-reservations` response also includes a `count` field. These endpoints 
 
 | Environment variable | Default | Description |
 |---|---|---|
+| `CONFIG_FILE` | empty | Optional path to the YAML-style configuration file |
 | `DNSMASQ_LEASES_FILE` | `/var/lib/dnsmasq/dnsmasq.leases` | Path to the dnsmasq lease file |
 | `DNSMASQ_HOSTS_FILE` | `/var/lib/dnsmasq/dnsmasq.dhcphosts` | Path to the optional DHCP hosts file |
 | `KNOWN_MACS_FILE` | `/data/known-macs.json` | Path to the persistent remembered-MAC list |
@@ -212,7 +213,11 @@ The `mark-reservations` response also includes a `count` field. These endpoints 
 | `REPO_URL` | `https://github.com/anonymous-writer/dnsmasq-leases-ui` | Repository URL shown in the UI |
 | `LOG_LEVEL` | `INFO` | Minimum log level: `DEBUG`, `INFO`, `WARN`, or `ERROR` |
 
-The same runtime settings can be set with command-line flags. Available flags are `--host`, `--port`, `--leases-file`, `--hosts-file`, `--known-macs-file`, and `--log-level`. A flag takes precedence over the corresponding environment variable.
+The same runtime settings can be supplied in a flat YAML-style configuration file. Example: [`config.example.yaml`](config.example.yaml). To use it, copy it to `/home/pi/Dnsmasq-Leases-UI/config.yaml` and launch the binary with `--config /home/pi/Dnsmasq-Leases-UI/config.yaml` (the supplied systemd unit does this). `CONFIG_FILE` can also specify the file path. Supported keys are `host`, `port`, `leases_file`, `hosts_file`, `known_macs_file`, `log_level`, `app_version`, `release_date`, and `repo_url`.
+
+Precedence is **defaults < environment variables < config file < command-line flags**. Available flags include `--config`, `--host`, `--port`, `--leases-file`, `--hosts-file`, `--known-macs-file`, `--log-level`, `--app-version`, `--release-date`, and `--repo-url`.
+
+The native ARM64 build also queries `dnsmasq --version` at startup and shows the detected version in the page footer. This is enabled only in the standalone/native build workflow; Docker builds do not show the dnsmasq version. If the `dnsmasq` executable is not available in `PATH`, the footer omits that part.
 
 The `dnsmasq.dhcphosts` file is optional. Without it, the UI still works, but reservations defined only in that file cannot be identified. Leases with a lease time of `0` are displayed as `Never` and treated as reservations.
 

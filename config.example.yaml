@@ -1,0 +1,21 @@
+# dnsmasq-leases-ui native configuration
+# File path for the systemd service: /home/pi/Dnsmasq-Leases-UI/config.yaml
+
+# Web server
+host: "0.0.0.0"
+port: "3008"
+
+# dnsmasq files (adjust to match your Raspberry Pi installation)
+leases_file: "/var/lib/misc/dnsmasq.leases"
+hosts_file: "/var/lib/misc/dnsmasq.dhcphosts"
+
+# Writable persistent list of devices marked as known
+known_macs_file: "/home/pi/Dnsmasq-Leases-UI/known-macs.json"
+
+# Logging: DEBUG, INFO, WARN, or ERROR
+log_level: "INFO"
+
+# Optional UI metadata
+# app_version: "2.2.0"
+# release_date: "2026-10-12"
+# repo_url: "https://github.com/anonymous-writer/dnsmasq-leases-ui"

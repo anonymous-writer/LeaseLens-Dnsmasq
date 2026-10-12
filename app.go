@@ -15,7 +15,7 @@ import (
 )
 
 // Run loads configuration, wires application dependencies, and starts the HTTP server.
-func Run(assets fs.FS) {
+func Run(assets fs.FS, nativeBuild bool) {
 	cfg, logLevel, err := loadConfigFromArgs(os.Args[1:])
 	if err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -36,7 +36,17 @@ func Run(assets fs.FS) {
 		LogFatalf("cannot access embedded static assets: %v", err)
 	}
 
-	handler := newHTTPHandler(cfg, known, tmpl, staticFS)
+	dnsmasqVersion := ""
+	if nativeBuild {
+		dnsmasqVersion = detectDnsmasqVersion()
+		if dnsmasqVersion == "" {
+			LogDebugf("native build: dnsmasq version unavailable (dnsmasq --version failed or returned an unrecognized result)")
+		} else {
+			LogInfof("detected native dnsmasq version=%s", dnsmasqVersion)
+		}
+	}
+
+	handler := newHTTPHandler(cfg, known, tmpl, staticFS, dnsmasqVersion)
 	address := net.JoinHostPort(cfg.Host, cfg.Port)
 	LogInfof("dnsmasq-leases-ui starting version=%s listen=%s", cfg.AppVersion, address)
 	if err := http.ListenAndServe(address, handler); err != nil {

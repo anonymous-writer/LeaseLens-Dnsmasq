@@ -45,4 +45,9 @@ func contains(a []string, v string) bool {
 	return false
 }
 
-type PageData struct{ Version, ReleaseDate, RepoURL string }
+type PageData struct {
+	Version        string
+	ReleaseDate    string
+	RepoURL        string
+	DnsmasqVersion string
+}
