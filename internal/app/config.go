@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+// Linker-overridable defaults for native builds. Runtime configuration can override these.
+var buildVersion = "dev"
+var buildReleaseDate = ""
+
 func envInt(k string, d int) int {
 	if v := os.Getenv(k); v != "" {
 		if n, e := strconv.Atoi(v); e == nil {
@@ -60,8 +64,8 @@ func loadConfig() Config {
 		LeasePath:     getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
 		HostsPath:     getenv("DNSMASQ_HOSTS_FILE", "/var/lib/dnsmasq/dnsmasq.dhcphosts"),
 		KnownMACsPath: getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
-		AppVersion:    getenv("APP_VERSION", "dev"),
-		ReleaseDate:   getenv("APP_RELEASE_DATE", ""),
+		AppVersion:    getenv("APP_VERSION", buildVersion),
+		ReleaseDate:   getenv("APP_RELEASE_DATE", buildReleaseDate),
 		RepoURL:       getenv("REPO_URL", "https://github.com/anonymous-writer/dnsmasq-leases-ui"),
 	}
 }

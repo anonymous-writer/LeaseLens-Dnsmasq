@@ -38,7 +38,7 @@ The current development image is published to GitHub Container Registry with the
 docker pull ghcr.io/anonymous-writer/dnsmasq-leases-ui:go-beta
 ```
 
-The `latest` tag is intended for the stable release. The manual development workflow described under [Docker image publishing](#docker-image-publishing) updates `go-beta` only; it does not update `latest` when you publish a GitHub Release or Pre-release.
+The `go-beta` tag follows the most recently published pre-release. Stable releases publish version tags plus `latest`; pre-releases never update `latest`. Publishing either kind of GitHub Release also attaches native ARM64 and AMD64 binaries to that release.
 
 The container reads these files by default:
 
@@ -297,9 +297,12 @@ All options are optional. `./dnsmasq-leases-ui --help` lists them. Command-line 
 
 ### Prebuilt native Linux binaries (ARM64 and AMD64)
 
-The manual GitHub Actions workflow builds standalone Linux binaries for both architectures. It does **not** build or publish a Docker image. Go tests and `go vet` run first; the two native artifacts are built only if they pass.
+The native workflow supports two modes:
 
-Run **GitHub → Actions → Build dnsmasq-leases-ui native binaries → Run workflow**. Download the artifact that matches the target machine:
+- **Manual run:** Go tests and `go vet` run first; ARM64 and AMD64 binaries are then uploaded as temporary GitHub Actions artifacts (retained for 30 days). This does not build or publish a Docker image.
+- **Published GitHub Release or Pre-release:** the same native builds run automatically and attach both `.tar.gz` archives plus `SHA256SUMS` to the matching release.
+
+For a manual build, run **GitHub → Actions → Build dnsmasq-leases-ui native binaries → Run workflow**. For a published pre-release or stable release, download the files directly from that release's **Assets** section. Choose the artifact or release asset matching the target machine:
 
 | Artifact | Target architecture | Typical systems |
 |---|---|---|
@@ -316,7 +319,7 @@ chmod +x dnsmasq-leases-ui-linux-arm64
 
 For an AMD64 Linux host, use the `dnsmasq-leases-ui-linux-amd64.tar.gz` archive and run `./dnsmasq-leases-ui-linux-amd64` instead. The archive contains only the executable; the HTML, JavaScript, and other web assets are embedded in it. The downloaded artifacts are retained by GitHub Actions for 30 days.
 
-The native executable checks for `dnsmasq --version` at startup and displays the detected version in the interface footer, provided `dnsmasq` is installed and available through `PATH`. This native-only display is not enabled in Docker builds. The external dnsmasq lease file, optional DHCP hosts file, and writable remembered-device JSON file still need to be accessible at the configured paths.
+For published GitHub Releases and Pre-releases, the native build embeds the release tag (without the leading `v`) and the release publication date, so the footer shows the correct version and date instead of `vdev`. A manual workflow run from a branch with the `release_tag` input left empty uses `dev` and the source commit date. To rebuild an existing release using the latest source, run the workflow from the updated branch and set `release_tag` to the existing tag (for example `v2.1.1-Beta.2`); the workflow embeds the right version/date and replaces the native assets on that release. When you manually run the workflow against an existing release tag, it embeds that tag and looks up the actual GitHub publication date (falling back to the tagged commit date if no published release exists). These embedded values are defaults; `APP_VERSION`, `APP_RELEASE_DATE`, the configuration file, and command-line flags can still override them according to the normal precedence. The native executable also checks for `dnsmasq --version` at startup and displays the detected version in the interface footer, provided `dnsmasq` is installed and available through `PATH`. This native-only dnsmasq version display is not enabled in Docker builds. The external dnsmasq lease file, optional DHCP hosts file, and writable remembered-device JSON file still need to be accessible at the configured paths.
 
 ### Build the Docker image locally
 
@@ -333,13 +336,30 @@ docker run --rm --network host \
 
 ## Docker image publishing
 
-The current development workflow is configured for manual execution from **GitHub → Actions → Build and publish Docker image → Run workflow**. A successful run builds and pushes a multi-architecture image (`linux/amd64` and `linux/arm64`) with the tag:
+Publishing a GitHub Pre-release or stable Release triggers the Docker publishing workflow after the release is published. It builds and pushes a multi-architecture image (`linux/amd64` and `linux/arm64`) to GitHub Container Registry (GHCR).
 
-```text
-ghcr.io/anonymous-writer/dnsmasq-leases-ui:go-beta
-```
+| Release type | Tags published to GHCR | Effect on `latest` |
+|---|---|---|
+| Pre-release, e.g. `v2.2.1-beta.1` | `2.2.1-beta.1` and `go-beta` | Does not change `latest` |
+| Stable release, e.g. `v2.2.1` | `2.2.1`, `2.2`, `2`, and `latest` | Updates `latest` to the stable release |
 
-The workflow is triggered by `workflow_dispatch` only. Publishing a GitHub Release or Pre-release does not trigger this workflow, and it does not update `latest`. To publish new development code, push all source changes to the repository and run the workflow manually.
+Use the version-specific tag when you need a fixed version. The moving `go-beta` tag is intended for testing the most recent pre-release. The Docker release workflow pushes to GHCR; it does not publish Docker Hub images.
+
+## Pre-release and stable release flow
+
+Use distinct SemVer tags for a pre-release and its later stable release. For example, publish `v2.2.1-beta.1` as a pre-release first, then publish `v2.2.1` as the stable release when ready. Do not reuse or move the pre-release tag for the stable release.
+
+When a release is **published** (not merely saved as a draft), the workflows build and attach these assets:
+
+- `dnsmasq-leases-ui-linux-arm64.tar.gz`
+- `dnsmasq-leases-ui-linux-amd64.tar.gz`
+- `SHA256SUMS`
+
+The native workflow builds the matching source at the release tag. The Docker workflow publishes a prerelease-specific version tag and `go-beta` for pre-releases, while stable releases receive SemVer aliases and `latest`. GitHub documents `release: types: [published]` as the event that catches both stable and pre-release publication, including pre-releases published from drafts. See [GitHub's release event documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
+
+### Release Please token
+
+The `release-please.yml` workflow uses the repository secret `RELEASE_PLEASE_TOKEN`. Create this under **Settings → Secrets and variables → Actions → New repository secret**. It should be a fine-grained token or GitHub App token with permission to create/update pull requests, contents, and releases. This lets the release created by Release Please trigger the release build workflows; GitHub suppresses most new workflow runs caused by events created with the default `GITHUB_TOKEN`. If you create and publish releases manually in the GitHub UI, this secret is not needed for that manual publishing path, but the current Release Please workflow will still need it to operate.
 
 ## Source layout
 
