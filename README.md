@@ -212,6 +212,8 @@ The `mark-reservations` response also includes a `count` field. These endpoints 
 | `REPO_URL` | `https://github.com/anonymous-writer/dnsmasq-leases-ui` | Repository URL shown in the UI |
 | `LOG_LEVEL` | `INFO` | Minimum log level: `DEBUG`, `INFO`, `WARN`, or `ERROR` |
 
+The same runtime settings can be set with command-line flags. Available flags are `--host`, `--port`, `--leases-file`, `--hosts-file`, `--known-macs-file`, and `--log-level`. A flag takes precedence over the corresponding environment variable.
+
 The `dnsmasq.dhcphosts` file is optional. Without it, the UI still works, but reservations defined only in that file cannot be identified. Leases with a lease time of `0` are displayed as `Never` and treated as reservations.
 
 ## Logging
@@ -265,23 +267,32 @@ These lines illustrate the intended format. A message appears only where the cor
 
 Keep `INFO` for everyday operation and switch to `DEBUG` temporarily when extra diagnostic detail is needed.
 
-## Building from source
+## Standalone binary
 
-Requires Go 1.25 or later. The Go source is split into several files; build the whole package, not only `main.go`.
+The Go executable embeds `templates/index.html` and all files in `static/`. After building, those files do not need to be copied alongside the executable.
 
 ```bash
-gofmt -w *.go
 go test ./...
-go build -o dnsmasq-leases-ui .
+go build -trimpath -o dnsmasq-leases-ui .
 ```
 
-The binary expects `templates/index.html` and the `static/` directory to be available relative to the working directory.
-
-Run it with:
+Run the standalone executable with command-line options:
 
 ```bash
-PORT=3008 ./dnsmasq-leases-ui
+./dnsmasq-leases-ui \
+  --host 0.0.0.0 \
+  --port 3008 \
+  --leases-file /var/lib/dnsmasq/dnsmasq.leases \
+  --hosts-file /var/lib/dnsmasq/dnsmasq.dhcphosts \
+  --known-macs-file ./data/known-macs.json \
+  --log-level INFO
 ```
+
+All options are optional. `./dnsmasq-leases-ui --help` lists them. Command-line flags override their matching environment variables; environment-variable configuration remains supported. Only the dnsmasq input files and the remembered-device JSON file must exist outside the executable. The directory holding `known-macs.json` must be writable by the app.
+
+### ARM64 build artifact
+
+To build a standalone Linux ARM64 executable without building or publishing a Docker image, run **GitHub → Actions → Build dnsmasq-leases-ui ARM64 binary → Run workflow**. Download the `dnsmasq-leases-ui-linux-arm64` artifact and extract it. The archive contains only the executable; use `chmod +x dnsmasq-leases-ui-linux-arm64` if needed, then run it with the options above.
 
 ### Build the Docker image locally
 
@@ -308,20 +319,7 @@ The workflow is triggered by `workflow_dispatch` only. Publishing a GitHub Relea
 
 ## Source layout
 
-The Go application is split into files by responsibility:
-
-- `main.go` — application startup and HTTP server
-- `config.go` — environment variables and runtime configuration
-- `models.go` — shared data structures and normalization helpers
-- `reservations.go` — parsing and matching DHCP reservations
-- `leases.go` — reading and parsing the lease file
-- `network.go` — ping, HTTP/HTTPS, DNS resolution, and URL checks
-- `known_macs.go` — persistent remembered-MAC storage and mark/unmark/reset operations
-- `handlers.go` — HTTP handlers for the UI, leases API, and remembered-device actions
-- `templates/index.html` — HTML template for the web interface
-- `static/app.js` — browser-side rendering, filtering, countdown, theme, and device actions
-
-Keep the `.go` files in the same directory and in the same Go package (`package main`). The Docker build context must include all these files.
+The executable entry point is `main.go`. Application code is grouped by responsibility under `internal/app/`. The embedded web assets live in `templates/` and `static/`; Docker builds and standalone binaries include these files during compilation, so they are not required at runtime beside the executable.
 
 ## IPv6 notes
 

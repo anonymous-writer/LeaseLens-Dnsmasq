@@ -1,34 +1,44 @@
 package app
 
 // Application entry point: load configuration, create dependencies, and start HTTP.
-//
-// Application messages are written through logging.go so LOG_LEVEL controls
-// how much detail is printed to the container log.
+// Web assets are supplied as an embedded filesystem by the executable.
 
 import (
+	"errors"
+	"flag"
+	"fmt"
 	"html/template"
+	"io/fs"
+	"net"
 	"net/http"
 	"os"
 )
 
 // Run loads configuration, wires application dependencies, and starts the HTTP server.
-func Run() {
-	cfg := loadConfig()
-	known := newKnownMACs(cfg.KnownMACsPath)
-
-	tmpl, err := template.ParseFiles("templates/index.html")
+func Run(assets fs.FS) {
+	cfg, logLevel, err := loadConfigFromArgs(os.Args[1:])
 	if err != nil {
-		LogFatalf("cannot parse template templates/index.html: %v", err)
+		if errors.Is(err, flag.ErrHelp) {
+			return
+		}
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(2)
+	}
+	SetLogLevel(logLevel)
+
+	known := newKnownMACs(cfg.KnownMACsPath)
+	tmpl, err := template.ParseFS(assets, "templates/index.html")
+	if err != nil {
+		LogFatalf("cannot parse embedded template templates/index.html: %v", err)
+	}
+	staticFS, err := fs.Sub(assets, "static")
+	if err != nil {
+		LogFatalf("cannot access embedded static assets: %v", err)
 	}
 
-	handler := newHTTPHandler(cfg, known, tmpl)
-	address := cfg.Host + ":" + cfg.Port
-	version := os.Getenv("APP_VERSION")
-	if version == "" {
-		version = "dev"
-	}
-
-	LogInfof("dnsmasq-leases-ui starting version=%s listen=%s", version, address)
+	handler := newHTTPHandler(cfg, known, tmpl, staticFS)
+	address := net.JoinHostPort(cfg.Host, cfg.Port)
+	LogInfof("dnsmasq-leases-ui starting version=%s listen=%s", cfg.AppVersion, address)
 	if err := http.ListenAndServe(address, handler); err != nil {
 		LogFatalf("HTTP server stopped: %v", err)
 	}

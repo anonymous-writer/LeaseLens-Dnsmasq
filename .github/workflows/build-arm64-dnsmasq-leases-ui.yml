@@ -1,7 +1,6 @@
 name: Build dnsmasq-leases-ui ARM64 binary
 
 on:
-  # Start this workflow manually from GitHub Actions.
   workflow_dispatch:
 
 permissions:
@@ -9,9 +8,8 @@ permissions:
 
 jobs:
   build-arm64:
-    name: Test and package Linux ARM64 binary
+    name: Test and build standalone Linux ARM64 binary
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -22,74 +20,28 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Run Go tests
+      - name: Run tests
         run: go test ./...
 
-      - name: Build Linux ARM64 executable
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Build standalone Linux ARM64 binary
         env:
           GOOS: linux
           GOARCH: arm64
           CGO_ENABLED: "0"
         run: |
-          mkdir -p dist/dnsmasq-leases-ui-linux-arm64
-          go build -trimpath -ldflags="-s -w" \
-            -o dist/dnsmasq-leases-ui-linux-arm64/dnsmasq-leases-ui .
+          mkdir -p dist
+          go build -trimpath -ldflags="-s -w" -o dist/dnsmasq-leases-ui-linux-arm64 .
 
-      - name: Package executable and web assets
-        shell: bash
-        run: |
-          set -euo pipefail
+      - name: Package binary (preserve executable permissions)
+        run: tar -czf dist/dnsmasq-leases-ui-linux-arm64.tar.gz -C dist dnsmasq-leases-ui-linux-arm64
 
-          package_dir="dist/dnsmasq-leases-ui-linux-arm64"
-
-          # The application loads these files at runtime relative to its working directory.
-          cp -R templates static "$package_dir/"
-
-          if [[ -f LICENSE ]]; then
-            cp LICENSE "$package_dir/"
-          fi
-
-          cat > "$package_dir/README-ARM64.txt" <<'EOF'
-          dnsmasq-leases-ui - Linux ARM64 standalone bundle
-          =================================================
-
-          This bundle contains the ARM64 executable and the templates/static assets
-          needed by the application. It does not contain or publish a Docker image.
-
-          1. Extract the archive on a 64-bit ARM Linux device, such as a Raspberry Pi:
-               tar -xzf dnsmasq-leases-ui-linux-arm64.tar.gz
-               cd dnsmasq-leases-ui-linux-arm64
-
-          2. Make sure the dnsmasq files are available at the configured paths.
-             Defaults:
-               /var/lib/dnsmasq/dnsmasq.leases
-               /var/lib/dnsmasq/dnsmasq.dhcphosts
-
-          3. Start the application from this directory so templates/ and static/
-             can be found:
-               PORT=3008 APP_VERSION=arm64-build LOG_LEVEL=INFO ./dnsmasq-leases-ui
-
-          Optional environment variables include:
-            HOST, PORT, DNSMASQ_LEASES_FILE, DNSMASQ_HOSTS_FILE,
-            KNOWN_MACS_FILE, LOG_LEVEL, WEB_UI_TIMEOUT, PING_TIMEOUT,
-            WEB_UI_MAX_WORKERS, APP_VERSION, APP_RELEASE_DATE, REPO_URL.
-
-          The remembered-device list defaults to /data/known-macs.json.
-          Ensure that directory exists and is writable by the user running the app,
-          or set KNOWN_MACS_FILE to a writable location.
-
-          Open http://<device-address>:3008 in a browser.
-          Press Ctrl+C to stop the program.
-          EOF
-
-          chmod +x "$package_dir/dnsmasq-leases-ui"
-          tar -czf dist/dnsmasq-leases-ui-linux-arm64.tar.gz \
-            -C dist dnsmasq-leases-ui-linux-arm64
-
-      - name: Upload ARM64 standalone bundle
+      - name: Upload standalone binary artifact
         uses: actions/upload-artifact@v4
         with:
-          name: dnsmasq-leases-ui-linux-arm64-${{ github.sha }}
+          name: dnsmasq-leases-ui-linux-arm64
           path: dist/dnsmasq-leases-ui-linux-arm64.tar.gz
           if-no-files-found: error
           retention-days: 30

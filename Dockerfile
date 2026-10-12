@@ -5,6 +5,8 @@ WORKDIR /src
 COPY go.mod ./
 COPY main.go ./
 COPY internal/ ./internal/
+COPY templates/ ./templates/
+COPY static/ ./static/
 
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /dnsmasq-leases-ui .
 
@@ -20,8 +22,6 @@ ENV APP_VERSION=${APP_VERSION} \
     REPO_URL=${REPO_URL}
 
 COPY --from=build /dnsmasq-leases-ui /app/dnsmasq-leases-ui
-COPY templates /app/templates
-COPY static /app/static
 
 USER root
 EXPOSE 5000

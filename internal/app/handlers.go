@@ -5,16 +5,17 @@ package app
 import (
 	"encoding/json"
 	"html/template"
+	"io/fs"
 	"net"
 	"net/http"
 	"strings"
 )
 
 // newHTTPHandler wires the page, static assets, and API endpoints together.
-func newHTTPHandler(cfg Config, known *KnownMACs, tmpl *template.Template) http.Handler {
+func newHTTPHandler(cfg Config, known *KnownMACs, tmpl *template.Template, staticFS fs.FS) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", homeHandler(cfg, tmpl))
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 	mux.HandleFunc("/known-macs", knownMACsHandler(cfg, known))
 	mux.HandleFunc("/leases", leasesHandler(cfg, known))
 	return mux
