@@ -217,7 +217,7 @@ The same runtime settings can be supplied in a flat YAML-style configuration fil
 
 Precedence is **defaults < environment variables < config file < command-line flags**. Available flags include `--config`, `--host`, `--port`, `--leases-file`, `--hosts-file`, `--known-macs-file`, `--log-level`, `--app-version`, `--release-date`, and `--repo-url`.
 
-The native ARM64 build also queries `dnsmasq --version` at startup and shows the detected version in the page footer. This is enabled only in the standalone/native build workflow; Docker builds do not show the dnsmasq version. If the `dnsmasq` executable is not available in `PATH`, the footer omits that part.
+The native ARM64 and AMD64 builds query `dnsmasq --version` at startup and show the detected version in the page footer. This is enabled only in the standalone/native build workflow; Docker builds do not show the dnsmasq version. If the `dnsmasq` executable is not available in `PATH`, the footer omits that part.
 
 The `dnsmasq.dhcphosts` file is optional. Without it, the UI still works, but reservations defined only in that file cannot be identified. Leases with a lease time of `0` are displayed as `Never` and treated as reservations.
 
@@ -295,9 +295,28 @@ Run the standalone executable with command-line options:
 
 All options are optional. `./dnsmasq-leases-ui --help` lists them. Command-line flags override their matching environment variables; environment-variable configuration remains supported. Only the dnsmasq input files and the remembered-device JSON file must exist outside the executable. The directory holding `known-macs.json` must be writable by the app.
 
-### ARM64 build artifact
+### Prebuilt native Linux binaries (ARM64 and AMD64)
 
-To build a standalone Linux ARM64 executable without building or publishing a Docker image, run **GitHub → Actions → Build dnsmasq-leases-ui ARM64 binary → Run workflow**. Download the `dnsmasq-leases-ui-linux-arm64` artifact and extract it. The archive contains only the executable; use `chmod +x dnsmasq-leases-ui-linux-arm64` if needed, then run it with the options above.
+The manual GitHub Actions workflow builds standalone Linux binaries for both architectures. It does **not** build or publish a Docker image. Go tests and `go vet` run first; the two native artifacts are built only if they pass.
+
+Run **GitHub → Actions → Build dnsmasq-leases-ui native binaries → Run workflow**. Download the artifact that matches the target machine:
+
+| Artifact | Target architecture | Typical systems |
+|---|---|---|
+| `dnsmasq-leases-ui-linux-arm64` | ARM64 / AArch64 | 64-bit Raspberry Pi OS and other 64-bit ARM Linux systems |
+| `dnsmasq-leases-ui-linux-amd64` | AMD64 / x86_64 | 64-bit Intel/AMD Linux PCs and servers |
+
+GitHub downloads each artifact as a ZIP containing a `.tar.gz` archive. Extract the downloaded ZIP first, then extract the matching `.tar.gz` file. For ARM64, for example:
+
+```bash
+tar -xzf dnsmasq-leases-ui-linux-arm64.tar.gz
+chmod +x dnsmasq-leases-ui-linux-arm64
+./dnsmasq-leases-ui-linux-arm64 --config /home/pi/Dnsmasq-Leases-UI/config.yaml
+```
+
+For an AMD64 Linux host, use the `dnsmasq-leases-ui-linux-amd64.tar.gz` archive and run `./dnsmasq-leases-ui-linux-amd64` instead. The archive contains only the executable; the HTML, JavaScript, and other web assets are embedded in it. The downloaded artifacts are retained by GitHub Actions for 30 days.
+
+The native executable checks for `dnsmasq --version` at startup and displays the detected version in the interface footer, provided `dnsmasq` is installed and available through `PATH`. This native-only display is not enabled in Docker builds. The external dnsmasq lease file, optional DHCP hosts file, and writable remembered-device JSON file still need to be accessible at the configured paths.
 
 ### Build the Docker image locally
 
