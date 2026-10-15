@@ -434,10 +434,57 @@ function showDetails(lease) {
     button.textContent = lease.isNew ? t('markAsKnown') : t('markAsNew');
     button.addEventListener('click', () => setKnown(lease, lease.isNew ? 'mark' : 'unmark', button));
     action.append(label, button);
+
+    // This destructive DHCP action is available only in native builds when
+    // an interface is explicitly configured, and only for IPv4 lease entries.
+    const releaseEnabled = document.body.dataset.leaseReleaseEnabled === 'true';
+    const leaseIP = netIPv4(lease.ipAddress);
+    if (releaseEnabled && leaseIP) {
+      const releaseButton = document.createElement('button');
+      releaseButton.type = 'button';
+      releaseButton.className = 'copy-button lease-release-button';
+      releaseButton.textContent = t('releaseIPv4Lease');
+      releaseButton.title = t('releaseIPv4LeaseTitle');
+      releaseButton.addEventListener('click', () => releaseIPv4Lease(lease, releaseButton));
+      action.append(releaseButton);
+    }
     content.prepend(action);
   }
 
   if (!dialog.open) dialog.showModal();
+}
+
+function netIPv4(value) {
+  const parts = String(value ?? '').trim().split('.');
+  return parts.length === 4 && parts.every(part => /^\d{1,3}$/.test(part) && Number(part) >= 0 && Number(part) <= 255)
+    ? parts.map(part => String(Number(part))).join('.') : '';
+}
+
+async function releaseIPv4Lease(lease, button) {
+  const ip = netIPv4(lease.ipAddress);
+  if (!ip || !validMac(lease.macAddress)) return;
+  if (!confirm(t('confirmReleaseIPv4Lease', { ip, mac: lease.macAddress }))) return;
+
+  button.disabled = true;
+  button.textContent = t('releasingIPv4Lease');
+  try {
+    const response = await fetch('/release-lease', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ip, mac: lease.macAddress })
+    });
+    if (!response.ok) throw new Error((await response.text()).trim() || t('releaseIPv4LeaseFailed'));
+    document.querySelector('#device-details').close();
+    alert(t('releasedIPv4Lease'));
+    await load();
+  } catch (error) {
+    alert(t('releaseIPv4LeaseFailed') + ': ' + error.message);
+  } finally {
+    if (button.isConnected) {
+      button.disabled = false;
+      button.textContent = t('releaseIPv4Lease');
+    }
+  }
 }
 
 function buildDeviceDetailsText(lease) {

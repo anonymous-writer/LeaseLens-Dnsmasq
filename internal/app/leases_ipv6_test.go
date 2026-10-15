@@ -16,6 +16,9 @@ func TestParseIPv4LeaseKeepsMACAddress(t *testing.T) {
 	if lease.IAID != "" || lease.DUID != "" {
 		t.Fatalf("IPv4 lease should not have IAID/DUID, got IAID=%q DUID=%q", lease.IAID, lease.DUID)
 	}
+	if lease.ClientID != "01:aa:bb:cc:dd:ee:ff" {
+		t.Fatalf("ClientID = %q, want the raw IPv4 DHCP client ID", lease.ClientID)
+	}
 }
 
 func TestParseIPv6LeaseKeepsIAIDAndDUIDSeparateFromMAC(t *testing.T) {

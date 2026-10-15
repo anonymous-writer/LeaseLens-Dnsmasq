@@ -9,6 +9,9 @@ port: "3008"
 leases_file: "/var/lib/misc/dnsmasq.leases"
 hosts_file: "/var/lib/misc/dnsmasq.dhcphosts"
 
+# Interface used to release native IPv4 DHCP leases (empty disables the button)
+# dhcp_interface: "eth1"
+
 # Writable persistent list of devices marked as known
 known_macs_file: "/home/pi/Dnsmasq-Leases-UI/known-macs.json"
 

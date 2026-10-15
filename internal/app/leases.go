@@ -37,13 +37,15 @@ func parseLeaseLine(line string, r *Reservations) (LeaseEntry, bool) {
 	// IPv4: expiry, MAC, IPv4, hostname, client-id
 	// IPv6: expiry, IAID, IPv6, hostname, DUID
 	macAddress := ""
+	clientID := ""
 	iaid := ""
 	duid := ""
 	if ip := net.ParseIP(p[2]); ip != nil && ip.To4() == nil {
 		iaid = p[1]
 		duid = strings.ToUpper(p[4])
-	} else if macRE.MatchString(p[1]) {
+	} else if ip != nil && ip.To4() != nil && macRE.MatchString(p[1]) {
 		macAddress = strings.ToUpper(p[1])
+		clientID = p[4]
 	}
 
 	return LeaseEntry{
@@ -51,6 +53,7 @@ func parseLeaseLine(line string, r *Reservations) (LeaseEntry, bool) {
 		LeaseTime:   end,
 		LeaseExpiry: expiry,
 		MACAddress:  macAddress,
+		ClientID:    clientID,
 		IAID:        iaid,
 		DUID:        duid,
 		IPAddress:   p[2],

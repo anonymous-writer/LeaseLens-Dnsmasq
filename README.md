@@ -206,6 +206,7 @@ The `mark-reservations` response also includes a `count` field. These endpoints 
 | `CONFIG_FILE` | empty | Optional path to the YAML-style configuration file |
 | `DNSMASQ_LEASES_FILE` | `/var/lib/dnsmasq/dnsmasq.leases` | Path to the dnsmasq lease file |
 | `DNSMASQ_HOSTS_FILE` | `/var/lib/dnsmasq/dnsmasq.dhcphosts` | Path to the optional DHCP hosts file |
+| `DNSMASQ_INTERFACE` | empty | Native-build DHCP interface for the optional IPv4 lease-release action; requires `dnsmasq-utils` and limited sudo permission |
 | `KNOWN_MACS_FILE` | `/data/known-macs.json` | Path to the persistent remembered-MAC list |
 | `HOST` | `0.0.0.0` | Address the web server listens on |
 | `PORT` | `5000` | Port the web server listens on |
@@ -217,11 +218,40 @@ The `mark-reservations` response also includes a `count` field. These endpoints 
 | `REPO_URL` | `https://github.com/anonymous-writer/dnsmasq-leases-ui` | Repository URL shown in the UI |
 | `LOG_LEVEL` | `INFO` | Minimum log level: `DEBUG`, `INFO`, `WARN`, or `ERROR` |
 
-The same runtime settings can be supplied in a flat YAML-style configuration file. Example: [`config.example.yaml`](config.example.yaml). To use it, copy it to `/home/pi/Dnsmasq-Leases-UI/config.yaml` and launch the binary with `--config /home/pi/Dnsmasq-Leases-UI/config.yaml` (the supplied systemd unit does this). `CONFIG_FILE` can also specify the file path. Supported keys are `host`, `port`, `leases_file`, `hosts_file`, `known_macs_file`, `log_level`, `app_version`, `release_date`, and `repo_url`.
+The same runtime settings can be supplied in a flat YAML-style configuration file. Example: [`config.example.yaml`](config.example.yaml). To use it, copy it to `/home/pi/Dnsmasq-Leases-UI/config.yaml` and launch the binary with `--config /home/pi/Dnsmasq-Leases-UI/config.yaml` (the supplied systemd unit does this). `CONFIG_FILE` can also specify the file path. Supported keys are `host`, `port`, `leases_file`, `hosts_file`, `known_macs_file`, `dhcp_interface`, `log_level`, `app_version`, `release_date`, and `repo_url`.
 
-Precedence is **defaults < environment variables < config file < command-line flags**. Available flags include `--config`, `--host`, `--port`, `--leases-file`, `--hosts-file`, `--known-macs-file`, `--log-level`, `--app-version`, `--release-date`, and `--repo-url`.
+Precedence is **defaults < environment variables < config file < command-line flags**. Available flags include `--config`, `--host`, `--port`, `--leases-file`, `--hosts-file`, `--known-macs-file`, `--dhcp-interface`, `--log-level`, `--app-version`, `--release-date`, and `--repo-url`.
 
 The native ARM64 and AMD64 builds query `dnsmasq --version` at startup and show the detected version in the page footer. This is enabled only in the standalone/native build workflow; Docker builds do not show the dnsmasq version. If the `dnsmasq` executable is not available in `PATH`, the footer omits that part.
+
+#### Optional native-only IPv4 lease release
+
+The native UI can show **Remove IPv4 lease** below the “Mark as new” action in device details. This action is available only when `dhcp_interface` (or `DNSMASQ_INTERFACE` / `--dhcp-interface`) is set. For example, set `dhcp_interface: "eth1"` in the native `config.yaml`.
+
+The app uses the `dhcp_release` utility from the `dnsmasq-utils` package. It asks dnsmasq to release the selected IPv4 lease; it does not edit the lease file by hand and does not block the device from reconnecting. A still-connected client may obtain a new lease immediately. IPv6 entries do not show this action.
+
+On Debian/Raspberry Pi OS, install the utility and grant the service user (shown here as `pi`) permission to run only this utility without a password:
+
+```bash
+sudo apt-get install dnsmasq-utils
+sudo visudo -f /etc/sudoers.d/dnsmasq-leases-ui
+```
+
+Add this line to the sudoers file:
+
+```sudoers
+pi ALL=(root) NOPASSWD: /usr/bin/dhcp_release eth1 *
+```
+
+Then validate the file and set its permissions:
+
+```bash
+sudo visudo -cf /etc/sudoers.d/dnsmasq-leases-ui
+sudo chmod 0440 /etc/sudoers.d/dnsmasq-leases-ui
+```
+
+Change `pi` to the account that runs the user service and replace `eth1` if your DHCP interface has another name. The application calls `sudo -n`, so it will never prompt for a password. Keep the web interface on localhost or a trusted network: the app's endpoints do not provide authentication. The button is not included in Docker builds. See [`docs/native-ipv4-lease-release.md`](docs/native-ipv4-lease-release.md) for the complete native setup.
+
 
 The `dnsmasq.dhcphosts` file is optional. Without it, the UI still works, but reservations defined only in that file cannot be identified. Leases with a lease time of `0` are displayed as `Never` and treated as reservations.
 
