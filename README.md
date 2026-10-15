@@ -38,7 +38,7 @@ The current development image is published to GitHub Container Registry with the
 docker pull ghcr.io/anonymous-writer/dnsmasq-leases-ui:go-beta
 ```
 
-The `latest` tag is intended for the stable release. The manual development workflow described under [Docker image publishing](#docker-image-publishing) updates `go-beta` only; it does not update `latest` when you publish a GitHub Release or Pre-release.
+The `go-beta` tag follows the most recently published pre-release. Stable releases publish version tags plus `latest`; pre-releases never update `latest`. Publishing either kind of GitHub Release also attaches native ARM64 and AMD64 binaries to that release.
 
 The container reads these files by default:
 
@@ -201,6 +201,7 @@ The `mark-reservations` response includes a `count` field. The `mark-all-ipv4-re
 
 | Environment variable | Default | Description |
 |---|---|---|
+| `CONFIG_FILE` | empty | Optional path to the YAML-style configuration file |
 | `DNSMASQ_LEASES_FILE` | `/var/lib/dnsmasq/dnsmasq.leases` | Path to the dnsmasq lease file |
 | `DNSMASQ_HOSTS_FILE` | `/var/lib/dnsmasq/dnsmasq.dhcphosts` | Path to the optional DHCP hosts file |
 | `KNOWN_MACS_FILE` | `/data/known-macs.json` | Path to the persistent remembered-MAC list |
@@ -213,6 +214,12 @@ The `mark-reservations` response includes a `count` field. The `mark-all-ipv4-re
 | `APP_RELEASE_DATE` | empty | Build/release date shown by the application |
 | `REPO_URL` | `https://github.com/anonymous-writer/dnsmasq-leases-ui` | Repository URL shown in the UI |
 | `LOG_LEVEL` | `INFO` | Minimum log level: `DEBUG`, `INFO`, `WARN`, or `ERROR` |
+
+The same runtime settings can be supplied in a flat YAML-style configuration file. Example: [`config.example.yaml`](config.example.yaml). To use it, copy it to `/home/pi/Dnsmasq-Leases-UI/config.yaml` and launch the binary with `--config /home/pi/Dnsmasq-Leases-UI/config.yaml` (the supplied systemd unit does this). `CONFIG_FILE` can also specify the file path. Supported keys are `host`, `port`, `leases_file`, `hosts_file`, `known_macs_file`, `log_level`, `app_version`, `release_date`, and `repo_url`.
+
+Precedence is **defaults < environment variables < config file < command-line flags**. Available flags include `--config`, `--host`, `--port`, `--leases-file`, `--hosts-file`, `--known-macs-file`, `--log-level`, `--app-version`, `--release-date`, and `--repo-url`.
+
+The native ARM64 and AMD64 builds query `dnsmasq --version` at startup and show the detected version in the page footer. This is enabled only in the standalone/native build workflow; Docker builds do not show the dnsmasq version. If the `dnsmasq` executable is not available in `PATH`, the footer omits that part.
 
 The `dnsmasq.dhcphosts` file is optional. Without it, the UI still works, but reservations defined only in that file cannot be identified. Leases with a lease time of `0` are displayed as `Never` and treated as reservations.
 
@@ -267,23 +274,54 @@ These lines illustrate the intended format. A message appears only where the cor
 
 Keep `INFO` for everyday operation and switch to `DEBUG` temporarily when extra diagnostic detail is needed.
 
-## Building from source
+## Standalone binary
 
-Requires Go 1.25 or later. The Go source is split into several files; build the whole package, not only `main.go`.
+The Go executable embeds `templates/index.html` and all files in `static/`. After building, those files do not need to be copied alongside the executable.
 
 ```bash
-gofmt -w *.go
 go test ./...
-go build -o dnsmasq-leases-ui .
+go build -trimpath -o dnsmasq-leases-ui .
 ```
 
-The binary expects `templates/index.html` and the `static/` directory to be available relative to the working directory.
-
-Run it with:
+Run the standalone executable with command-line options:
 
 ```bash
-PORT=3008 ./dnsmasq-leases-ui
+./dnsmasq-leases-ui \
+  --host 0.0.0.0 \
+  --port 3008 \
+  --leases-file /var/lib/dnsmasq/dnsmasq.leases \
+  --hosts-file /var/lib/dnsmasq/dnsmasq.dhcphosts \
+  --known-macs-file ./data/known-macs.json \
+  --log-level INFO
 ```
+
+All options are optional. `./dnsmasq-leases-ui --help` lists them. Command-line flags override their matching environment variables; environment-variable configuration remains supported. Only the dnsmasq input files and the remembered-device JSON file must exist outside the executable. The directory holding `known-macs.json` must be writable by the app.
+
+### Prebuilt native Linux binaries (ARM64 and AMD64)
+
+The native workflow supports two modes:
+
+- **Manual run:** Go tests and `go vet` run first; ARM64 and AMD64 binaries are then uploaded as temporary GitHub Actions artifacts (retained for 30 days). This does not build or publish a Docker image.
+- **Published GitHub Release or Pre-release:** the same native builds run automatically and attach both `.tar.gz` archives plus `SHA256SUMS` to the matching release.
+
+For a manual build, run **GitHub → Actions → Build dnsmasq-leases-ui native binaries → Run workflow**. For a published pre-release or stable release, download the files directly from that release's **Assets** section. Choose the artifact or release asset matching the target machine:
+
+| Artifact | Target architecture | Typical systems |
+|---|---|---|
+| `dnsmasq-leases-ui-linux-arm64` | ARM64 / AArch64 | 64-bit Raspberry Pi OS and other 64-bit ARM Linux systems |
+| `dnsmasq-leases-ui-linux-amd64` | AMD64 / x86_64 | 64-bit Intel/AMD Linux PCs and servers |
+
+GitHub downloads each artifact as a ZIP containing a `.tar.gz` archive. Extract the downloaded ZIP first, then extract the matching `.tar.gz` file. For ARM64, for example:
+
+```bash
+tar -xzf dnsmasq-leases-ui-linux-arm64.tar.gz
+chmod +x dnsmasq-leases-ui-linux-arm64
+./dnsmasq-leases-ui-linux-arm64 --config /home/pi/Dnsmasq-Leases-UI/config.yaml
+```
+
+For an AMD64 Linux host, use the `dnsmasq-leases-ui-linux-amd64.tar.gz` archive and run `./dnsmasq-leases-ui-linux-amd64` instead. The archive contains only the executable; the HTML, JavaScript, and other web assets are embedded in it. The downloaded artifacts are retained by GitHub Actions for 30 days.
+
+For published GitHub Releases and Pre-releases, the native build embeds the release tag (without the leading `v`) and the release publication date, so the footer shows the correct version and date instead of `vdev`. A manual workflow run from a branch with the `release_tag` input left empty uses `dev` and the source commit date. To rebuild an existing release using the latest source, run the workflow from the updated branch and set `release_tag` to the existing tag (for example `v2.1.1-Beta.2`); the workflow embeds the right version/date and replaces the native assets on that release. When you manually run the workflow against an existing release tag, it embeds that tag and looks up the actual GitHub publication date (falling back to the tagged commit date if no published release exists). These embedded values are defaults; `APP_VERSION`, `APP_RELEASE_DATE`, the configuration file, and command-line flags can still override them according to the normal precedence. The native executable also checks for `dnsmasq --version` at startup and displays the detected version in the interface footer, provided `dnsmasq` is installed and available through `PATH`. This native-only dnsmasq version display is not enabled in Docker builds. The external dnsmasq lease file, optional DHCP hosts file, and writable remembered-device JSON file still need to be accessible at the configured paths.
 
 ### Build the Docker image locally
 
@@ -300,30 +338,34 @@ docker run --rm --network host \
 
 ## Docker image publishing
 
-The current development workflow is configured for manual execution from **GitHub → Actions → Build and publish Docker image → Run workflow**. A successful run builds and pushes a multi-architecture image (`linux/amd64` and `linux/arm64`) with the tag:
+Publishing a GitHub Pre-release or stable Release triggers the Docker publishing workflow after the release is published. It builds and pushes a multi-architecture image (`linux/amd64` and `linux/arm64`) to GitHub Container Registry (GHCR).
 
-```text
-ghcr.io/anonymous-writer/dnsmasq-leases-ui:go-beta
-```
+| Release type | Tags published to GHCR | Effect on `latest` |
+|---|---|---|
+| Pre-release, e.g. `v2.2.1-beta.1` | `2.2.1-beta.1` and `go-beta` | Does not change `latest` |
+| Stable release, e.g. `v2.2.1` | `2.2.1`, `2.2`, `2`, and `latest` | Updates `latest` to the stable release |
 
-The workflow is triggered by `workflow_dispatch` only. Publishing a GitHub Release or Pre-release does not trigger this workflow, and it does not update `latest`. To publish new development code, push all source changes to the repository and run the workflow manually.
+Use the version-specific tag when you need a fixed version. The moving `go-beta` tag is intended for testing the most recent pre-release. The Docker release workflow pushes to GHCR; it does not publish Docker Hub images.
+
+## Pre-release and stable release flow
+
+Use distinct SemVer tags for a pre-release and its later stable release. For example, publish `v2.2.1-beta.1` as a pre-release first, then publish `v2.2.1` as the stable release when ready. Do not reuse or move the pre-release tag for the stable release.
+
+When a release is **published** (not merely saved as a draft), the workflows build and attach these assets:
+
+- `dnsmasq-leases-ui-linux-arm64.tar.gz`
+- `dnsmasq-leases-ui-linux-amd64.tar.gz`
+- `SHA256SUMS`
+
+The native workflow builds the matching source at the release tag. The Docker workflow publishes a prerelease-specific version tag and `go-beta` for pre-releases, while stable releases receive SemVer aliases and `latest`. GitHub documents `release: types: [published]` as the event that catches both stable and pre-release publication, including pre-releases published from drafts. See [GitHub's release event documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
+
+### Release Please token
+
+The `release-please.yml` workflow uses the repository secret `RELEASE_PLEASE_TOKEN`. Create this under **Settings → Secrets and variables → Actions → New repository secret**. It should be a fine-grained token or GitHub App token with permission to create/update pull requests, contents, and releases. This lets the release created by Release Please trigger the release build workflows; GitHub suppresses most new workflow runs caused by events created with the default `GITHUB_TOKEN`. If you create and publish releases manually in the GitHub UI, this secret is not needed for that manual publishing path, but the current Release Please workflow will still need it to operate.
 
 ## Source layout
 
-The Go application is split into files by responsibility:
-
-- `main.go` — application startup and HTTP server
-- `config.go` — environment variables and runtime configuration
-- `models.go` — shared data structures and normalization helpers
-- `reservations.go` — parsing and matching DHCP reservations
-- `leases.go` — reading and parsing the lease file
-- `network.go` — ping, HTTP/HTTPS, DNS resolution, and URL checks
-- `known_macs.go` — persistent remembered-MAC storage and mark/unmark/reset operations
-- `handlers.go` — HTTP handlers for the UI, leases API, and remembered-device actions
-- `templates/index.html` — HTML template for the web interface
-- `static/app.js` — browser-side rendering, filtering, countdown, theme, and device actions
-
-Keep the `.go` files in the same directory and in the same Go package (`package main`). The Docker build context must include all these files.
+The executable entry point is `main.go`. Application code is grouped by responsibility under `internal/app/`. The embedded web assets live in `templates/` and `static/`; Docker builds and standalone binaries include these files during compilation, so they are not required at runtime beside the executable.
 
 ## IPv6 notes
 

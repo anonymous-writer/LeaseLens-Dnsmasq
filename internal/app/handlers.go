@@ -5,28 +5,29 @@ package app
 import (
 	"encoding/json"
 	"html/template"
+	"io/fs"
 	"net"
 	"net/http"
 	"strings"
 )
 
 // newHTTPHandler wires the page, static assets, and API endpoints together.
-func newHTTPHandler(cfg Config, known *KnownMACs, tmpl *template.Template) http.Handler {
+func newHTTPHandler(cfg Config, known *KnownMACs, tmpl *template.Template, staticFS fs.FS, dnsmasqVersion string) http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", homeHandler(cfg, tmpl))
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	mux.HandleFunc("/", homeHandler(cfg, tmpl, dnsmasqVersion))
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 	mux.HandleFunc("/known-macs", knownMACsHandler(cfg, known))
 	mux.HandleFunc("/leases", leasesHandler(cfg, known))
 	return mux
 }
 
-func homeHandler(cfg Config, tmpl *template.Template) http.HandlerFunc {
+func homeHandler(cfg Config, tmpl *template.Template, dnsmasqVersion string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
 			return
 		}
-		data := PageData{cfg.AppVersion, cfg.ReleaseDate, cfg.RepoURL}
+		data := PageData{Version: cfg.AppVersion, ReleaseDate: cfg.ReleaseDate, RepoURL: cfg.RepoURL, DnsmasqVersion: dnsmasqVersion}
 		if err := tmpl.Execute(w, data); err != nil {
 			LogErrorf("cannot render home page: %v", err)
 			http.Error(w, "template error", http.StatusInternalServerError)
