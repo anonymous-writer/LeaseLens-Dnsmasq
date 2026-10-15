@@ -287,7 +287,10 @@ async function resetKnown() {
 
 document.querySelector('#reset-known-button').addEventListener('click', resetKnown);
 document.querySelector('#mark-reservations-button').addEventListener('click', markReservationsKnown);
-document.querySelector('#mark-all-ipv4-reservations-button').addEventListener('click', markAllIPv4ReservationsKnown);
+const markAllIPv4ReservationsButton = document.querySelector('#mark-all-ipv4-reservations-button');
+if (markAllIPv4ReservationsButton) {
+  markAllIPv4ReservationsButton.addEventListener('click', markAllIPv4ReservationsKnown);
+}
 
 async function markReservationsKnown() {
   const reservedMACs = new Set(leases
@@ -327,6 +330,7 @@ async function markReservationsKnown() {
 async function markAllIPv4ReservationsKnown() {
   if (!confirm(t('confirmMarkAllIPv4Reservations'))) return;
   const button = document.querySelector('#mark-all-ipv4-reservations-button');
+  if (!button) return;
   button.disabled = true;
   const label = button.querySelector('[data-i18n]');
   if (label) label.textContent = t('markingAllIPv4Reservations');
@@ -351,7 +355,7 @@ async function markAllIPv4ReservationsKnown() {
   } catch (error) {
     alert(t('couldNotMarkAllIPv4Reservations', { error: error.message }));
   } finally {
-    button.disabled = false;
+    if (button.isConnected) button.disabled = false;
     if (label) label.textContent = t('markAllIPv4Reservations');
   }
 }

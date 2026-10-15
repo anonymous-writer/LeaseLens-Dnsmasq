@@ -163,11 +163,14 @@ After changing the configuration, restart dnsmasq and verify that the files exis
 - Copy all device details at once from the details dialog.
 - A `NEW` label means the MAC address is not currently in the remembered-device list.
 - In device details, choose **Mark as known** to remember a device or **Mark as new** to remove its MAC from the remembered list.
-- Choose **Mark reservations known** to remember currently detected DHCP reservations with valid MAC addresses.
-- Choose **Mark all IPv4 reservations** to remember every configured IPv4 reservation with a valid MAC address from the DHCP hosts file, including devices that are currently offline.
+- Choose **Mark reservations known** to remember all currently detected DHCP reservations that have valid MAC addresses.
 - Choose **Reset remembered** to clear all remembered MAC addresses. The UI asks for confirmation first; devices with valid MAC addresses can be marked as new again.
 
 The remembered list is stored in `known-macs.json` and persists across container restarts when `/data` is mounted to a persistent host directory. IPv6 leases without a valid MAC address are not marked as new because they cannot be reliably identified by the MAC-based list.
+
+### Remembering configured IPv4 reservations
+
+The existing **Mark reservations known** action processes DHCP reservations that are currently detected in the lease list. The separate **Mark all IPv4 reservations** action reads the configured DHCP hosts file directly, so IPv4 reservations are included even when their devices are offline. Only lines that contain both a valid MAC address and an IPv4 address are remembered; IPv6-only and ignored entries are skipped. The action uses the same persistent `known-macs.json` list as the per-device actions.
 
 ## Endpoints
 
@@ -192,10 +195,9 @@ Each object in the `leases` array can include `staticIP`, `leasetime`, `leaseExp
 | `mark` (default) | `{"mac":"AA:BB:CC:DD:EE:FF","action":"mark"}` | Remember one valid MAC address |
 | `unmark` | `{"mac":"AA:BB:CC:DD:EE:FF","action":"unmark"}` | Remove one MAC address from the remembered list |
 | `reset` | `{"action":"reset"}` | Clear the remembered list |
-| `mark-reservations` | `{"action":"mark-reservations"}` | Remember currently detected DHCP reservations with valid MAC addresses |
-| `mark-all-ipv4-reservations` | `{"action":"mark-all-ipv4-reservations"}` | Remember every configured IPv4 reservation with a valid MAC address in the DHCP hosts file, including offline devices |
+| `mark-reservations` | `{"action":"mark-reservations"}` | Remember all currently detected DHCP reservations with valid MAC addresses |
 
-The `mark-reservations` response includes a `count` field. The `mark-all-ipv4-reservations` response includes `count` and the `macs` list used to update the current view. This action reads the configured `DNSMASQ_HOSTS_FILE` directly and returns an error if the file cannot be read. These endpoints do not provide authentication; keep the application on a trusted network and do not expose it directly to the public internet.
+The `mark-reservations` response also includes a `count` field. These endpoints do not provide authentication; keep the application on a trusted network and do not expose it directly to the public internet.
 
 ## Configuration
 

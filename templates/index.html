@@ -343,7 +343,10 @@ dialog::backdrop {
     <button id="refresh-button" type="button" title="Refresh" data-i18n-title="refresh" aria-label="Refresh" data-i18n-aria-label="refresh"><span class="refresh-icon" aria-hidden="true">↻</span> <span data-i18n="refresh">Refresh</span></button>
 
     <!-- Merkt alle aktuell erkannten DHCP-Reservierungen mit gültiger MAC-Adresse. -->
-    <button id="mark-reservations-button" type="button" title="Mark all DHCP reservations as known" data-i18n-title="markReservationsKnownTitle"><span data-i18n="markReservationsKnown">Mark reservations known</span></button>
+    <button id="mark-reservations-button" type="button" title="Mark currently detected DHCP reservations as known" data-i18n-title="markReservationsKnownTitle"><span data-i18n="markReservationsKnown">Mark reservations known</span></button>
+
+    <!-- Liest die DHCP-Hosts-Datei direkt und merkt auch offline IPv4-Reservierungen. -->
+    <button id="mark-all-ipv4-reservations-button" type="button" title="Mark all configured IPv4 reservations as known" data-i18n-title="markAllIPv4ReservationsTitle"><span data-i18n="markAllIPv4Reservations">Mark all IPv4 reservations</span></button>
 
     <!-- Entfernt nach Bestätigung alle dauerhaft gespeicherten Merkeinträge. -->
     <button id="reset-known-button" type="button" title="Forget all remembered devices" data-i18n-title="resetRememberedTitle"><span data-i18n="resetRemembered">Reset remembered</span></button>

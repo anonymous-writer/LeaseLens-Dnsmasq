@@ -36,7 +36,7 @@ func homeHandler(cfg Config, tmpl *template.Template, dnsmasqVersion string) htt
 }
 
 // knownMACsHandler supports individual mark/unmark, reset, and bulk-marking
-// currently detected and configured DHCP reservations.
+// currently detected and configured IPv4 DHCP reservations.
 func knownMACsHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

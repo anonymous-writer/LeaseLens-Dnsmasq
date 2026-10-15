@@ -10,9 +10,10 @@ import (
 	"strings"
 )
 
-// readIPv4ReservationMACs returns unique MAC addresses for configured IPv4 DHCP
-// reservations. A MAC and an IPv4 address must occur on the same dhcphosts line;
-// IPv6-only reservations, entries without a MAC, and ignored hosts are excluded.
+
+// readIPv4ReservationMACs returns unique MAC addresses from configured DHCP-host
+// lines that contain both a valid MAC and an IPv4 address. It deliberately reads
+// the configuration file directly, so offline reservations are included.
 func readIPv4ReservationMACs(path string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -29,7 +30,7 @@ func readIPv4ReservationMACs(path string) ([]string, error) {
 		}
 
 		fields := strings.Split(line, ",")
-		var mac string
+		var lineMACs []string
 		hasIPv4 := false
 		ignored := false
 		for _, field := range fields {
@@ -41,15 +42,17 @@ func readIPv4ReservationMACs(path string) ([]string, error) {
 				ignored = true
 			}
 			if macRE.MatchString(value) {
-				mac = strings.ToUpper(value)
+				lineMACs = append(lineMACs, strings.ToUpper(value))
 				continue
 			}
 			if ip := net.ParseIP(value); ip != nil && ip.To4() != nil {
 				hasIPv4 = true
 			}
 		}
-		if mac != "" && hasIPv4 && !ignored {
-			unique[mac] = struct{}{}
+		if hasIPv4 && !ignored {
+			for _, mac := range lineMACs {
+				unique[mac] = struct{}{}
+			}
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -60,7 +63,6 @@ func readIPv4ReservationMACs(path string) ([]string, error) {
 	for mac := range unique {
 		macs = append(macs, mac)
 	}
-	// Keep the response stable, which also makes tests and logs deterministic.
 	sort.Strings(macs)
 	return macs, nil
 }
