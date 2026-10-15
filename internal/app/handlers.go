@@ -5,29 +5,28 @@ package app
 import (
 	"encoding/json"
 	"html/template"
-	"io/fs"
 	"net"
 	"net/http"
 	"strings"
 )
 
 // newHTTPHandler wires the page, static assets, and API endpoints together.
-func newHTTPHandler(cfg Config, known *KnownMACs, tmpl *template.Template, staticFS fs.FS, dnsmasqVersion string) http.Handler {
+func newHTTPHandler(cfg Config, known *KnownMACs, tmpl *template.Template) http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", homeHandler(cfg, tmpl, dnsmasqVersion))
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
+	mux.HandleFunc("/", homeHandler(cfg, tmpl))
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	mux.HandleFunc("/known-macs", knownMACsHandler(cfg, known))
 	mux.HandleFunc("/leases", leasesHandler(cfg, known))
 	return mux
 }
 
-func homeHandler(cfg Config, tmpl *template.Template, dnsmasqVersion string) http.HandlerFunc {
+func homeHandler(cfg Config, tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
 			return
 		}
-		data := PageData{Version: cfg.AppVersion, ReleaseDate: cfg.ReleaseDate, RepoURL: cfg.RepoURL, DnsmasqVersion: dnsmasqVersion}
+		data := PageData{cfg.AppVersion, cfg.ReleaseDate, cfg.RepoURL}
 		if err := tmpl.Execute(w, data); err != nil {
 			LogErrorf("cannot render home page: %v", err)
 			http.Error(w, "template error", http.StatusInternalServerError)
@@ -36,7 +35,7 @@ func homeHandler(cfg Config, tmpl *template.Template, dnsmasqVersion string) htt
 }
 
 // knownMACsHandler supports individual mark/unmark, reset, and bulk-marking
-// all currently detected DHCP reservations.
+// currently detected and configured DHCP reservations.
 func knownMACsHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -60,6 +59,7 @@ func knownMACsHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 		}
 		var err error
 		markedCount := 0
+		var markedMACs []string
 		switch action {
 		case "mark":
 			err = known.mark(body.MAC)
@@ -80,6 +80,14 @@ func knownMACsHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 				}
 				markedCount, err = known.markMany(macs)
 			}
+		case "mark-all-ipv4-reservations":
+			markedMACs, err = readIPv4ReservationMACs(cfg.HostsPath)
+			if err != nil {
+				LogErrorf("cannot read DHCP hosts file path=%s: %v", cfg.HostsPath, err)
+				http.Error(w, "cannot read DHCP hosts file (check DNSMASQ_HOSTS_FILE and file permissions)", http.StatusInternalServerError)
+				return
+			}
+			markedCount, err = known.markMany(markedMACs)
 		default:
 			LogWarnf("rejected unknown known-MAC action action=%q", action)
 			http.Error(w, "invalid action", http.StatusBadRequest)
@@ -99,13 +107,21 @@ func knownMACsHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 		case "reset":
 			LogInfof("remembered-device list reset")
 		case "mark-reservations":
-			LogInfof("DHCP reservations processed for remembered-device list count=%d", markedCount)
+			LogInfof("currently detected DHCP reservations processed for remembered-device list count=%d", markedCount)
+		case "mark-all-ipv4-reservations":
+			LogInfof("configured IPv4 DHCP reservations processed for remembered-device list count=%d", markedCount)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		if action == "mark-reservations" {
 			if err := json.NewEncoder(w).Encode(map[string]any{"ok": true, "count": markedCount}); err != nil {
 				LogDebugf("client disconnected while writing reservation action response: %v", err)
+			}
+			return
+		}
+		if action == "mark-all-ipv4-reservations" {
+			if err := json.NewEncoder(w).Encode(map[string]any{"ok": true, "count": markedCount, "macs": markedMACs}); err != nil {
+				LogDebugf("client disconnected while writing all-IPv4-reservations response: %v", err)
 			}
 			return
 		}

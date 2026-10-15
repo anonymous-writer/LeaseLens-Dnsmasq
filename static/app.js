@@ -287,6 +287,7 @@ async function resetKnown() {
 
 document.querySelector('#reset-known-button').addEventListener('click', resetKnown);
 document.querySelector('#mark-reservations-button').addEventListener('click', markReservationsKnown);
+document.querySelector('#mark-all-ipv4-reservations-button').addEventListener('click', markAllIPv4ReservationsKnown);
 
 async function markReservationsKnown() {
   const reservedMACs = new Set(leases
@@ -320,6 +321,38 @@ async function markReservationsKnown() {
   } finally {
     button.disabled = false;
     if (label) label.textContent = t('markReservationsKnown');
+  }
+}
+
+async function markAllIPv4ReservationsKnown() {
+  if (!confirm(t('confirmMarkAllIPv4Reservations'))) return;
+  const button = document.querySelector('#mark-all-ipv4-reservations-button');
+  button.disabled = true;
+  const label = button.querySelector('[data-i18n]');
+  if (label) label.textContent = t('markingAllIPv4Reservations');
+  try {
+    const response = await fetch(KNOWN_MACS_API_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'mark-all-ipv4-reservations' })
+    });
+    if (!response.ok) throw new Error(await response.text());
+    const result = await response.json();
+    const reservedMACs = new Set((Array.isArray(result.macs) ? result.macs : [])
+      .map(mac => String(mac ?? '').trim().toUpperCase()).filter(validMac));
+    if (Number(result.count) === 0 || reservedMACs.size === 0) {
+      alert(t('noIPv4Reservations'));
+      return;
+    }
+    leases = leases.map(lease => reservedMACs.has(String(lease.macAddress ?? '').trim().toUpperCase())
+      ? { ...lease, isNew: false } : lease);
+    render();
+    alert(t('markedAllIPv4Reservations', { count: Number(result.count) }));
+    refreshOpenDetails(document.querySelector('#device-details').dataset.mac || '');
+  } catch (error) {
+    alert(t('couldNotMarkAllIPv4Reservations', { error: error.message }));
+  } finally {
+    button.disabled = false;
+    if (label) label.textContent = t('markAllIPv4Reservations');
   }
 }
 
