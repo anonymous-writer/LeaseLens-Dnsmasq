@@ -50,15 +50,29 @@ tr.new-device { background:color-mix(in srgb,var(--yellow) 9%,var(--surface)); }
 .device-status { white-space:nowrap; font-weight:600; font-size:.82rem; }
 .dot { display:inline-block; width:.55rem; height:.55rem; border-radius:50%; margin-right:.45rem; background:#858b96; vertical-align:middle; }
 .dot.online { background:var(--green); box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 14%,transparent); } .dot.reachable { background:var(--yellow); box-shadow:0 0 0 3px color-mix(in srgb,var(--yellow) 14%,transparent); } .dot.offline { background:var(--red); box-shadow:0 0 0 3px color-mix(in srgb,var(--red) 14%,transparent); } .dot.unknown { background:#858b96; }
-#device-details { max-width:min(43rem,calc(100vw - 2rem)); width:100%; padding:1.35rem; border:1px solid var(--border); border-radius:14px; background:var(--surface); color:var(--fg); box-shadow:var(--shadow); }
-#device-details::backdrop { background:#07090dcc; backdrop-filter:blur(3px); }
-#detail-title { margin:.1rem 0 1rem; font-size:1.3rem; letter-spacing:-.02em; } .detail-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.65rem; }
-.detail-item { padding:.8rem; background:var(--surface-raised); border:1px solid var(--border); border-radius:9px; overflow-wrap:anywhere; }
-.detail-label { display:block; color:var(--muted); font-size:.76rem; margin-bottom:.3rem; } .copy-button,#detail-close { padding:.35rem .6rem; font:inherit; font-size:.8rem; background:var(--surface); color:var(--fg); border:1px solid var(--border); border-radius:6px; cursor:pointer; }
-.copy-button { display:block; margin-top:.5rem; } #copy-device-details-button { margin:.1rem 0 1rem; } #detail-close { float:right; }
+#device-details { max-width:min(49rem,calc(100vw - 2rem)); width:100%; padding:clamp(1rem,2.5vw,1.65rem); border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border)); border-radius:18px; background:var(--surface); color:var(--fg); box-shadow:0 24px 80px #0006; }
+#device-details::backdrop { background:#07090dd9; backdrop-filter:blur(5px); }
+#detail-title { margin:.15rem 0 1.1rem; font-size:1.45rem; letter-spacing:-.035em; font-weight:760; } .detail-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; }
+.detail-item { min-width:0; padding:1rem; background:linear-gradient(145deg,var(--surface-raised),color-mix(in srgb,var(--surface-raised) 78%,var(--bg))); border:1px solid var(--border); border-radius:12px; overflow-wrap:anywhere; transition:border-color .16s,transform .16s; }
+.detail-item:hover { border-color:color-mix(in srgb,var(--accent) 45%,var(--border)); }
+.detail-label { display:block; color:var(--muted); font-size:.78rem; font-weight:550; margin-bottom:.45rem; letter-spacing:.01em; } .detail-item strong { display:block; font-size:.94rem; line-height:1.5; font-weight:680; }
+.copy-button,#detail-close,#copy-device-details-button { min-height:2.35rem; padding:.55rem .85rem; font:inherit; font-size:.84rem; font-weight:600; color:var(--fg); background:var(--surface); border:1px solid var(--border); border-radius:9px; cursor:pointer; transition:transform .12s,background .15s,border-color .15s,box-shadow .15s; }
+.copy-button:hover,#detail-close:hover { background:var(--surface-raised); border-color:var(--accent); }
+.copy-button:active,#detail-close:active,#copy-device-details-button:active { transform:translateY(1px); }
+.copy-button:focus-visible,#detail-close:focus-visible,#copy-device-details-button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.copy-button { display:block; margin-top:.65rem; }
+#copy-device-details-button { display:inline-flex; align-items:center; gap:.45rem; margin:.05rem 0 1.1rem; color:#fff; background:var(--accent); border-color:var(--accent); box-shadow:0 3px 10px color-mix(in srgb,var(--accent) 20%,transparent); }
+#copy-device-details-button:hover { filter:brightness(1.08); }
+#detail-close { float:right; background:var(--surface-raised); }
+.new-device-action { border-color:color-mix(in srgb,var(--accent) 40%,var(--border)); background:color-mix(in srgb,var(--accent) 7%,var(--surface-raised)); }
+.new-device-action .copy-button { color:#fff; background:var(--accent); border-color:var(--accent); }
+.new-device-action .copy-button:hover { filter:brightness(1.08); }
+.lease-release-button { color:#fff!important; background:#c93643!important; border-color:#c93643!important; }
+.lease-release-button:hover { background:#a92734!important; border-color:#a92734!important; }
+.copy-button:disabled,#copy-device-details-button:disabled { opacity:.65; cursor:wait; }
 footer { margin-top:1.2rem; color:var(--muted); font-size:.8rem; }
 @media(max-width:1000px) { #toolbar { position:static; grid-template-columns:repeat(2,minmax(0,1fr)); } #search { grid-column:1/-1; } #theme-toggle { margin-left:0; justify-self:start; } }
-@media(max-width:620px) { body { padding:.7rem; } #toolbar { grid-template-columns:1fr 1fr; gap:.45rem; } #toolbar button,#toolbar select { width:100%; white-space:normal; } #summary-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; } .summary-card { padding:.8rem; } .summary-value { font-size:1.4rem; } .detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:620px) { body { padding:.7rem; } #device-details { padding:1rem; border-radius:14px; } #detail-title { font-size:1.25rem; } .detail-item { padding:.75rem; } .copy-button,#detail-close,#copy-device-details-button { min-height:2.55rem; } #toolbar { grid-template-columns:1fr 1fr; gap:.45rem; } #toolbar button,#toolbar select { width:100%; white-space:normal; } #summary-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; } .summary-card { padding:.8rem; } .summary-value { font-size:1.4rem; } .detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important; } }
 </style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}">
   <!--
