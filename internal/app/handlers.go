@@ -169,13 +169,13 @@ func leasesHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 
 // runDHCPRelease is a seam for tests; production always calls the fixed
 // dhcp_release utility through non-interactive sudo.
-var runDHCPRelease = func(ctx context.Context, iface, ip, mac, clientID string) ([]byte, error) {
-	return exec.CommandContext(ctx, "sudo", "-n", "/usr/bin/dhcp_release", iface, ip, mac, clientID).CombinedOutput()
+var runDHCPRelease = func(ctx context.Context, iface, ip, mac, clientID, hostname string) ([]byte, error) {
+	return exec.CommandContext(ctx, "sudo", "-n", "/usr/local/sbin/dnsmasq-leases-ui-release", iface, ip, mac, clientID, hostname).CombinedOutput()
 }
 
-// releaseLeaseHandler uses dnsmasq-utils' dhcp_release utility rather than
-// editing the lease file directly. The endpoint only exists in native builds
-// with an explicitly configured DHCP interface.
+// releaseLeaseHandler invokes a narrowly scoped root helper which releases IPv4
+// with dhcp_release and removes the matching DHCPv6 lease record. The endpoint
+// only exists in native builds with an explicitly configured DHCP interface.
 func releaseLeaseHandler(cfg Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -222,17 +222,22 @@ func releaseLeaseHandler(cfg Config) http.HandlerFunc {
 		if clientID == "" {
 			clientID = "*"
 		}
-		output, err := runDHCPRelease(ctx, cfg.DHCPInterface, ipText, mac, clientID)
+		hostname := strings.TrimSpace(target.Name)
+		if hostname == "" {
+			http.Error(w, "matching lease has no hostname; cannot safely remove IPv6 lease", http.StatusConflict)
+			return
+		}
+		output, err := runDHCPRelease(ctx, cfg.DHCPInterface, ipText, mac, clientID, hostname)
 		if err != nil {
-			LogErrorf("native IPv4 lease release failed interface=%s ip=%s mac=%s: %v output=%q", cfg.DHCPInterface, ipText, mac, err, strings.TrimSpace(string(output)))
-			message := "could not release DHCP lease; install dnsmasq-utils and configure sudo permission for /usr/bin/dhcp_release"
+			LogErrorf("native IPv4/IPv6 lease release failed interface=%s ip=%s mac=%s: %v output=%q", cfg.DHCPInterface, ipText, mac, err, strings.TrimSpace(string(output)))
+			message := "could not release DHCP lease; install the dnsmasq-leases-ui root helper and configure its sudo permission"
 			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 				message = "DHCP lease release timed out"
 			}
 			http.Error(w, message, http.StatusBadGateway)
 			return
 		}
-		LogInfof("native IPv4 DHCP lease release requested interface=%s ip=%s mac=%s", cfg.DHCPInterface, ipText, mac)
+		LogInfof("native IPv4/IPv6 DHCP lease release requested interface=%s ip=%s mac=%s hostname=%s", cfg.DHCPInterface, ipText, mac, hostname)
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = fmt.Fprintln(w, `{"ok":true}`)
 	}
