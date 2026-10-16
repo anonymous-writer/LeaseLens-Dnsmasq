@@ -232,19 +232,9 @@ func releaseLeaseHandler(cfg Config) http.HandlerFunc {
 			http.Error(w, message, http.StatusBadGateway)
 			return
 		}
-		// dnsmasq's dhcp_release utility only releases IPv4 leases. In the
-		// native build, also remove matching IPv6 lease-file records when the
-		// hostname uniquely identifies this IPv4 device.
-		removedIPv6 := 0
-		if strings.TrimSpace(target.Name) != "" {
-			removedIPv6, err = removeIPv6LeasesForUniqueHostname(cfg.LeasePath, target.Name, ipText, mac)
-			if err != nil {
-				LogWarnf("IPv4 lease released, but matching IPv6 lease-file records could not be removed: %v", err)
-			}
-		}
-		LogInfof("native DHCP lease release requested interface=%s ip=%s mac=%s ipv6_records_removed=%d", cfg.DHCPInterface, ipText, mac, removedIPv6)
+		LogInfof("native IPv4 DHCP lease release requested interface=%s ip=%s mac=%s", cfg.DHCPInterface, ipText, mac)
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = fmt.Fprintf(w, `{"ok":true,"ipv6LeasesRemoved":%d}`+"\\n", removedIPv6)
+		_, _ = fmt.Fprintln(w, `{"ok":true}`)
 	}
 }
 
