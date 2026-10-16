@@ -49,8 +49,13 @@ func removeIPv6LeasesForUniqueHostname(path, hostname, ip, mac string) (int, err
 	if err := scanner.Err(); err != nil {
 		return 0, err
 	}
-	// Do not guess if hostname is shared or the IPv4 lease disappeared.
-	if !targetFound || ipv4NameCount != 1 {
+	// The caller validates the exact IPv4 lease before invoking dhcp_release.
+	// dnsmasq may remove that IPv4 record immediately, before this function
+	// runs. If one IPv4 record remains, it must match the requested IP/MAC;
+	// if multiple records remain, the hostname is ambiguous. Zero remaining
+	// IPv4 records is expected after a successful release, so the prevalidated
+	// hostname is then used to remove its IPv6 records.
+	if ipv4NameCount > 1 || (ipv4NameCount == 1 && !targetFound) {
 		return 0, nil
 	}
 
