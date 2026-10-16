@@ -19,9 +19,9 @@ func TestReleaseLeaseHandlerUsesMatchedLeaseAndClientID(t *testing.T) {
 
 	called := false
 	oldRunner := runDHCPRelease
-	runDHCPRelease = func(_ context.Context, iface, ip, mac, clientID, hostname string) ([]byte, error) {
+	runDHCPRelease = func(_ context.Context, iface, ip, mac, clientID string) ([]byte, error) {
 		called = true
-		if iface != "eth1" || ip != "192.0.2.10" || mac != "AA:BB:CC:DD:EE:FF" || clientID != "01:aa:bb:cc:dd:ee:ff" || hostname != "test-device" {
+		if iface != "eth1" || ip != "192.0.2.10" || mac != "AA:BB:CC:DD:EE:FF" || clientID != "01:aa:bb:cc:dd:ee:ff" {
 			t.Fatalf("unexpected dhcp_release args: %q %q %q %q", iface, ip, mac, clientID)
 		}
 		return nil, nil
