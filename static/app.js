@@ -118,6 +118,10 @@ function statusCell(lease) {
   dot.setAttribute('role', 'img');
   dot.setAttribute('aria-label', dot.title);
   cell.append(dot);
+  const label = document.createElement('span');
+  label.className = 'status-label';
+  label.textContent = ({ online: t('httpHttpsGreen'), reachable: t('pingYellow'), offline: t('noResponseRed'), unknown: t('unknown') })[lease.status] || t('unknown');
+  cell.append(label);
   return cell;
 }
 
@@ -162,7 +166,21 @@ function updateRefreshMeta() {
   }
 }
 
+function updateStatusCards() {
+  const count = key => leases.filter(lease => (lease.status || 'unknown') === key).length;
+  document.querySelector('#summary-total').textContent = String(leases.length);
+  document.querySelector('#summary-online').textContent = String(count('online'));
+  const now = Math.floor(Date.now() / 1000);
+  const expiring = leases.filter(lease => {
+    const expiry = Number(lease.leaseExpiry);
+    return Number.isFinite(expiry) && expiry > now && expiry <= now + 86400;
+  }).length;
+  document.querySelector('#summary-expiring').textContent = String(expiring);
+  document.querySelector('#summary-offline').textContent = String(count('offline'));
+}
+
 function render() {
+  updateStatusCards();
   const rows = sorted(leases.filter(lease => match(lease, filterQuery) && matchesFilters(lease)));
   const tbody = document.querySelector('#leases tbody');
   tbody.replaceChildren(...rows.map(lease => {

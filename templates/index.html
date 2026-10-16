@@ -9,304 +9,58 @@
   <!-- Das Icon wird statisch vom Webserver aus /static ausgeliefert. -->
   <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
   <style>
-:root {
-  --bg:#fff;
-  --fg:#111;
-  --row:#e6e6e6;
-  --muted:#666;
-  --border:#ccc;
-  --accent:#06c
+ :root {
+  color-scheme: light dark;
+  --bg:#101216; --surface:#181b21; --surface-raised:#20242c; --fg:#e8ebf0;
+  --muted:#9ba4b2; --border:#303641; --accent:#69aaff;
+  --green:#43c982; --yellow:#f0bf4c; --red:#ff6868;
+  --shadow:0 8px 28px #0003;
 }
-/* Wenn kein Theme explizit gewählt wurde, Systemeinstellung für Dunkelmodus nutzen. */
-@media(prefers-color-scheme:dark) {
-  :root:not([data-theme=light]) {
-    --bg:#1a1a1a;
-    --fg:#e6e6e6;
-    --row:#2a2a2a;
-    --muted:#999;
-    --border:#444;
-    --accent:#4d9fff
-  }
-}
-/* Explizit aktiviertes dunkles Theme. Die Werte entsprechen dem Dark-Mode-Teil oben. */
-:root[data-theme=dark] {
-  --bg:#1a1a1a;
-  --fg:#e6e6e6;
-  --row:#2a2a2a;
-  --muted:#999;
-  --border:#444;
-  --accent:#4d9fff
-}
-/* Grundlayout der gesamten Seite. */
-body {
-  font-family:system-ui,sans-serif;
-  background:var(--bg);
-  color:var(--fg);
-  margin:1rem
-}
-/* Werkzeugleiste mit Suche, Filtern und Aktionsbuttons. */
-#toolbar {
-  position:sticky;
-  top:0;
-  background:var(--bg);
-  padding:.5rem 0;
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  gap:.5rem;
-  z-index:2
-}
-/* Suchfeld: max-width begrenzt die Breite auf großen Bildschirmen. */
-#search {
-  max-width:24rem;
-  flex:1;
-  padding:.4rem .6rem;
-  font:inherit;
-  color:var(--fg);
-  background:var(--bg);
-  border:1px solid var(--border);
-  border-radius:4px
-}
-/* Dropdowns für IP-Version und DHCP-Reservierungsfilter. */
-#ip-filter,#reservation-filter,#status-filter,#language-select {
-  padding:.4rem .5rem;
-  font:inherit;
-  color:var(--fg);
-  background:var(--bg);
-  border:1px solid var(--border);
-  border-radius:4px;
-  max-width:100%
-}
-/* Buttons zum Zurücksetzen und zum Merken reservierter Geräte. */
-#reset-known-button,#mark-reservations-button,#mark-all-ipv4-reservations-button {
-  padding:.4rem .7rem;
-  font:inherit;
-  background:var(--bg);
-  color:var(--fg);
-  border:1px solid var(--border);
-  border-radius:4px;
-  cursor:pointer
-}
-#reset-known-button:disabled,#mark-reservations-button:disabled,#mark-all-ipv4-reservations-button:disabled {
-  opacity:.6;
-  cursor:wait
-}
-/* Markanter roter Button zum manuellen Aktualisieren der Lease-Liste. */
-#refresh-button {
-  padding:.4rem .8rem;
-  font:inherit;
-  font-weight:650;
-  background:#dc2626;
-  color:#fff;
-  border:1px solid #b91c1c;
-  border-radius:5px;
-  cursor:pointer;
-  box-shadow:0 1px 2px #0002;
-  transition:background-color .15s ease, box-shadow .15s ease, transform .15s ease
-}
-#refresh-button:hover:not(:disabled) {
-  background:#b91c1c;
-  box-shadow:0 2px 5px #0003
-}
-#refresh-button:active:not(:disabled) {
-  background:#991b1b;
-  transform:translateY(1px)
-}
-#refresh-button:focus-visible {
-  outline:3px solid #fca5a5;
-  outline-offset:2px
-}
-#refresh-button:disabled {
-  background:#991b1b;
-  border-color:#7f1d1d;
-  opacity:.75;
-  cursor:wait
-}
-/* Runder Umschalter für helles/dunkles Theme. */
-#theme-toggle {
-  margin-left:auto;
-  border:1px solid var(--fg);
-  background:var(--bg);
-  color:var(--fg);
-  border-radius:50%;
-  width:2.25rem;
-  height:2.25rem;
-  cursor:pointer
-}
-.icon-sun {
-  display:none
-}
-:root[data-theme=dark] .icon-moon {
-  display:none
-}
-:root[data-theme=dark] .icon-sun {
-  display:inline
-}
-/* Tabelle und Spaltenüberschriften. */
-table {
-  border-collapse:collapse;
-  width:100%
-}
-th,td {
-  text-align:left;
-  padding:.5rem;
-  border-bottom:1px solid var(--border)
-}
-th {
-  position:sticky;
-  top:3.2rem;
-  background:var(--bg);
-  cursor:pointer
-}
-tbody tr:hover {
-  background:var(--row)
-}
-a {
-  color:var(--accent)
-}
-/* Statuszeile unter der Tabelle; bei Fehlern kommt zusätzlich .error dazu. */
-#status {
-  margin-top:.75rem;
-  color:var(--muted)
-}
-#status.error {
-  color:#c00
-}
-/* Zeigt letzte erfolgreiche Aktualisierung sowie Lade- oder Fehlerzustand separat. */
-#refresh-meta {
-  display:flex;
-  flex-wrap:wrap;
-  gap:.35rem 1rem;
-  margin-top:.25rem;
-  color:var(--muted);
-  font-size:.85rem
-}
-#refresh-state.error {
-  color:#c00
-}
-.refresh-icon {
-  display:inline-block
-}
-#refresh-button[aria-busy="true"] .refresh-icon {
-  animation:refresh-spin .9s linear infinite
-}
-@keyframes refresh-spin {
-  to { transform:rotate(360deg) }
-}
-/* Bei schmalen Fenstern kann die Werkzeugleiste umbrechen; dann darf sie die Tabelle nicht überdecken. */
-@media (max-width: 900px) {
-  #toolbar { position:static; }
-  th { top:0; }
-}
-/* Versions-/Release-Information am Seitenende. */
-footer {
-  margin-top:1rem;
-  color:var(--muted);
-  font-size:.9rem
-}
-/* Tabellenzeilen, die durch app.js anklickbar gemacht werden. */
-tr.device-row {
-  cursor:pointer
-}
-tr.new-device {
-  background:#fff0cc
-}
-:root[data-theme=dark] tr.new-device {
-  background:#493b20
-}
-/* Kennzeichnung für neue Geräte. */
-.new-badge {
-  display:inline-block;
-  background:#b45309;
-  color:#fff;
-  font-size:.7rem;
-  font-weight:700;
-  padding:.12rem .35rem;
-  border-radius:4px;
-  letter-spacing:.03em
-}
-/* Statusspalte und farbige Statuspunkte. */
-.device-status {
-  white-space:nowrap;
-  font-weight:600
-}
-.dot {
-  display:inline-block;
-  width:.55rem;
-  height:.55rem;
-  border-radius:50%;
-  margin-right:.35rem;
-  background:#888
-}
-.dot.online {
-  background:#159447
-}
-.dot.reachable {
-  background:#d9a400
-}
-.dot.offline {
-  background:#c33
-}
-.dot.unknown {
-  background:#888
-}
-/* Modal für die Gerätedetails. */
-dialog {
-  max-width:min(38rem,calc(100vw - 3rem));
-  width:100%;
-  border:1px solid var(--border);
-  border-radius:10px;
-  background:var(--bg);
-  color:var(--fg)
-}
-dialog::backdrop {
-  background:#0008
-}
-/* Responsive Anordnung der Informationen im Detaildialog. */
-.detail-grid {
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));
-  gap:.8rem
-}
-.detail-item {
-  padding:.65rem;
-  border:1px solid var(--border);
-  border-radius:6px;
-  overflow-wrap:anywhere
-}
-/* Kopierbuttons innerhalb der Gerätedetails. */
-.copy-button {
-  display:block;
-  margin-top:.45rem;
-  padding:.2rem .45rem;
-  font:inherit;
-  font-size:.8rem;
-  background:var(--bg);
-  color:var(--fg);
-  border:1px solid var(--border);
-  border-radius:4px;
-  cursor:pointer
-}
-.detail-label {
-  display:block;
-  color:var(--muted);
-  font-size:.8rem;
-  margin-bottom:.2rem
-}
-#copy-device-details-button {
-  display:inline-block;
-  margin:.25rem 0 .75rem;
-}
-#detail-close {
-  float:right;
-  padding:.4rem .7rem;
-  background:var(--bg);
-  color:var(--fg);
-  border:1px solid var(--border);
-  border-radius:5px;
-  cursor:pointer
-}
-  </style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}">
+:root[data-theme=light] { color-scheme:light; --bg:#f4f6f9; --surface:#fff; --surface-raised:#f7f9fc; --fg:#202633; --muted:#687386; --border:#dfe4ec; --accent:#075fbd; --shadow:0 8px 28px #18243a0d; }
+@media(prefers-color-scheme:light) { :root:not([data-theme=dark]) { color-scheme:light; --bg:#f4f6f9; --surface:#fff; --surface-raised:#f7f9fc; --fg:#202633; --muted:#687386; --border:#dfe4ec; --accent:#075fbd; --shadow:0 8px 28px #18243a0d; } }
+* { box-sizing:border-box; }
+body { margin:0; padding:1.25rem clamp(.75rem,2vw,2rem) 2rem; font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--fg); }
+#toolbar { position:sticky; top:0; z-index:5; display:grid; grid-template-columns:minmax(14rem,1.5fr) repeat(3,minmax(8rem,.75fr)) auto; align-items:center; gap:.55rem; padding:.75rem 0; background:var(--bg); }
+#search,#ip-filter,#reservation-filter,#status-filter,#language-select,#toolbar button { min-height:2.45rem; padding:.55rem .75rem; font:inherit; color:var(--fg); background:var(--surface); border:1px solid var(--border); border-radius:8px; }
+#search { min-width:0; width:100%; }
+#search:focus,#toolbar select:focus-visible,#toolbar button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+#toolbar button { cursor:pointer; white-space:nowrap; transition:background .15s,border-color .15s; }
+#toolbar button:hover:not(:disabled) { background:var(--surface-raised); border-color:var(--muted); }
+#refresh-button { background:#b4232d!important; border-color:#b4232d!important; color:#fff!important; font-weight:650!important; }
+#refresh-button:hover:not(:disabled) { background:#941d26!important; }
+#reset-known-button:disabled,#mark-reservations-button:disabled,#mark-all-ipv4-reservations-button:disabled { opacity:.6; cursor:wait; }
+#theme-toggle { justify-self:end; width:2.45rem; padding:.4rem!important; display:grid; place-items:center; }
+.icon-sun { display:none; } :root[data-theme=dark] .icon-moon { display:none; } :root[data-theme=dark] .icon-sun { display:inline; }
+#summary-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.8rem; margin:.65rem 0 1rem; }
+.summary-card { min-width:0; padding:1rem 1.1rem; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); }
+.summary-label { display:block; color:var(--muted); font-size:.82rem; margin-bottom:.3rem; }
+.summary-value { display:flex; align-items:center; gap:.55rem; font-size:1.65rem; font-weight:750; letter-spacing:-.035em; line-height:1.2; }
+.summary-dot { width:.6rem; height:.6rem; border-radius:50%; background:var(--muted); }
+.summary-card.online .summary-dot { background:var(--green); } .summary-card.reachable .summary-dot { background:var(--yellow); } .summary-card.offline .summary-dot { background:var(--red); }
+.table-wrap { overflow:auto; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); }
+table { border-collapse:separate; border-spacing:0; width:100%; min-width:760px; }
+th,td { text-align:left; padding:.78rem .9rem; border-bottom:1px solid var(--border); }
+th { position:sticky; top:0; z-index:1; background:var(--surface-raised); color:var(--muted); font-size:.76rem; font-weight:700; text-transform:uppercase; letter-spacing:.045em; white-space:nowrap; cursor:pointer; }
+tbody tr:last-child td { border-bottom:0; } tbody tr:hover { background:var(--surface-raised); } tr.device-row { cursor:pointer; transition:background .12s; } tr.device-row:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+#status { margin-top:.85rem; color:var(--muted); font-size:.85rem; } #status.error,#refresh-state.error { color:var(--red); }
+#refresh-meta { display:flex; flex-wrap:wrap; gap:.35rem 1rem; margin-top:.3rem; color:var(--muted); font-size:.8rem; }
+.refresh-icon { display:inline-block; } #refresh-button[aria-busy="true"] .refresh-icon { animation:refresh-spin .9s linear infinite; } @keyframes refresh-spin { to { transform:rotate(360deg); } }
+tr.new-device { background:color-mix(in srgb,var(--yellow) 9%,var(--surface)); } .new-badge { display:inline-block; background:#b45309; color:#fff; font-size:.68rem; font-weight:750; padding:.12rem .35rem; border-radius:5px; letter-spacing:.03em; }
+.device-status { white-space:nowrap; font-weight:600; font-size:.82rem; }
+.dot { display:inline-block; width:.55rem; height:.55rem; border-radius:50%; margin-right:.45rem; background:#858b96; vertical-align:middle; }
+.dot.online { background:var(--green); box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 14%,transparent); } .dot.reachable { background:var(--yellow); box-shadow:0 0 0 3px color-mix(in srgb,var(--yellow) 14%,transparent); } .dot.offline { background:var(--red); box-shadow:0 0 0 3px color-mix(in srgb,var(--red) 14%,transparent); } .dot.unknown { background:#858b96; }
+#device-details { max-width:min(43rem,calc(100vw - 2rem)); width:100%; padding:1.35rem; border:1px solid var(--border); border-radius:14px; background:var(--surface); color:var(--fg); box-shadow:var(--shadow); }
+#device-details::backdrop { background:#07090dcc; backdrop-filter:blur(3px); }
+#detail-title { margin:.1rem 0 1rem; font-size:1.3rem; letter-spacing:-.02em; } .detail-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.65rem; }
+.detail-item { padding:.8rem; background:var(--surface-raised); border:1px solid var(--border); border-radius:9px; overflow-wrap:anywhere; }
+.detail-label { display:block; color:var(--muted); font-size:.76rem; margin-bottom:.3rem; } .copy-button,#detail-close { padding:.35rem .6rem; font:inherit; font-size:.8rem; background:var(--surface); color:var(--fg); border:1px solid var(--border); border-radius:6px; cursor:pointer; }
+.copy-button { display:block; margin-top:.5rem; } #copy-device-details-button { margin:.1rem 0 1rem; } #detail-close { float:right; }
+footer { margin-top:1.2rem; color:var(--muted); font-size:.8rem; }
+@media(max-width:1000px) { #toolbar { position:static; grid-template-columns:repeat(2,minmax(0,1fr)); } #search { grid-column:1/-1; } #theme-toggle { margin-left:0; justify-self:start; } }
+@media(max-width:620px) { body { padding:.7rem; } #toolbar { grid-template-columns:1fr 1fr; gap:.45rem; } #toolbar button,#toolbar select { width:100%; white-space:normal; } #summary-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; } .summary-card { padding:.8rem; } .summary-value { font-size:1.4rem; } .detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important; } }
+</style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}">
   <!--
     Hauptwerkzeugleiste.
     Wichtig: IDs werden von /static/app.js verwendet. Beim Umbenennen einer ID
@@ -370,10 +124,18 @@ dialog::backdrop {
     </button>
   </div>
 
+  <section id="summary-cards" aria-label="Lease summary">
+    <div class="summary-card"><span class="summary-label" data-i18n="summaryTotal">Total leases</span><div class="summary-value"><span id="summary-total">—</span></div></div>
+    <div class="summary-card online"><span class="summary-label" data-i18n="summaryOnline">Online</span><div class="summary-value"><span class="summary-dot" aria-hidden="true"></span><span id="summary-online">—</span></div></div>
+    <div class="summary-card reachable"><span class="summary-label" data-i18n="summaryExpiring">Expires within 24 hours</span><div class="summary-value"><span class="summary-dot" aria-hidden="true"></span><span id="summary-expiring">—</span></div></div>
+    <div class="summary-card offline"><span class="summary-label" data-i18n="summaryOffline">Offline</span><div class="summary-value"><span class="summary-dot" aria-hidden="true"></span><span id="summary-offline">—</span></div></div>
+  </section>
+
   <!--
     Lease-Tabelle. app.js fügt die Zeilen zur Laufzeit in tbody ein und behandelt
     Sortierung/Klicks. data-key muss zu den Feldnamen in der API passen.
   -->
+  <div class="table-wrap">
   <table id="leases">
     <thead>
       <tr>
@@ -388,6 +150,7 @@ dialog::backdrop {
     <!-- Bleibt leer, bis app.js Lease-Daten von /leases geladen hat. -->
     <tbody></tbody>
   </table>
+  </div>
 
   <!-- Tabellenzusammenfassung sowie letzter Erfolg und aktueller Lade-/Fehlerstatus. -->
   <div id="status" role="status" aria-live="polite" data-i18n="loading">Loading…</div>

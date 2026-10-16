@@ -10,7 +10,6 @@ import (
 	"strings"
 )
 
-
 // readIPv4ReservationMACs returns unique MAC addresses from configured DHCP-host
 // lines that contain both a valid MAC and an IPv4 address. It deliberately reads
 // the configuration file directly, so offline reservations are included.
