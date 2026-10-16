@@ -1,4 +1,4 @@
-# Native IPv4 DHCP lease release
+# Native DHCP lease removal (IPv4 and IPv6)
 
 This optional action is only compiled into the standalone/native UI. The Docker build does not expose the endpoint or display the button.
 
@@ -41,8 +41,8 @@ Change `pi` to the actual service account if needed. The application calls the c
 
 ## Behavior and limits
 
-The app only offers release for an IPv4 address/MAC pair that is present in the current lease file. It retrieves that record's client ID and invokes `dhcp_release` with the configured interface. That utility sends a DHCPRELEASE message to the local dnsmasq server, causing dnsmasq to release the IPv4 lease. The app does not edit the lease file directly or restart dnsmasq.
+The app only offers removal for an IPv4 address/MAC pair present in the current lease file. It retrieves that record's client ID and invokes `dhcp_release` with the configured interface. After a successful IPv4 release, the native build also removes IPv6 lease-file records with the same hostname, but only when that hostname belongs to exactly one IPv4 lease. Because dnsmasq's IPv6 records contain IAID/DUID rather than a MAC address, hostname matching is a conservative best-effort association. If the hostname is empty or ambiguous, IPv6 records are left untouched. The lease file is rewritten atomically; dnsmasq may subsequently recreate a lease for a client that reconnects.
 
-This is not a network block or a kick: a client that remains connected can immediately request another lease. The action does not support IPv6. Because the web UI has no authentication, keep it on localhost or a trusted network, especially when enabling this privileged action.
+This is not a network block or a kick: a client that remains connected can immediately request another lease. The IPv6 cleanup is a lease-file cleanup, not a DHCPv6 RELEASE exchange. Because the web UI has no authentication, keep it on localhost or a trusted network, especially when enabling this privileged action.
 
 The supported utility is provided by the `dnsmasq-utils` package and must run as root. See the [`dhcp_release(1)` man page](https://manpages.debian.org/bookworm/dnsmasq-utils/dhcp_release.1.en.html).

@@ -206,7 +206,7 @@ The `mark-reservations` response also includes a `count` field. These endpoints 
 | `CONFIG_FILE` | empty | Optional path to the YAML-style configuration file |
 | `DNSMASQ_LEASES_FILE` | `/var/lib/dnsmasq/dnsmasq.leases` | Path to the dnsmasq lease file |
 | `DNSMASQ_HOSTS_FILE` | `/var/lib/dnsmasq/dnsmasq.dhcphosts` | Path to the optional DHCP hosts file |
-| `DNSMASQ_INTERFACE` | empty | Native-build DHCP interface for the optional IPv4 lease-release action; requires `dnsmasq-utils` and limited sudo permission |
+| `DNSMASQ_INTERFACE` | empty | Native-build DHCP interface for the optional lease-removal action; requires `dnsmasq-utils` and limited sudo permission |
 | `KNOWN_MACS_FILE` | `/data/known-macs.json` | Path to the persistent remembered-MAC list |
 | `HOST` | `0.0.0.0` | Address the web server listens on |
 | `PORT` | `5000` | Port the web server listens on |
@@ -224,11 +224,11 @@ Precedence is **defaults < environment variables < config file < command-line fl
 
 The native ARM64 and AMD64 builds query `dnsmasq --version` at startup and show the detected version in the page footer. This is enabled only in the standalone/native build workflow; Docker builds do not show the dnsmasq version. If the `dnsmasq` executable is not available in `PATH`, the footer omits that part.
 
-#### Optional native-only IPv4 lease release
+#### Optional native-only DHCP lease removal (IPv4 and IPv6)
 
 The native UI can show **Remove IPv4 lease** below the “Mark as new” action in device details. This action is available only when `dhcp_interface` (or `DNSMASQ_INTERFACE` / `--dhcp-interface`) is set. For example, set `dhcp_interface: "eth1"` in the native `config.yaml`.
 
-The app uses the `dhcp_release` utility from the `dnsmasq-utils` package. It asks dnsmasq to release the selected IPv4 lease; it does not edit the lease file by hand and does not block the device from reconnecting. A still-connected client may obtain a new lease immediately. IPv6 entries do not show this action.
+The app uses the `dhcp_release` utility from the `dnsmasq-utils` package. It asks dnsmasq to release the selected IPv4 lease and then removes matching IPv6 records from the lease file when the hostname uniquely identifies the same device. Since IPv6 lease records use IAID/DUID rather than a MAC address, this association is best-effort; empty or ambiguous hostnames are left unchanged. The lease file is rewritten atomically, but dnsmasq may recreate entries if the device reconnects. IPv6 entries do not show a separate release action.
 
 On Debian/Raspberry Pi OS, install the utility and grant the service user (shown here as `pi`) permission to run only this utility without a password:
 
