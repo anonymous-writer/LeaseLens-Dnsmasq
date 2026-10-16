@@ -6,8 +6,65 @@ import (
 	"bufio"
 	"net"
 	"os"
+	"sort"
 	"strings"
 )
+
+// readIPv4ReservationMACs returns unique MAC addresses from configured DHCP-host
+// lines that contain both a valid MAC and an IPv4 address. It deliberately reads
+// the configuration file directly, so offline reservations are included.
+func readIPv4ReservationMACs(path string) ([]string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	unique := make(map[string]struct{})
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(strings.SplitN(scanner.Text(), "#", 2)[0])
+		if line == "" {
+			continue
+		}
+
+		fields := strings.Split(line, ",")
+		var lineMACs []string
+		hasIPv4 := false
+		ignored := false
+		for _, field := range fields {
+			value := strings.Trim(strings.TrimSpace(field), "[]")
+			if value == "" {
+				continue
+			}
+			if strings.EqualFold(value, "ignore") {
+				ignored = true
+			}
+			if macRE.MatchString(value) {
+				lineMACs = append(lineMACs, strings.ToUpper(value))
+				continue
+			}
+			if ip := net.ParseIP(value); ip != nil && ip.To4() != nil {
+				hasIPv4 = true
+			}
+		}
+		if hasIPv4 && !ignored {
+			for _, mac := range lineMACs {
+				unique[mac] = struct{}{}
+			}
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	macs := make([]string, 0, len(unique))
+	for mac := range unique {
+		macs = append(macs, mac)
+	}
+	sort.Strings(macs)
+	return macs, nil
+}
 
 func (r *Reservations) addLine(line string) {
 	line = strings.TrimSpace(strings.SplitN(line, "#", 2)[0])

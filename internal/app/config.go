@@ -51,6 +51,7 @@ type Config struct {
 	LeasePath     string
 	HostsPath     string
 	KnownMACsPath string
+	DHCPInterface string
 	AppVersion    string
 	ReleaseDate   string
 	RepoURL       string
@@ -64,6 +65,7 @@ func loadConfig() Config {
 		LeasePath:     getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
 		HostsPath:     getenv("DNSMASQ_HOSTS_FILE", "/var/lib/dnsmasq/dnsmasq.dhcphosts"),
 		KnownMACsPath: getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
+		DHCPInterface: getenv("DNSMASQ_INTERFACE", ""),
 		AppVersion:    getenv("APP_VERSION", buildVersion),
 		ReleaseDate:   getenv("APP_RELEASE_DATE", buildReleaseDate),
 		RepoURL:       getenv("REPO_URL", "https://github.com/anonymous-writer/dnsmasq-leases-ui"),
@@ -116,6 +118,7 @@ func loadConfigFromArgs(args []string) (Config, string, error) {
 	flags.StringVar(&cfg.LeasePath, "leases-file", cfg.LeasePath, "Path to dnsmasq lease file (environment: DNSMASQ_LEASES_FILE)")
 	flags.StringVar(&cfg.HostsPath, "hosts-file", cfg.HostsPath, "Path to optional dnsmasq DHCP hosts file (environment: DNSMASQ_HOSTS_FILE)")
 	flags.StringVar(&cfg.KnownMACsPath, "known-macs-file", cfg.KnownMACsPath, "Path to persistent remembered-MAC JSON file (environment: KNOWN_MACS_FILE)")
+	flags.StringVar(&cfg.DHCPInterface, "dhcp-interface", cfg.DHCPInterface, "Interface used by dhcp_release for native IPv4 lease release (environment: DNSMASQ_INTERFACE)")
 	flags.StringVar(&logLevel, "log-level", logLevel, "Log level: DEBUG, INFO, WARN, or ERROR (environment: LOG_LEVEL)")
 	flags.StringVar(&cfg.AppVersion, "app-version", cfg.AppVersion, "Application version (environment: APP_VERSION)")
 	flags.StringVar(&cfg.ReleaseDate, "release-date", cfg.ReleaseDate, "Application release date (environment: APP_RELEASE_DATE)")
@@ -181,6 +184,8 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 			cfg.HostsPath = value
 		case "known_macs_file", "known-macs-file":
 			cfg.KnownMACsPath = value
+		case "dhcp_interface", "dhcp-interface":
+			cfg.DHCPInterface = value
 		case "log_level", "log-level":
 			*logLevel = value
 		case "app_version", "app-version":

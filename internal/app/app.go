@@ -38,6 +38,11 @@ func Run(assets fs.FS, nativeBuild bool) {
 
 	dnsmasqVersion := ""
 	if nativeBuild {
+		if validInterfaceName(cfg.DHCPInterface) {
+			LogInfof("native IPv4 lease release action enabled interface=%s", cfg.DHCPInterface)
+		} else {
+			LogInfof("native IPv4 lease release action disabled; configure dhcp_interface to enable it")
+		}
 		dnsmasqVersion = detectDnsmasqVersion()
 		if dnsmasqVersion == "" {
 			LogDebugf("native build: dnsmasq version unavailable (dnsmasq --version failed or returned an unrecognized result)")
@@ -46,7 +51,7 @@ func Run(assets fs.FS, nativeBuild bool) {
 		}
 	}
 
-	handler := newHTTPHandler(cfg, known, tmpl, staticFS, dnsmasqVersion)
+	handler := newHTTPHandler(cfg, known, tmpl, staticFS, dnsmasqVersion, nativeBuild)
 	address := net.JoinHostPort(cfg.Host, cfg.Port)
 	LogInfof("dnsmasq-leases-ui starting version=%s listen=%s", cfg.AppVersion, address)
 	if err := http.ListenAndServe(address, handler); err != nil {

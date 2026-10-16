@@ -1,0 +1,149 @@
+#!/usr/bin/python3
+"""Narrowly scoped privileged helper for dnsmasq-leases-ui lease removal."""
+import ipaddress
+import os
+import re
+import stat
+import subprocess
+import sys
+import tempfile
+
+LEASE_FILE = "/var/lib/dnsmasq/dnsmasq.leases"
+DHCP_RELEASE = "/usr/bin/dhcp_release"
+IFACE_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,15}$")
+MAC_RE = re.compile(r"^(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$")
+HOST_RE = re.compile(r"^[A-Za-z0-9_.-]{1,253}$")
+
+
+def fail(message, code=1):
+    print(message, file=sys.stderr)
+    raise SystemExit(code)
+
+
+def parse_line(line):
+    fields = line.split()
+    # dnsmasq IPv4: expiry mac ip hostname client-id (5 fields)
+    # dnsmasq IPv6: expiry IAID ip hostname DUID (6 fields)
+    if len(fields) < 5:
+        return None
+    try:
+        addr = ipaddress.ip_address(fields[2])
+    except ValueError:
+        return None
+    return fields, addr
+
+
+def read_lines():
+    with open(LEASE_FILE, "r", encoding="utf-8", errors="strict") as f:
+        return f.readlines()
+
+
+def atomic_write(lines, old_stat):
+    directory = os.path.dirname(LEASE_FILE)
+    fd, tmp_path = tempfile.mkstemp(prefix=".dnsmasq.leases-ui-", dir=directory, text=True)
+    try:
+        os.fchown(fd, old_stat.st_uid, old_stat.st_gid)
+        os.fchmod(fd, stat.S_IMODE(old_stat.st_mode))
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
+            f.writelines(lines)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, LEASE_FILE)
+        dfd = os.open(directory, os.O_DIRECTORY)
+        try:
+            os.fsync(dfd)
+        finally:
+            os.close(dfd)
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except FileNotFoundError:
+            pass
+
+
+def main():
+    if os.geteuid() != 0:
+        fail("helper must be run through sudo")
+    if len(sys.argv) != 6:
+        fail("usage: dnsmasq-leases-ui-release INTERFACE IPv4 MAC CLIENT_ID HOSTNAME", 2)
+    iface, ip_text, mac, client_id, hostname = sys.argv[1:]
+    if not IFACE_RE.fullmatch(iface):
+        fail("invalid interface", 2)
+    try:
+        ip = ipaddress.ip_address(ip_text)
+    except ValueError:
+        fail("invalid IP address", 2)
+    if ip.version != 4:
+        fail("IPv4 address required", 2)
+    if not MAC_RE.fullmatch(mac):
+        fail("invalid MAC address", 2)
+    if not HOST_RE.fullmatch(hostname):
+        fail("invalid hostname", 2)
+    if client_id != "*" and not re.fullmatch(r"[A-Za-z0-9:._-]{1,256}", client_id):
+        fail("invalid DHCP client ID", 2)
+
+    before = read_lines()
+    matches = []
+    for line in before:
+        parsed = parse_line(line)
+        if not parsed:
+            continue
+        fields, addr = parsed
+        if addr.version == 4 and str(addr) == str(ip) and fields[1].lower() == mac.lower() and fields[3].lower() == hostname.lower():
+            matches.append(fields)
+    if len(matches) != 1:
+        fail("matching IPv4 lease/hostname is missing or ambiguous", 3)
+
+    # Remove the IPv4 lease via the supported dnsmasq utility first.
+    result = subprocess.run([DHCP_RELEASE, iface, str(ip), mac.upper(), client_id],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=5)
+    if result.returncode != 0:
+        fail("dhcp_release failed: " + result.stderr.strip(), 4)
+
+    # Re-read after dhcp_release; IPv6 dnsmasq records have SIX fields, not five.
+    try:
+        current = read_lines()
+        old_stat = os.stat(LEASE_FILE, follow_symlinks=False)
+    except OSError as exc:
+        fail("cannot read lease file after IPv4 release: " + str(exc), 5)
+    ipv6_candidates = []
+    for index, line in enumerate(current):
+        parsed = parse_line(line)
+        if not parsed:
+            continue
+        fields, addr = parsed
+        if len(fields) >= 6 and addr.version == 6 and fields[3].lower() == hostname.lower():
+            ipv6_candidates.append((index, fields))
+
+    # Prefer an exact DUID-to-MAC association (common DUID-LLT / DUID-LL
+    # layouts end with the client's link-layer address). If that is not
+    # possible, only fall back when the hostname has exactly one IPv6 lease.
+    mac_hex = mac.lower().replace(":", "")
+    exact = []
+    for index, fields in ipv6_candidates:
+        duid_hex = re.sub(r"[^0-9a-f]", "", fields[5].lower())
+        if duid_hex.endswith(mac_hex):
+            exact.append(index)
+    if exact:
+        remove_indexes = set(exact)
+    elif len(ipv6_candidates) == 1:
+        remove_indexes = {ipv6_candidates[0][0]}
+    else:
+        remove_indexes = set()
+
+    kept, removed = [], 0
+    for index, line in enumerate(current):
+        if index in remove_indexes:
+            removed += 1
+            continue
+        kept.append(line)
+    if removed:
+        try:
+            atomic_write(kept, old_stat)
+        except OSError as exc:
+            fail("IPv4 was released, but IPv6 lease cleanup failed: " + str(exc), 6)
+    print(f"ipv4_released=1 ipv6_records_removed={removed}")
+
+
+if __name__ == "__main__":
+    main()

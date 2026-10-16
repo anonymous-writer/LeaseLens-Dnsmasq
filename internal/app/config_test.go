@@ -20,6 +20,7 @@ func TestLoadConfigFromArgsOverridesEnvironment(t *testing.T) {
 		"--leases-file", "/tmp/leases",
 		"--hosts-file", "/tmp/hosts",
 		"--known-macs-file", "/tmp/known.json",
+		"--dhcp-interface", "eth1",
 		"--log-level", "DEBUG",
 	})
 	if err != nil {
@@ -30,6 +31,9 @@ func TestLoadConfigFromArgsOverridesEnvironment(t *testing.T) {
 	}
 	if cfg.LeasePath != "/tmp/leases" || cfg.HostsPath != "/tmp/hosts" || cfg.KnownMACsPath != "/tmp/known.json" {
 		t.Fatalf("file flags not applied: %+v", cfg)
+	}
+	if cfg.DHCPInterface != "eth1" {
+		t.Fatalf("DHCPInterface = %q, want eth1", cfg.DHCPInterface)
 	}
 	if logLevel != "DEBUG" {
 		t.Fatalf("logLevel = %q, want DEBUG", logLevel)
@@ -71,6 +75,7 @@ port: "3008"
 leases_file: "/tmp/config.leases"
 hosts_file: "/tmp/config.hosts"
 known_macs_file: "/tmp/known-macs.json"
+dhcp_interface: "eth1"
 log_level: "DEBUG"
 `
 	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
@@ -86,6 +91,9 @@ log_level: "DEBUG"
 	}
 	if cfg.LeasePath != "/tmp/config.leases" || cfg.HostsPath != "/tmp/config.hosts" || cfg.KnownMACsPath != "/tmp/known-macs.json" {
 		t.Fatalf("config file paths not applied: %+v", cfg)
+	}
+	if cfg.DHCPInterface != "eth1" {
+		t.Fatalf("DHCPInterface from config = %q, want eth1", cfg.DHCPInterface)
 	}
 	if logLevel != "DEBUG" {
 		t.Fatalf("logLevel = %q, want DEBUG", logLevel)

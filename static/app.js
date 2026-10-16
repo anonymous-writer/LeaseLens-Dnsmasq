@@ -118,6 +118,10 @@ function statusCell(lease) {
   dot.setAttribute('role', 'img');
   dot.setAttribute('aria-label', dot.title);
   cell.append(dot);
+  const label = document.createElement('span');
+  label.className = 'status-label';
+  label.textContent = ({ online: t('httpHttpsGreen'), reachable: t('pingYellow'), offline: t('noResponseRed'), unknown: t('unknown') })[lease.status] || t('unknown');
+  cell.append(label);
   return cell;
 }
 
@@ -162,7 +166,21 @@ function updateRefreshMeta() {
   }
 }
 
+function updateStatusCards() {
+  const count = key => leases.filter(lease => (lease.status || 'unknown') === key).length;
+  document.querySelector('#summary-total').textContent = String(leases.length);
+  document.querySelector('#summary-online').textContent = String(count('online'));
+  const now = Math.floor(Date.now() / 1000);
+  const expiring = leases.filter(lease => {
+    const expiry = Number(lease.leaseExpiry);
+    return Number.isFinite(expiry) && expiry > now && expiry <= now + 86400;
+  }).length;
+  document.querySelector('#summary-expiring').textContent = String(expiring);
+  document.querySelector('#summary-offline').textContent = String(count('offline'));
+}
+
 function render() {
+  updateStatusCards();
   const rows = sorted(leases.filter(lease => match(lease, filterQuery) && matchesFilters(lease)));
   const tbody = document.querySelector('#leases tbody');
   tbody.replaceChildren(...rows.map(lease => {
@@ -287,6 +305,10 @@ async function resetKnown() {
 
 document.querySelector('#reset-known-button').addEventListener('click', resetKnown);
 document.querySelector('#mark-reservations-button').addEventListener('click', markReservationsKnown);
+const markAllIPv4ReservationsButton = document.querySelector('#mark-all-ipv4-reservations-button');
+if (markAllIPv4ReservationsButton) {
+  markAllIPv4ReservationsButton.addEventListener('click', markAllIPv4ReservationsKnown);
+}
 
 async function markReservationsKnown() {
   const reservedMACs = new Set(leases
@@ -320,6 +342,39 @@ async function markReservationsKnown() {
   } finally {
     button.disabled = false;
     if (label) label.textContent = t('markReservationsKnown');
+  }
+}
+
+async function markAllIPv4ReservationsKnown() {
+  if (!confirm(t('confirmMarkAllIPv4Reservations'))) return;
+  const button = document.querySelector('#mark-all-ipv4-reservations-button');
+  if (!button) return;
+  button.disabled = true;
+  const label = button.querySelector('[data-i18n]');
+  if (label) label.textContent = t('markingAllIPv4Reservations');
+  try {
+    const response = await fetch(KNOWN_MACS_API_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'mark-all-ipv4-reservations' })
+    });
+    if (!response.ok) throw new Error(await response.text());
+    const result = await response.json();
+    const reservedMACs = new Set((Array.isArray(result.macs) ? result.macs : [])
+      .map(mac => String(mac ?? '').trim().toUpperCase()).filter(validMac));
+    if (Number(result.count) === 0 || reservedMACs.size === 0) {
+      alert(t('noIPv4Reservations'));
+      return;
+    }
+    leases = leases.map(lease => reservedMACs.has(String(lease.macAddress ?? '').trim().toUpperCase())
+      ? { ...lease, isNew: false } : lease);
+    render();
+    alert(t('markedAllIPv4Reservations', { count: Number(result.count) }));
+    refreshOpenDetails(document.querySelector('#device-details').dataset.mac || '');
+  } catch (error) {
+    alert(t('couldNotMarkAllIPv4Reservations', { error: error.message }));
+  } finally {
+    if (button.isConnected) button.disabled = false;
+    if (label) label.textContent = t('markAllIPv4Reservations');
   }
 }
 
@@ -397,10 +452,57 @@ function showDetails(lease) {
     button.textContent = lease.isNew ? t('markAsKnown') : t('markAsNew');
     button.addEventListener('click', () => setKnown(lease, lease.isNew ? 'mark' : 'unmark', button));
     action.append(label, button);
+
+    // This destructive DHCP action is available only in native builds when
+    // an interface is explicitly configured, and only for IPv4 lease entries.
+    const releaseEnabled = document.body.dataset.leaseReleaseEnabled === 'true';
+    const leaseIP = netIPv4(lease.ipAddress);
+    if (releaseEnabled && leaseIP) {
+      const releaseButton = document.createElement('button');
+      releaseButton.type = 'button';
+      releaseButton.className = 'copy-button lease-release-button';
+      releaseButton.textContent = t('releaseIPv4Lease');
+      releaseButton.title = t('releaseIPv4LeaseTitle');
+      releaseButton.addEventListener('click', () => releaseIPv4Lease(lease, releaseButton));
+      action.append(releaseButton);
+    }
     content.prepend(action);
   }
 
   if (!dialog.open) dialog.showModal();
+}
+
+function netIPv4(value) {
+  const parts = String(value ?? '').trim().split('.');
+  return parts.length === 4 && parts.every(part => /^\d{1,3}$/.test(part) && Number(part) >= 0 && Number(part) <= 255)
+    ? parts.map(part => String(Number(part))).join('.') : '';
+}
+
+async function releaseIPv4Lease(lease, button) {
+  const ip = netIPv4(lease.ipAddress);
+  if (!ip || !validMac(lease.macAddress)) return;
+  if (!confirm(t('confirmReleaseIPv4Lease', { ip, mac: lease.macAddress }))) return;
+
+  button.disabled = true;
+  button.textContent = t('releasingIPv4Lease');
+  try {
+    const response = await fetch('/release-lease', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ip, mac: lease.macAddress })
+    });
+    if (!response.ok) throw new Error((await response.text()).trim() || t('releaseIPv4LeaseFailed'));
+    document.querySelector('#device-details').close();
+    alert(t('releasedIPv4Lease'));
+    await load();
+  } catch (error) {
+    alert(t('releaseIPv4LeaseFailed') + ': ' + error.message);
+  } finally {
+    if (button.isConnected) {
+      button.disabled = false;
+      button.textContent = t('releaseIPv4Lease');
+    }
+  }
 }
 
 function buildDeviceDetailsText(lease) {

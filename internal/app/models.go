@@ -12,6 +12,7 @@ type LeaseEntry struct {
 	LeaseTime   string `json:"leasetime"`
 	LeaseExpiry int64  `json:"leaseExpiry"`
 	MACAddress  string `json:"macAddress"`
+	ClientID    string `json:"-"`              // IPv4 DHCP client ID, retained internally for dhcp_release.
 	IAID        string `json:"iaid,omitempty"` // DHCPv6 Identity Association Identifier
 	DUID        string `json:"duid,omitempty"` // DHCPv6 Client Identifier
 	IPAddress   string `json:"ipAddress"`
@@ -46,8 +47,9 @@ func contains(a []string, v string) bool {
 }
 
 type PageData struct {
-	Version        string
-	ReleaseDate    string
-	RepoURL        string
-	DnsmasqVersion string
+	Version            string
+	ReleaseDate        string
+	RepoURL            string
+	DnsmasqVersion     string
+	EnableLeaseRelease bool
 }

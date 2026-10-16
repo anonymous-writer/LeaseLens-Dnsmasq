@@ -3,31 +3,40 @@ package app
 // HTTP handlers for the web interface and JSON API.
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"net"
 	"net/http"
+	"os/exec"
 	"strings"
+	"time"
 )
 
 // newHTTPHandler wires the page, static assets, and API endpoints together.
-func newHTTPHandler(cfg Config, known *KnownMACs, tmpl *template.Template, staticFS fs.FS, dnsmasqVersion string) http.Handler {
+func newHTTPHandler(cfg Config, known *KnownMACs, tmpl *template.Template, staticFS fs.FS, dnsmasqVersion string, nativeBuild bool) http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", homeHandler(cfg, tmpl, dnsmasqVersion))
+	enableLeaseRelease := nativeBuild && validInterfaceName(cfg.DHCPInterface)
+	mux.HandleFunc("/", homeHandler(cfg, tmpl, dnsmasqVersion, enableLeaseRelease))
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 	mux.HandleFunc("/known-macs", knownMACsHandler(cfg, known))
 	mux.HandleFunc("/leases", leasesHandler(cfg, known))
+	if enableLeaseRelease {
+		mux.HandleFunc("/release-lease", releaseLeaseHandler(cfg))
+	}
 	return mux
 }
 
-func homeHandler(cfg Config, tmpl *template.Template, dnsmasqVersion string) http.HandlerFunc {
+func homeHandler(cfg Config, tmpl *template.Template, dnsmasqVersion string, enableLeaseRelease bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
 			return
 		}
-		data := PageData{Version: cfg.AppVersion, ReleaseDate: cfg.ReleaseDate, RepoURL: cfg.RepoURL, DnsmasqVersion: dnsmasqVersion}
+		data := PageData{Version: cfg.AppVersion, ReleaseDate: cfg.ReleaseDate, RepoURL: cfg.RepoURL, DnsmasqVersion: dnsmasqVersion, EnableLeaseRelease: enableLeaseRelease}
 		if err := tmpl.Execute(w, data); err != nil {
 			LogErrorf("cannot render home page: %v", err)
 			http.Error(w, "template error", http.StatusInternalServerError)
@@ -36,7 +45,7 @@ func homeHandler(cfg Config, tmpl *template.Template, dnsmasqVersion string) htt
 }
 
 // knownMACsHandler supports individual mark/unmark, reset, and bulk-marking
-// all currently detected DHCP reservations.
+// currently detected and configured IPv4 DHCP reservations.
 func knownMACsHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -60,6 +69,7 @@ func knownMACsHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 		}
 		var err error
 		markedCount := 0
+		var markedMACs []string
 		switch action {
 		case "mark":
 			err = known.mark(body.MAC)
@@ -80,6 +90,14 @@ func knownMACsHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 				}
 				markedCount, err = known.markMany(macs)
 			}
+		case "mark-all-ipv4-reservations":
+			markedMACs, err = readIPv4ReservationMACs(cfg.HostsPath)
+			if err != nil {
+				LogErrorf("cannot read DHCP hosts file path=%s: %v", cfg.HostsPath, err)
+				http.Error(w, "cannot read DHCP hosts file (check DNSMASQ_HOSTS_FILE and file permissions)", http.StatusInternalServerError)
+				return
+			}
+			markedCount, err = known.markMany(markedMACs)
 		default:
 			LogWarnf("rejected unknown known-MAC action action=%q", action)
 			http.Error(w, "invalid action", http.StatusBadRequest)
@@ -99,13 +117,21 @@ func knownMACsHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 		case "reset":
 			LogInfof("remembered-device list reset")
 		case "mark-reservations":
-			LogInfof("DHCP reservations processed for remembered-device list count=%d", markedCount)
+			LogInfof("currently detected DHCP reservations processed for remembered-device list count=%d", markedCount)
+		case "mark-all-ipv4-reservations":
+			LogInfof("configured IPv4 DHCP reservations processed for remembered-device list count=%d", markedCount)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		if action == "mark-reservations" {
 			if err := json.NewEncoder(w).Encode(map[string]any{"ok": true, "count": markedCount}); err != nil {
 				LogDebugf("client disconnected while writing reservation action response: %v", err)
+			}
+			return
+		}
+		if action == "mark-all-ipv4-reservations" {
+			if err := json.NewEncoder(w).Encode(map[string]any{"ok": true, "count": markedCount, "macs": markedMACs}); err != nil {
+				LogDebugf("client disconnected while writing all-IPv4-reservations response: %v", err)
 			}
 			return
 		}
@@ -139,4 +165,87 @@ func leasesHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 			LogDebugf("client disconnected while writing leases response: %v", err)
 		}
 	}
+}
+
+// runDHCPRelease is a seam for tests; production always calls the fixed
+// dhcp_release utility through non-interactive sudo.
+var runDHCPRelease = func(ctx context.Context, iface, ip, mac, clientID string) ([]byte, error) {
+	return exec.CommandContext(ctx, "sudo", "-n", "/usr/bin/dhcp_release", iface, ip, mac, clientID).CombinedOutput()
+}
+
+// releaseLeaseHandler uses dnsmasq-utils' dhcp_release utility rather than
+// editing the lease file directly. The endpoint only exists in native builds
+// with an explicitly configured DHCP interface.
+func releaseLeaseHandler(cfg Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var body struct {
+			IP  string `json:"ip"`
+			MAC string `json:"mac"`
+		}
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2048)).Decode(&body); err != nil {
+			http.Error(w, "invalid request", http.StatusBadRequest)
+			return
+		}
+		ip := net.ParseIP(strings.TrimSpace(body.IP))
+		mac := strings.ToUpper(strings.TrimSpace(body.MAC))
+		if ip == nil || ip.To4() == nil || !macRE.MatchString(mac) {
+			http.Error(w, "a valid IPv4 address and MAC address are required", http.StatusBadRequest)
+			return
+		}
+		ipText := ip.To4().String()
+		leases, err := readLeaseEntries(cfg.LeasePath, cfg.HostsPath)
+		if err != nil {
+			LogErrorf("cannot read DHCP leases before release: %v", err)
+			http.Error(w, "cannot read DHCP lease file", http.StatusServiceUnavailable)
+			return
+		}
+		var target *LeaseEntry
+		for i := range leases {
+			entry := &leases[i]
+			parsed := net.ParseIP(entry.IPAddress)
+			if parsed != nil && parsed.To4() != nil && parsed.To4().String() == ipText && strings.EqualFold(entry.MACAddress, mac) {
+				target = entry
+				break
+			}
+		}
+		if target == nil {
+			http.Error(w, "no matching IPv4 lease found; refresh the page and try again", http.StatusConflict)
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
+		clientID := strings.TrimSpace(target.ClientID)
+		if clientID == "" {
+			clientID = "*"
+		}
+		output, err := runDHCPRelease(ctx, cfg.DHCPInterface, ipText, mac, clientID)
+		if err != nil {
+			LogErrorf("native IPv4 lease release failed interface=%s ip=%s mac=%s: %v output=%q", cfg.DHCPInterface, ipText, mac, err, strings.TrimSpace(string(output)))
+			message := "could not release DHCP lease; install dnsmasq-utils and configure sudo permission for /usr/bin/dhcp_release"
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				message = "DHCP lease release timed out"
+			}
+			http.Error(w, message, http.StatusBadGateway)
+			return
+		}
+		LogInfof("native IPv4 DHCP lease release requested interface=%s ip=%s mac=%s", cfg.DHCPInterface, ipText, mac)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintln(w, `{"ok":true}`)
+	}
+}
+
+func validInterfaceName(value string) bool {
+	if value == "" || len(value) > 15 {
+		return false
+	}
+	for _, r := range value {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_' || r == '.' || r == ':' || r == '-') {
+			return false
+		}
+	}
+	return true
 }
