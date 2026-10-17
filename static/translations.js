@@ -11,7 +11,7 @@
   const dictionaries = {
     en: {
       language: 'Language', selectLanguage: 'Select language',
-      summaryTotal: 'Total leases', summaryOnline: 'Online · web reachable', summaryExpiring: 'Expires within 24 hours', summaryOffline: 'No response',
+      summaryTotal: 'Total leases', summaryOnline: 'Online · web reachable', summaryPing: 'Ping reachable', summaryExpiring: 'Expires within 24 hours', summaryOffline: 'No response',
       searchPlaceholder: 'Filter leases…', ipFilterTitle: 'Filter IPv4/IPv6',
       allIPs: 'All IPs', ipv4: 'IPv4', ipv6: 'IPv6',
       reservationFilterTitle: 'Filter DHCP reservations', allLeases: 'All leases',
@@ -69,7 +69,7 @@
     },
     de: {
       language: 'Sprache', selectLanguage: 'Sprache auswählen',
-      summaryTotal: 'Leases gesamt', summaryOnline: 'Online · Web erreichbar', summaryExpiring: 'Läuft in 24 Stunden ab', summaryOffline: 'Keine Antwort',
+      summaryTotal: 'Leases gesamt', summaryOnline: 'Online · Web erreichbar', summaryPing: 'Ping erreichbar', summaryExpiring: 'Läuft in 24 Stunden ab', summaryOffline: 'Keine Antwort',
       searchPlaceholder: 'Leases filtern…', ipFilterTitle: 'IPv4/IPv6 filtern',
       allIPs: 'Alle IPs', ipv4: 'IPv4', ipv6: 'IPv6',
       reservationFilterTitle: 'DHCP-Reservierungen filtern', allLeases: 'Alle Leases',
@@ -126,7 +126,7 @@
       sortAscending: 'ascending', sortDescending: 'descending'    },
     es: {
       language: 'Idioma', selectLanguage: 'Seleccionar idioma',
-      summaryTotal: 'Concesiones totales', summaryOnline: 'En línea · web accesible', summaryExpiring: 'Caduca en 24 horas', summaryOffline: 'Sin respuesta',
+      summaryTotal: 'Concesiones totales', summaryOnline: 'En línea · web accesible', summaryPing: 'Ping accesible', summaryExpiring: 'Caduca en 24 horas', summaryOffline: 'Sin respuesta',
       searchPlaceholder: 'Filtrar concesiones DHCP…', ipFilterTitle: 'Filtrar IPv4/IPv6',
       allIPs: 'Todas las IP', ipv4: 'IPv4', ipv6: 'IPv6',
       reservationFilterTitle: 'Filtrar reservas DHCP', allLeases: 'Todas las concesiones',

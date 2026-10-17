@@ -39,12 +39,12 @@ body { margin:0; padding:1.25rem clamp(.75rem,2vw,2rem) 2rem; font:14px/1.45 sys
 #reset-known-button:disabled,#mark-reservations-button:disabled,#mark-all-ipv4-reservations-button:disabled,#refresh-button:disabled { opacity:.58; cursor:wait; box-shadow:none!important; }
 #theme-toggle { justify-self:end; width:2.45rem; padding:.4rem!important; display:grid; place-items:center; color:var(--accent)!important; background:color-mix(in srgb,var(--accent) 8%,var(--surface))!important; border-color:color-mix(in srgb,var(--accent) 35%,var(--border))!important; }
 .icon-sun { display:none; } :root[data-theme=dark] .icon-moon { display:none; } :root[data-theme=dark] .icon-sun { display:inline; }
-#summary-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.6rem; margin:.35rem 0 .65rem; }
+#summary-cards { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:.6rem; margin:.35rem 0 .65rem; }
 .summary-card { min-width:0; padding:.62rem .85rem; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:none; }
 .summary-label { display:block; color:var(--muted); font-size:.76rem; margin-bottom:.12rem; }
 .summary-value { display:flex; align-items:center; gap:.48rem; font-size:1.45rem; font-weight:750; letter-spacing:-.035em; line-height:1.15; }
 .summary-dot { width:.6rem; height:.6rem; border-radius:50%; background:var(--muted); }
-.summary-card.online .summary-dot { background:var(--green); } .summary-card.reachable .summary-dot { background:var(--yellow); } .summary-card.offline .summary-dot { background:var(--red); }
+.summary-card.online .summary-dot { background:var(--green); } .summary-card.reachable .summary-dot,.summary-card.ping .summary-dot { background:var(--yellow); } .summary-card.offline .summary-dot { background:var(--red); }
 .table-wrap { overflow:auto; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); }
 table { border-collapse:separate; border-spacing:0; width:100%; min-width:760px; }
 th,td { text-align:left; padding:.58rem .8rem; border-bottom:1px solid var(--border); }
@@ -84,7 +84,7 @@ tr.new-device { background:color-mix(in srgb,var(--yellow) 9%,var(--surface)); }
 .copy-button:disabled,#copy-device-details-button:disabled { opacity:.65; cursor:wait; }
 footer { margin-top:1.2rem; color:var(--muted); font-size:.8rem; }
 #toolbar button,#toolbar select,#search { min-height:2.2rem; }
-@media(max-width:1000px) { #toolbar { position:static; grid-template-columns:repeat(2,minmax(0,1fr)); } #search { grid-column:1/-1; } #theme-toggle { margin-left:0; justify-self:start; } }
+@media(max-width:1000px) { #summary-cards { grid-template-columns:repeat(3,minmax(0,1fr)); } #toolbar { position:static; grid-template-columns:repeat(2,minmax(0,1fr)); } #search { grid-column:1/-1; } #theme-toggle { margin-left:0; justify-self:start; } }
 @media(max-width:620px) { body { padding:.7rem; } #device-details { padding:1rem; border-radius:14px; } #detail-title { font-size:1.25rem; } .detail-item { padding:.75rem; } .copy-button,#detail-close,#copy-device-details-button { min-height:2.55rem; } #toolbar { grid-template-columns:1fr 1fr; gap:.45rem; } #toolbar button,#toolbar select { width:100%; white-space:normal; min-height:2.7rem; } #summary-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; } .summary-card { padding:.65rem; } .summary-value { font-size:1.3rem; } .detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important; } }
 </style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}">
@@ -154,6 +154,7 @@ footer { margin-top:1.2rem; color:var(--muted); font-size:.8rem; }
   <section id="summary-cards" aria-label="Lease summary">
     <div class="summary-card"><span class="summary-label" data-i18n="summaryTotal">Total leases</span><div class="summary-value"><span id="summary-total">—</span></div></div>
     <div class="summary-card online"><span class="summary-label" data-i18n="summaryOnline">Online</span><div class="summary-value"><span class="summary-dot" aria-hidden="true"></span><span id="summary-online">—</span></div></div>
+    <div class="summary-card ping"><span class="summary-label" data-i18n="summaryPing">Ping erreichbar</span><div class="summary-value"><span class="summary-dot" aria-hidden="true"></span><span id="summary-ping">—</span></div></div>
     <div class="summary-card reachable"><span class="summary-label" data-i18n="summaryExpiring">Expires within 24 hours</span><div class="summary-value"><span class="summary-dot" aria-hidden="true"></span><span id="summary-expiring">—</span></div></div>
     <div class="summary-card offline"><span class="summary-label" data-i18n="summaryOffline">Offline</span><div class="summary-value"><span class="summary-dot" aria-hidden="true"></span><span id="summary-offline">—</span></div></div>
   </section>
