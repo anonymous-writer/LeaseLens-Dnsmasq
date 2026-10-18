@@ -78,6 +78,18 @@ func loadOUIDatabase() map[string]string {
 	return ouiMap
 }
 
+// cleanVendorName removes format markers that appear in some OUI databases,
+// while preserving the registered organization name itself.
+func cleanVendorName(name string) string {
+	name = strings.TrimSpace(name)
+	for _, marker := range []string{"(base 16)", "(hex)"} {
+		if len(name) >= len(marker) && strings.EqualFold(name[:len(marker)], marker) {
+			name = strings.TrimSpace(name[len(marker):])
+		}
+	}
+	return name
+}
+
 func readOUIDatabase(path string) (map[string]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -98,8 +110,8 @@ func readOUIDatabase(path string) (map[string]string, error) {
 			continue
 		}
 		prefix := strings.NewReplacer(":", "", "-", "").Replace(strings.ToUpper(match[1]))
-		vendor := strings.TrimSpace(match[2])
-		if strings.EqualFold(vendor, "(hex)") || vendor == "" {
+		vendor := cleanVendorName(match[2])
+		if vendor == "" {
 			continue
 		}
 		entries[prefix] = vendor

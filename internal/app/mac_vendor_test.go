@@ -10,6 +10,7 @@ func TestReadOUIDatabaseSupportsIEEEAndArpScanFormats(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "oui.txt")
 	content := "F4F5D8   (hex)               Apple, Inc.\n" +
 		"00:00:0C Cisco Systems, Inc.\n" +
+		"80691A (base 16) Belkin International Inc.\n" +
 		"# comment\n"
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatal(err)
@@ -23,6 +24,9 @@ func TestReadOUIDatabaseSupportsIEEEAndArpScanFormats(t *testing.T) {
 	}
 	if got["00000C"] != "Cisco Systems, Inc." {
 		t.Fatalf("Cisco vendor = %q", got["00000C"])
+	}
+	if got["80691A"] != "Belkin International Inc." {
+		t.Fatalf("Belkin vendor = %q, want clean name without database marker", got["80691A"])
 	}
 }
 
