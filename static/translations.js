@@ -11,7 +11,7 @@
   const dictionaries = {
     en: {
       language: 'Language', selectLanguage: 'Select language',
-      summaryTotal: 'Total leases', summaryOnline: 'Online · web reachable', summaryExpiring: 'Expires within 24 hours', summaryOffline: 'No response',
+      summaryTotal: 'Total leases', summaryOnline: 'Online · web reachable', summaryPing: 'Ping reachable', summaryExpiring: 'Expires within 24 hours', summaryOffline: 'No response',
       searchPlaceholder: 'Filter leases…', ipFilterTitle: 'Filter IPv4/IPv6',
       allIPs: 'All IPs', ipv4: 'IPv4', ipv6: 'IPv6',
       reservationFilterTitle: 'Filter DHCP reservations', allLeases: 'All leases',
@@ -36,7 +36,7 @@
       httpHttpsReachable: 'HTTP/HTTPS reachable', pingReachableNoHTTP: 'Ping reachable, no HTTP/HTTPS',
       noResponse: 'No response to ping or HTTP/HTTPS', statusUnknown: 'Status unknown',
       httpHttpsGreen: 'HTTP/HTTPS reachable (green)', pingYellow: 'Ping reachable, no HTTP/HTTPS (yellow)',
-      noResponseRed: 'No response to ping or HTTP/HTTPS (red)', unknown: 'Unknown',
+      noResponseRed: 'No response to ping or HTTP/HTTPS (red)', statusShortOnline: 'Online', statusShortPing: 'Ping OK', statusShortOffline: 'Offline', unknown: 'Unknown',
       hostname: 'Hostname', ipAddressV4V6: 'IPv4 / IPv6 address', webInterface: 'Web interface',
       hostnameURL: 'Hostname URL', notAvailable: 'Not available', notDetected: 'Not detected',
       copy: 'Copy', copied: 'Copied', copyFailed: 'Copy failed', copyValueTitle: 'Copy {field}',
@@ -69,7 +69,7 @@
     },
     de: {
       language: 'Sprache', selectLanguage: 'Sprache auswählen',
-      summaryTotal: 'Leases gesamt', summaryOnline: 'Online · Web erreichbar', summaryExpiring: 'Läuft in 24 Stunden ab', summaryOffline: 'Keine Antwort',
+      summaryTotal: 'Leases gesamt', summaryOnline: 'Online · Web erreichbar', summaryPing: 'Ping erreichbar', summaryExpiring: 'Läuft in 24 Stunden ab', summaryOffline: 'Keine Antwort',
       searchPlaceholder: 'Leases filtern…', ipFilterTitle: 'IPv4/IPv6 filtern',
       allIPs: 'Alle IPs', ipv4: 'IPv4', ipv6: 'IPv6',
       reservationFilterTitle: 'DHCP-Reservierungen filtern', allLeases: 'Alle Leases',
@@ -94,7 +94,7 @@
       httpHttpsReachable: 'HTTP/HTTPS erreichbar', pingReachableNoHTTP: 'Ping erreichbar, kein HTTP/HTTPS',
       noResponse: 'Keine Antwort auf Ping oder HTTP/HTTPS', statusUnknown: 'Status unbekannt',
       httpHttpsGreen: 'HTTP/HTTPS erreichbar (grün)', pingYellow: 'Ping erreichbar, kein HTTP/HTTPS (gelb)',
-      noResponseRed: 'Keine Antwort auf Ping oder HTTP/HTTPS (rot)', unknown: 'Unbekannt',
+      noResponseRed: 'Keine Antwort auf Ping oder HTTP/HTTPS (rot)', statusShortOnline: 'Online', statusShortPing: 'Ping OK', statusShortOffline: 'Offline', unknown: 'Unbekannt',
       hostname: 'Hostname', ipAddressV4V6: 'IPv4-/IPv6-Adresse', webInterface: 'Weboberfläche',
       hostnameURL: 'Hostname-URL', notAvailable: 'Nicht verfügbar', notDetected: 'Nicht erkannt',
       copy: 'Kopieren', copied: 'Kopiert', copyFailed: 'Kopieren fehlgeschlagen', copyValueTitle: '{field} kopieren',
@@ -126,7 +126,7 @@
       sortAscending: 'ascending', sortDescending: 'descending'    },
     es: {
       language: 'Idioma', selectLanguage: 'Seleccionar idioma',
-      summaryTotal: 'Concesiones totales', summaryOnline: 'En línea · web accesible', summaryExpiring: 'Caduca en 24 horas', summaryOffline: 'Sin respuesta',
+      summaryTotal: 'Concesiones totales', summaryOnline: 'En línea · web accesible', summaryPing: 'Ping accesible', summaryExpiring: 'Caduca en 24 horas', summaryOffline: 'Sin respuesta',
       searchPlaceholder: 'Filtrar concesiones DHCP…', ipFilterTitle: 'Filtrar IPv4/IPv6',
       allIPs: 'Todas las IP', ipv4: 'IPv4', ipv6: 'IPv6',
       reservationFilterTitle: 'Filtrar reservas DHCP', allLeases: 'Todas las concesiones',
@@ -152,7 +152,7 @@
       httpHttpsReachable: 'HTTP/HTTPS accesible', pingReachableNoHTTP: 'Ping responde, sin HTTP/HTTPS',
       noResponse: 'Sin respuesta a ping ni HTTP/HTTPS', statusUnknown: 'Estado desconocido',
       httpHttpsGreen: 'HTTP/HTTPS accesible (verde)', pingYellow: 'Ping responde, sin HTTP/HTTPS (amarillo)',
-      noResponseRed: 'Sin respuesta a ping ni HTTP/HTTPS (rojo)', unknown: 'Desconocido',
+      noResponseRed: 'Sin respuesta a ping ni HTTP/HTTPS (rojo)', statusShortOnline: 'En línea', statusShortPing: 'Ping OK', statusShortOffline: 'Sin respuesta', unknown: 'Desconocido',
       hostname: 'Nombre de host', ipAddressV4V6: 'Dirección IPv4 / IPv6',
       webInterface: 'Interfaz web', hostnameURL: 'URL del nombre de host',
       notAvailable: 'No disponible', notDetected: 'No detectado',

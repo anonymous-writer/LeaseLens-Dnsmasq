@@ -120,7 +120,7 @@ function statusCell(lease) {
   cell.append(dot);
   const label = document.createElement('span');
   label.className = 'status-label';
-  label.textContent = ({ online: t('httpHttpsGreen'), reachable: t('pingYellow'), offline: t('noResponseRed'), unknown: t('unknown') })[lease.status] || t('unknown');
+  label.textContent = ({ online: t('statusShortOnline'), reachable: t('statusShortPing'), offline: t('statusShortOffline'), unknown: t('unknown') })[lease.status] || t('unknown');
   cell.append(label);
   return cell;
 }
@@ -170,6 +170,7 @@ function updateStatusCards() {
   const count = key => leases.filter(lease => (lease.status || 'unknown') === key).length;
   document.querySelector('#summary-total').textContent = String(leases.length);
   document.querySelector('#summary-online').textContent = String(count('online'));
+  document.querySelector('#summary-ping').textContent = String(count('reachable'));
   const now = Math.floor(Date.now() / 1000);
   const expiring = leases.filter(lease => {
     const expiry = Number(lease.leaseExpiry);
