@@ -6,7 +6,9 @@
 
 A lightweight web interface for the [dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html) DHCP lease file, written in Go. It provides a searchable, sortable view of DHCP leases, detects reachable HTTP/HTTPS interfaces on client devices, and lets you manage which devices have already been acknowledged.
 
-![Screenshot](https://raw.githubusercontent.com/anonymous-writer/dnsmasq-leases-ui/main/docs/screenshot.png)
+![Screenshot](https://raw.githubusercontent.com/anonymous-writer/dnsmasq-leases-ui/main/docs/screenshot1.png)
+
+![Screenshot](https://raw.githubusercontent.com/anonymous-writer/dnsmasq-leases-ui/main/docs/screenshot2.png)
 
 ## Features
 
