@@ -15,7 +15,8 @@ A lightweight web interface for the [dnsmasq](https://thekelleys.org.uk/dnsmasq/
 - Searchable and sortable DHCP lease table
 - IPv4 and IPv6 support, with filters for IP version and DHCP reservations
 - Manual refresh of the lease list; lease countdowns update locally in the browser
-- Device details dialog with hostname, IP, MAC, reservation status, lease end, and detected web URLs
+- Device details dialog with hostname, IP, MAC, manufacturer, reservation status, lease end, and detected web URLs
+- Local MAC manufacturer lookup using the IEEE OUI database; locally administered/randomized MAC addresses are identified separately
 - Status indicator: green when HTTP/HTTPS responds, yellow when ping responds but no web interface is detected, red when neither check responds
 - Automatically detects reachable HTTP/HTTPS interfaces and makes device IP addresses clickable
 - Shows a clickable hostname when it resolves to the corresponding lease IP
@@ -210,6 +211,7 @@ The `mark-reservations` response also includes a `count` field. These endpoints 
 | `DNSMASQ_HOSTS_FILE` | `/var/lib/dnsmasq/dnsmasq.dhcphosts` | Path to the optional DHCP hosts file |
 | `DNSMASQ_INTERFACE` | empty | Native-build DHCP interface for the optional IPv4 lease-release action; requires `dnsmasq-utils` and limited sudo permission |
 | `KNOWN_MACS_FILE` | `/data/known-macs.json` | Path to the persistent remembered-MAC list |
+| `OUI_DATABASE_FILE` | auto-detected system path | Optional path to a local IEEE OUI text database used for MAC manufacturer lookup |
 | `HOST` | `0.0.0.0` | Address the web server listens on |
 | `PORT` | `5000` | Port the web server listens on |
 | `WEB_UI_TIMEOUT` | `500ms` | Timeout for an HTTP/HTTPS or hostname-resolution check; accepts Go durations such as `500ms` or seconds such as `0.5` |
@@ -220,7 +222,7 @@ The `mark-reservations` response also includes a `count` field. These endpoints 
 | `REPO_URL` | `https://github.com/anonymous-writer/dnsmasq-leases-ui` | Repository URL shown in the UI |
 | `LOG_LEVEL` | `INFO` | Minimum log level: `DEBUG`, `INFO`, `WARN`, or `ERROR` |
 
-The same runtime settings can be supplied in a flat YAML-style configuration file. Example: [`config.example.yaml`](config.example.yaml). To use it, copy it to `/home/pi/Dnsmasq-Leases-UI/config.yaml` and launch the binary with `--config /home/pi/Dnsmasq-Leases-UI/config.yaml` (the supplied systemd unit does this). `CONFIG_FILE` can also specify the file path. Supported keys are `host`, `port`, `leases_file`, `hosts_file`, `known_macs_file`, `dhcp_interface`, `log_level`, `app_version`, `release_date`, and `repo_url`.
+For native installs, manufacturer lookup uses an installed local OUI database when available (for example, Debian/Raspberry Pi OS package `ieee-data`). Set `OUI_DATABASE_FILE` to override its path. Docker images include a local IEEE OUI database. If no database is found, leases still load and the manufacturer column shows “Unknown”.\n\nThe same runtime settings can be supplied in a flat YAML-style configuration file. Example: [`config.example.yaml`](config.example.yaml). To use it, copy it to `/home/pi/Dnsmasq-Leases-UI/config.yaml` and launch the binary with `--config /home/pi/Dnsmasq-Leases-UI/config.yaml` (the supplied systemd unit does this). `CONFIG_FILE` can also specify the file path. Supported keys are `host`, `port`, `leases_file`, `hosts_file`, `known_macs_file`, `dhcp_interface`, `log_level`, `app_version`, `release_date`, and `repo_url`.
 
 Precedence is **defaults < environment variables < config file < command-line flags**. Available flags include `--config`, `--host`, `--port`, `--leases-file`, `--hosts-file`, `--known-macs-file`, `--dhcp-interface`, `--log-level`, `--app-version`, `--release-date`, and `--repo-url`.
 

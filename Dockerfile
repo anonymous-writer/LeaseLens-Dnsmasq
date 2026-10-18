@@ -2,6 +2,9 @@
 FROM golang:1.25-alpine AS build
 WORKDIR /src
 
+# Use Alpine's IEEE OUI registry at build time; only the text database is copied to runtime.
+RUN apk add --no-cache arp-scan
+
 COPY go.mod ./
 COPY main.go ./
 COPY internal/ ./internal/
@@ -22,6 +25,7 @@ ENV APP_VERSION=${APP_VERSION} \
     REPO_URL=${REPO_URL}
 
 COPY --from=build /dnsmasq-leases-ui /app/dnsmasq-leases-ui
+COPY --from=build /usr/share/arp-scan/ieee-oui.txt /usr/share/ieee-data/oui.txt
 
 USER root
 EXPOSE 5000

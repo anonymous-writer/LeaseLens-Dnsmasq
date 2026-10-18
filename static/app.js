@@ -72,7 +72,7 @@ function match(lease, query) {
   if (!query) return true;
   query = query.toLowerCase();
   const reservationTerms = lease.staticIP ? ['yes', 'ja'] : ['no', 'nein'];
-  return [lease.ipAddress, lease.macAddress, lease.iaid, lease.duid, lease.name, lease.leasetime, formatLease(lease),
+  return [lease.ipAddress, lease.macAddress, lease.vendor, lease.privateMAC ? t('privateMACAddress') : '', lease.iaid, lease.duid, lease.name, lease.leasetime, formatLease(lease),
     ...reservationTerms, lease.status].some(value => String(value ?? '').toLowerCase().includes(query));
 }
 
@@ -106,6 +106,12 @@ function statusDescription(statusValue) {
     case 'offline': return t('noResponse');
     default: return t('statusUnknown');
   }
+}
+
+function displayVendor(lease) {
+  if (!validMac(lease.macAddress)) return '';
+  if (lease.privateMAC) return t('privateMACAddress');
+  return lease.vendor || t('vendorUnknown');
 }
 
 function statusCell(lease) {
@@ -191,7 +197,8 @@ function render() {
     row.setAttribute('aria-label', t('detailsFor', { device: lease.name || lease.ipAddress }));
     row.appendChild(statusCell(lease));
     const displayMAC = validMac(lease.macAddress) ? lease.macAddress : '—';
-    [lease.ipAddress, displayMAC, lease.name, lease.staticIP ? t('yes') : t('no'), formatLease(lease)]
+    [lease.ipAddress, displayMAC, displayVendor(lease) || '—', lease.name,
+      lease.staticIP ? t('yes') : t('no'), formatLease(lease)]
       .forEach((value, index) => {
         const cell = document.createElement('td');
         if (index === 1 && lease.isNew && validMac(lease.macAddress)) {
@@ -202,10 +209,17 @@ function render() {
         }
         if (index === 0 && lease.webUrl) {
           cell.appendChild(link(lease.ipAddress, lease.webUrl));
-        } else if (index === 2 && lease.webHostUrl) {
+        } else if (index === 3 && lease.webHostUrl) {
           cell.appendChild(link(lease.name, lease.webHostUrl));
         } else {
           cell.append(document.createTextNode(value ?? ''));
+        }
+        if (index === 2 && lease.privateMAC) {
+          cell.className = 'vendor-private';
+          cell.title = t('privateMACAddressTitle');
+        } else if (index === 2 && !lease.vendor && validMac(lease.macAddress)) {
+          cell.className = 'vendor-unknown';
+          cell.title = t('vendorUnknownTitle');
         }
         row.appendChild(cell);
       });
@@ -405,6 +419,7 @@ function showDetails(lease) {
     { key: 'hostname', value: lease.name && lease.name !== '*' ? lease.name : t('notAvailable'), copy: true },
     { key: 'ipAddressV4V6', value: lease.ipAddress, copy: true },
     { key: 'macAddress', value: lease.macAddress || t('notAvailable'), copy: Boolean(lease.macAddress) },
+    { key: 'vendor', value: displayVendor(lease) || t('notAvailable') },
     ...(lease.iaid !== undefined && lease.iaid !== null && String(lease.iaid) !== ''
       ? [{ key: 'iaid', value: String(lease.iaid), copy: true }] : []),
     ...(lease.duid ? [{ key: 'duid', value: lease.duid, copy: true }] : []),
@@ -514,6 +529,7 @@ function buildDeviceDetailsText(lease) {
     `${t('hostname')}: ${hostname}`,
     `${t('ipAddressV4V6')}: ${lease.ipAddress || t('notAvailable')}`,
     `${t('macAddress')}: ${lease.macAddress || t('notAvailable')}`,
+    `${t('vendor')}: ${displayVendor(lease) || t('notAvailable')}`,
   ];
   if (lease.iaid !== undefined && lease.iaid !== null && String(lease.iaid) !== '') {
     fields.push(`${t('iaid')}: ${lease.iaid}`);
