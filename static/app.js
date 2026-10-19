@@ -27,6 +27,18 @@ const status = document.querySelector('#status');
 const lastUpdated = document.querySelector('#last-updated');
 const refreshState = document.querySelector('#refresh-state');
 
+// Zeigt die lokale Systemzeit des Browsers im LeaseLens-Kopf an.
+function updateBrandClock() {
+  const now = new Date();
+  const lang = { en: 'en-GB', de: 'de-DE', es: 'es-ES' }[LANGUAGE_API().language] || 'en-GB';
+  const clock = document.querySelector('#system-clock');
+  const date = document.querySelector('#system-date');
+  if (clock) clock.textContent = new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(now);
+  if (date) date.textContent = new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }).format(now);
+}
+updateBrandClock();
+window.setInterval(updateBrandClock, 1000);
+
 (() => {
   try {
     const theme = localStorage.getItem(THEME_KEY);
@@ -145,10 +157,13 @@ function updateLeaseSummary(shown, total) {
   status.classList.remove('error');
   if (shown !== total) {
     status.textContent = t('filteredSummary', { shown, total });
-  } else if (total === 1) {
-    status.textContent = t('oneLeaseSummary');
   } else {
-    status.textContent = t('manyLeasesSummary', { count: total });
+    const language = LANGUAGE_API().language;
+    status.textContent = ({
+      de: 'Zeile anklicken, um Gerätedetails zu öffnen',
+      en: 'Click a row to open device details',
+      es: 'Haz clic en una fila para ver los detalles del dispositivo'
+    })[language] || 'Click a row to open device details';
   }
 }
 

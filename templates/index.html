@@ -92,6 +92,20 @@ footer { margin-top:1.2rem; color:var(--muted); font-size:.8rem; }
 #toolbar button,#toolbar select,#search { min-height:2.2rem; }
 @media(max-width:1000px) { #summary-cards { grid-template-columns:repeat(3,minmax(0,1fr)); } #toolbar { position:static; grid-template-columns:repeat(2,minmax(0,1fr)); } #search { grid-column:1/-1; } #theme-toggle { margin-left:0; justify-self:start; } }
 @media(max-width:620px) { body { padding:.7rem; } #brand-logo { height:2.65rem; max-width:5rem; } #brand-title { font-size:1rem; } #device-details { padding:1rem; border-radius:14px; } #detail-title { font-size:1.25rem; } .detail-item { padding:.75rem; } .copy-button,#detail-close,#copy-device-details-button { min-height:2.55rem; } #toolbar { grid-template-columns:1fr 1fr; gap:.45rem; } #toolbar button,#toolbar select { width:100%; white-space:normal; min-height:2.7rem; } #summary-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; } .summary-card { padding:.65rem; } .summary-value { font-size:1.3rem; } .detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+/* Kompakte Systeminformationen im Kopf und ein gemeinsamer Status-/Versionsbereich. */
+#brand-header { position:relative; }
+#brand-meta { margin-left:auto; display:flex; align-items:center; justify-content:flex-end; gap:clamp(.65rem,2vw,1.5rem); color:#c3d2e8; font-size:.82rem; }
+.brand-meta-item { display:flex; align-items:center; gap:.55rem; min-width:0; }
+.brand-meta-item svg { width:1.5rem; height:1.5rem; flex:0 0 auto; color:#a8c5ed; }
+.brand-meta-label { display:block; color:#8fa6c5; font-size:.72rem; }
+.brand-meta-value { display:block; color:#e8f1ff; white-space:nowrap; }
+#dnsmasq-state { color:#31d5a0; }
+#status-panel { display:flex; flex-wrap:wrap; align-items:center; gap:.35rem 1rem; margin-top:.85rem; padding:.7rem .85rem; border:1px solid var(--border); border-radius:9px; background:var(--surface); color:var(--muted); font-size:.8rem; }
+#status-panel #status { margin:0; flex:1 1 18rem; font-size:inherit; }
+#status-panel #refresh-meta { margin:0; gap:.25rem .8rem; }
+#status-panel footer { margin:0 0 0 auto; font-size:inherit; }
+@media(max-width:800px) { #brand-header { flex-wrap:wrap; } #brand-meta { width:100%; margin-left:0; justify-content:flex-start; flex-wrap:wrap; } }
+@media(max-width:520px) { #brand-meta { gap:.55rem 1rem; font-size:.75rem; } .brand-meta-item svg { width:1.15rem; height:1.15rem; } #status-panel footer { margin-left:0; flex-basis:100%; } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important; } }
 
 /* LeaseLens visual identity: preserves all existing controls and interactions. */
@@ -144,6 +158,11 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
   <header id="brand-header">
     <img id="brand-logo" src="/static/logo-WLM.png" alt="LeaseLens – WLM Logo" width="160" height="160">
     <div class="brand-copy"><h1 id="brand-title">Lease<span>Lens</span></h1><p id="brand-subtitle">Dnsmasq Network Dashboard</p><p id="brand-description">DHCP Leases · Geräteerkennung · Hersteller · Netzwerkstatus</p></div>
+    <div id="brand-meta" aria-label="Systeminformationen">
+      <div class="brand-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div><span class="brand-meta-label">Systemzeit</span><span class="brand-meta-value" id="system-clock">--:--:--</span><span class="brand-meta-label" id="system-date">--.--.----</span></div></div>
+      <div class="brand-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01M11 7h6M11 17h6"/></svg><div><span class="brand-meta-label">System</span><span class="brand-meta-value">LeaseLens</span><span class="brand-meta-label">Go · Web Dashboard</span></div></div>
+      <div class="brand-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2l2.2 2.2 3.1-.1.9 3 2.6 1.7-1 2.9 1 2.9-2.6 1.7-.9 3-3.1-.1L12 21l-2.2-2.2-3.1.1-.9-3-2.6-1.7 1-2.9-1-2.9 2.6-1.7.9-3 3.1.1z"/><circle cx="12" cy="12" r="3"/></svg><div><span class="brand-meta-label">Dnsmasq</span><span class="brand-meta-value" id="dnsmasq-state">● Läuft</span><span class="brand-meta-label">{{if .DnsmasqVersion}}Version {{.DnsmasqVersion}}{{else}}Status wird überwacht{{end}}</span></div></div>
+    </div>
   </header>
   <div id="toolbar">
     <!-- Freitextsuche über geladene DHCP-Leases. -->
@@ -234,11 +253,11 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
   </div>
 
   <!-- Tabellenzusammenfassung sowie letzter Erfolg und aktueller Lade-/Fehlerstatus. -->
-  <div id="status" role="status" aria-live="polite" data-i18n="loading">Loading…</div>
-  <div id="refresh-meta" aria-live="polite">
-    <span id="last-updated"></span>
-    <span id="refresh-state"></span>
-  </div>
+  <section id="status-panel" aria-label="Anwendungsstatus">
+    <div id="status" role="status" aria-live="polite" data-i18n="loading">Loading…</div>
+    <div id="refresh-meta" aria-live="polite"><span id="last-updated"></span><span id="refresh-state"></span></div>
+    <footer><a href="{{.RepoURL}}" target="_blank" rel="noopener noreferrer">LeaseLens</a> v{{.Version}}{{if .ReleaseDate}} · <span data-i18n="released">released</span> {{.ReleaseDate}}{{end}}</footer>
+  </section>
 
   <!-- Modal: app.js befüllt #detail-content mit den gewählten Gerätedetails. -->
   <dialog id="device-details" aria-labelledby="detail-title">
@@ -253,10 +272,7 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
     eingesetzt. Diese Platzhalter nicht entfernen, wenn die Datei als Go-Template
     verwendet wird.
   -->
-  <footer>
-    <a href="{{.RepoURL}}" target="_blank" rel="noopener noreferrer">dnsmasq-leases-ui</a>
-    v{{.Version}}{{if .ReleaseDate}} · <span data-i18n="released">released</span> {{.ReleaseDate}}{{end}}{{if .DnsmasqVersion}} · dnsmasq {{.DnsmasqVersion}}{{end}}
-  </footer>
+
 
   <!-- Cache-Busting: Versionswert ändert die URL, wenn ein neues App-Build geladen wird. -->
   <script src="/static/translations.js?v={{.Version}}"></script>
