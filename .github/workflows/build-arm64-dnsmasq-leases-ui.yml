@@ -115,7 +115,7 @@ jobs:
             -C dist "dnsmasq-leases-ui-linux-${{ matrix.arch }}"
 
       - name: Upload standalone binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dnsmasq-leases-ui-linux-${{ matrix.arch }}
           path: dist/dnsmasq-leases-ui-linux-${{ matrix.arch }}.tar.gz
@@ -131,7 +131,7 @@ jobs:
       contents: write
     steps:
       - name: Download ARM64 and AMD64 artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: dnsmasq-leases-ui-linux-*
           path: dist
