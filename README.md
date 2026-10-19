@@ -1,3 +1,11 @@
+# LeaseLens-Dnsmasq
+
+**LeaseLens** — Dnsmasq Network Dashboard.
+
+# LeaseLens – Dnsmasq Network Dashboard
+
+LeaseLens ist die Weboberfläche zur Verwaltung und Anzeige von dnsmasq-DHCP-Leases.
+
 # dnsmasq-leases-ui
 
 [![GHCR](https://img.shields.io/badge/GHCR-docker%20image-blue?logo=github)](https://github.com/anonymous-writer/dnsmasq-leases-ui/pkgs/container/dnsmasq-leases-ui)
