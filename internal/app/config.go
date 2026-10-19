@@ -68,7 +68,7 @@ func loadConfig() Config {
 		DHCPInterface: getenv("DNSMASQ_INTERFACE", ""),
 		AppVersion:    getenv("APP_VERSION", buildVersion),
 		ReleaseDate:   getenv("APP_RELEASE_DATE", buildReleaseDate),
-		RepoURL:       getenv("REPO_URL", "https://github.com/anonymous-writer/dnsmasq-leases-ui"),
+		RepoURL:       getenv("REPO_URL", "https://github.com/anonymous-writer/leaselens-dnsmasq"),
 	}
 }
 
@@ -102,10 +102,10 @@ func loadConfigFromArgs(args []string) (Config, string, error) {
 		}
 	}
 
-	flags := flag.NewFlagSet("dnsmasq-leases-ui", flag.ContinueOnError)
+	flags := flag.NewFlagSet("leaselens-dnsmasq", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 	flags.Usage = func() {
-		fmt.Fprintln(flags.Output(), "Usage: dnsmasq-leases-ui [options]")
+		fmt.Fprintln(flags.Output(), "Usage: leaselens-dnsmasq [options]")
 		fmt.Fprintln(flags.Output(), "Precedence: defaults < environment < config file < command line.")
 		fmt.Fprintln(flags.Output())
 		fmt.Fprintln(flags.Output(), "Options:")

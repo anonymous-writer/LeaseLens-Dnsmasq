@@ -1,5 +1,5 @@
 /*
- * dnsmasq-leases-ui frontend behavior.
+ * leaselens-dnsmasq frontend behavior.
  * All user-visible UI text is provided by static/translations.js.
  */
 'use strict';
@@ -26,6 +26,18 @@ let activeDetailLease = null;
 const status = document.querySelector('#status');
 const lastUpdated = document.querySelector('#last-updated');
 const refreshState = document.querySelector('#refresh-state');
+
+// Zeigt die lokale Systemzeit des Browsers im LeaseLens-Kopf an.
+function updateBrandClock() {
+  const now = new Date();
+  const lang = { en: 'en-GB', de: 'de-DE', es: 'es-ES' }[LANGUAGE_API().language] || 'en-GB';
+  const clock = document.querySelector('#system-clock');
+  const date = document.querySelector('#system-date');
+  if (clock) clock.textContent = new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(now);
+  if (date) date.textContent = new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }).format(now);
+}
+updateBrandClock();
+window.setInterval(updateBrandClock, 1000);
 
 (() => {
   try {
@@ -72,7 +84,7 @@ function match(lease, query) {
   if (!query) return true;
   query = query.toLowerCase();
   const reservationTerms = lease.staticIP ? ['yes', 'ja'] : ['no', 'nein'];
-  return [lease.ipAddress, lease.macAddress, lease.iaid, lease.duid, lease.name, lease.leasetime, formatLease(lease),
+  return [lease.ipAddress, lease.macAddress, lease.vendor, lease.privateMAC ? t('privateMACAddress') : '', lease.iaid, lease.duid, lease.name, lease.leasetime, formatLease(lease),
     ...reservationTerms, lease.status].some(value => String(value ?? '').toLowerCase().includes(query));
 }
 
@@ -108,6 +120,12 @@ function statusDescription(statusValue) {
   }
 }
 
+function displayVendor(lease) {
+  if (!validMac(lease.macAddress)) return '';
+  if (lease.privateMAC) return t('privateMACAddress');
+  return lease.vendor || t('vendorUnknown');
+}
+
 function statusCell(lease) {
   const cell = document.createElement('td');
   cell.className = 'device-status';
@@ -139,10 +157,13 @@ function updateLeaseSummary(shown, total) {
   status.classList.remove('error');
   if (shown !== total) {
     status.textContent = t('filteredSummary', { shown, total });
-  } else if (total === 1) {
-    status.textContent = t('oneLeaseSummary');
   } else {
-    status.textContent = t('manyLeasesSummary', { count: total });
+    const language = LANGUAGE_API().language;
+    status.textContent = ({
+      de: 'Zeile anklicken, um Gerätedetails zu öffnen',
+      en: 'Click a row to open device details',
+      es: 'Haz clic en una fila para ver los detalles del dispositivo'
+    })[language] || 'Click a row to open device details';
   }
 }
 
@@ -191,7 +212,8 @@ function render() {
     row.setAttribute('aria-label', t('detailsFor', { device: lease.name || lease.ipAddress }));
     row.appendChild(statusCell(lease));
     const displayMAC = validMac(lease.macAddress) ? lease.macAddress : '—';
-    [lease.ipAddress, displayMAC, lease.name, lease.staticIP ? t('yes') : t('no'), formatLease(lease)]
+    [lease.ipAddress, displayMAC, displayVendor(lease) || '—', lease.name,
+      lease.staticIP ? t('yes') : t('no'), formatLease(lease)]
       .forEach((value, index) => {
         const cell = document.createElement('td');
         if (index === 1 && lease.isNew && validMac(lease.macAddress)) {
@@ -202,10 +224,17 @@ function render() {
         }
         if (index === 0 && lease.webUrl) {
           cell.appendChild(link(lease.ipAddress, lease.webUrl));
-        } else if (index === 2 && lease.webHostUrl) {
+        } else if (index === 3 && lease.webHostUrl) {
           cell.appendChild(link(lease.name, lease.webHostUrl));
         } else {
           cell.append(document.createTextNode(value ?? ''));
+        }
+        if (index === 2 && lease.privateMAC) {
+          cell.className = 'vendor-private';
+          cell.title = t('privateMACAddressTitle');
+        } else if (index === 2 && !lease.vendor && validMac(lease.macAddress)) {
+          cell.className = 'vendor-unknown';
+          cell.title = t('vendorUnknownTitle');
         }
         row.appendChild(cell);
       });
@@ -405,6 +434,7 @@ function showDetails(lease) {
     { key: 'hostname', value: lease.name && lease.name !== '*' ? lease.name : t('notAvailable'), copy: true },
     { key: 'ipAddressV4V6', value: lease.ipAddress, copy: true },
     { key: 'macAddress', value: lease.macAddress || t('notAvailable'), copy: Boolean(lease.macAddress) },
+    { key: 'vendor', value: displayVendor(lease) || t('notAvailable') },
     ...(lease.iaid !== undefined && lease.iaid !== null && String(lease.iaid) !== ''
       ? [{ key: 'iaid', value: String(lease.iaid), copy: true }] : []),
     ...(lease.duid ? [{ key: 'duid', value: lease.duid, copy: true }] : []),
@@ -483,6 +513,7 @@ async function releaseIPv4Lease(lease, button) {
   const ip = netIPv4(lease.ipAddress);
   if (!ip || !validMac(lease.macAddress)) return;
   if (!confirm(t('confirmReleaseIPv4Lease', { ip, mac: lease.macAddress }))) return;
+  const markAsNewAfterRelease = confirm(t('confirmMarkAsNewAfterRelease'));
 
   button.disabled = true;
   button.textContent = t('releasingIPv4Lease');
@@ -493,8 +524,21 @@ async function releaseIPv4Lease(lease, button) {
       body: JSON.stringify({ ip, mac: lease.macAddress })
     });
     if (!response.ok) throw new Error((await response.text()).trim() || t('releaseIPv4LeaseFailed'));
+    let resultMessage = t('releasedIPv4Lease');
+    if (markAsNewAfterRelease) {
+      const knownResponse = await fetch(KNOWN_MACS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mac: lease.macAddress, action: 'unmark' })
+      });
+      if (!knownResponse.ok) {
+        resultMessage += '\n\n' + t('couldNotMarkNewAfterRelease', { error: (await knownResponse.text()).trim() });
+      } else {
+        leases = leases.map(item => item.macAddress === lease.macAddress ? { ...item, isNew: true } : item);
+      }
+    }
     document.querySelector('#device-details').close();
-    alert(t('releasedIPv4Lease'));
+    alert(resultMessage);
     await load();
   } catch (error) {
     alert(t('releaseIPv4LeaseFailed') + ': ' + error.message);
@@ -514,6 +558,7 @@ function buildDeviceDetailsText(lease) {
     `${t('hostname')}: ${hostname}`,
     `${t('ipAddressV4V6')}: ${lease.ipAddress || t('notAvailable')}`,
     `${t('macAddress')}: ${lease.macAddress || t('notAvailable')}`,
+    `${t('vendor')}: ${displayVendor(lease) || t('notAvailable')}`,
   ];
   if (lease.iaid !== undefined && lease.iaid !== null && String(lease.iaid) !== '') {
     fields.push(`${t('iaid')}: ${lease.iaid}`);

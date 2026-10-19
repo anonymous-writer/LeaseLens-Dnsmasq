@@ -1,21 +1,30 @@
-# dnsmasq-leases-ui
+# LeaseLens-Dnsmasq
 
-[![GHCR](https://img.shields.io/badge/GHCR-docker%20image-blue?logo=github)](https://github.com/anonymous-writer/dnsmasq-leases-ui/pkgs/container/dnsmasq-leases-ui)
+**LeaseLens** — Dnsmasq Network Dashboard.
+
+# LeaseLens – Dnsmasq Network Dashboard
+
+LeaseLens ist die Weboberfläche zur Verwaltung und Anzeige von dnsmasq-DHCP-Leases.
+
+# leaselens-dnsmasq
+
+[![GHCR](https://img.shields.io/badge/GHCR-docker%20image-blue?logo=github)](https://github.com/anonymous-writer/leaselens-dnsmasq/pkgs/container/leaselens-dnsmasq)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)](https://go.dev/)
-[![License](https://img.shields.io/github/license/anonymous-writer/dnsmasq-leases-ui)](LICENSE)
+[![License](https://img.shields.io/github/license/anonymous-writer/leaselens-dnsmasq)](LICENSE)
 
 A lightweight web interface for the [dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html) DHCP lease file, written in Go. It provides a searchable, sortable view of DHCP leases, detects reachable HTTP/HTTPS interfaces on client devices, and lets you manage which devices have already been acknowledged.
 
-![Screenshot](https://raw.githubusercontent.com/anonymous-writer/dnsmasq-leases-ui/main/docs/screenshot1.png)
+![Screenshot](https://raw.githubusercontent.com/anonymous-writer/leaselens-dnsmasq/main/docs/screenshot1.png)
 
-![Screenshot](https://raw.githubusercontent.com/anonymous-writer/dnsmasq-leases-ui/main/docs/screenshot2.png)
+![Screenshot](https://raw.githubusercontent.com/anonymous-writer/leaselens-dnsmasq/main/docs/screenshot2.png)
 
 ## Features
 
 - Searchable and sortable DHCP lease table
 - IPv4 and IPv6 support, with filters for IP version and DHCP reservations
 - Manual refresh of the lease list; lease countdowns update locally in the browser
-- Device details dialog with hostname, IP, MAC, reservation status, lease end, and detected web URLs
+- Device details dialog with hostname, IP, MAC, manufacturer, reservation status, lease end, and detected web URLs
+- Local MAC manufacturer lookup using the IEEE OUI database; locally administered/randomized MAC addresses are identified separately
 - Status indicator: green when HTTP/HTTPS responds, yellow when ping responds but no web interface is detected, red when neither check responds
 - Automatically detects reachable HTTP/HTTPS interfaces and makes device IP addresses clickable
 - Shows a clickable hostname when it resolves to the corresponding lease IP
@@ -37,7 +46,7 @@ A lightweight web interface for the [dnsmasq](https://thekelleys.org.uk/dnsmasq/
 The current development image is published to GitHub Container Registry with the `go-beta` tag. Pull it with:
 
 ```bash
-docker pull ghcr.io/anonymous-writer/dnsmasq-leases-ui:go-beta
+docker pull ghcr.io/anonymous-writer/leaselens-dnsmasq:go-beta
 ```
 
 The `go-beta` tag follows the most recently published pre-release. Stable releases publish version tags plus `latest`; pre-releases never update `latest`. Publishing either kind of GitHub Release also attaches native ARM64 and AMD64 binaries to that release.
@@ -55,13 +64,13 @@ The hosts file is optional. Mount the containing directory rather than individua
 
 ```bash
 docker run -d \
-  --name dnsmasq-leases-ui \
+  --name leaselens-dnsmasq \
   --restart unless-stopped \
   --network host \
   -e PORT=3008 \
   -v /var/lib/dnsmasq:/var/lib/dnsmasq:ro \
   -v "$(pwd)/data:/data" \
-  ghcr.io/anonymous-writer/dnsmasq-leases-ui:go-beta
+  ghcr.io/anonymous-writer/leaselens-dnsmasq:go-beta
 ```
 
 Create the persistent data directory before starting the container:
@@ -82,9 +91,9 @@ Example `compose.yaml`:
 
 ```yaml
 services:
-  dnsmasq-leases-ui:
-    image: ghcr.io/anonymous-writer/dnsmasq-leases-ui:go-beta
-    container_name: dnsmasq-leases-ui
+  leaselens-dnsmasq:
+    image: ghcr.io/anonymous-writer/leaselens-dnsmasq:go-beta
+    container_name: leaselens-dnsmasq
     restart: unless-stopped
     environment:
       PORT: "3008"
@@ -123,11 +132,11 @@ Then start or restart the service. This is a one-time ownership fix for the data
 You can test write access with:
 
 ```bash
-podman exec dnsmasq-leases-ui sh -c \
+podman exec leaselens-dnsmasq sh -c \
   'id; ls -ldn /data; touch /data/testfile && rm /data/testfile'
 ```
 
-If you use a different image or change its configured user, verify the UID/GID with `podman exec dnsmasq-leases-ui id` and adapt the ownership command accordingly.
+If you use a different image or change its configured user, verify the UID/GID with `podman exec leaselens-dnsmasq id` and adapt the ownership command accordingly.
 
 ### Configure dnsmasq
 
@@ -210,6 +219,7 @@ The `mark-reservations` response also includes a `count` field. These endpoints 
 | `DNSMASQ_HOSTS_FILE` | `/var/lib/dnsmasq/dnsmasq.dhcphosts` | Path to the optional DHCP hosts file |
 | `DNSMASQ_INTERFACE` | empty | Native-build DHCP interface for the optional IPv4 lease-release action; requires `dnsmasq-utils` and limited sudo permission |
 | `KNOWN_MACS_FILE` | `/data/known-macs.json` | Path to the persistent remembered-MAC list |
+| `OUI_DATABASE_FILE` | auto-detected system path | Optional path to a local IEEE OUI text database used for MAC manufacturer lookup |
 | `HOST` | `0.0.0.0` | Address the web server listens on |
 | `PORT` | `5000` | Port the web server listens on |
 | `WEB_UI_TIMEOUT` | `500ms` | Timeout for an HTTP/HTTPS or hostname-resolution check; accepts Go durations such as `500ms` or seconds such as `0.5` |
@@ -217,10 +227,10 @@ The `mark-reservations` response also includes a `count` field. These endpoints 
 | `WEB_UI_MAX_WORKERS` | `16` | Maximum concurrent IP web-interface checks |
 | `APP_VERSION` | `dev` | Version shown by the application |
 | `APP_RELEASE_DATE` | empty | Build/release date shown by the application |
-| `REPO_URL` | `https://github.com/anonymous-writer/dnsmasq-leases-ui` | Repository URL shown in the UI |
+| `REPO_URL` | `https://github.com/anonymous-writer/leaselens-dnsmasq` | Repository URL shown in the UI |
 | `LOG_LEVEL` | `INFO` | Minimum log level: `DEBUG`, `INFO`, `WARN`, or `ERROR` |
 
-The same runtime settings can be supplied in a flat YAML-style configuration file. Example: [`config.example.yaml`](config.example.yaml). To use it, copy it to `/home/pi/Dnsmasq-Leases-UI/config.yaml` and launch the binary with `--config /home/pi/Dnsmasq-Leases-UI/config.yaml` (the supplied systemd unit does this). `CONFIG_FILE` can also specify the file path. Supported keys are `host`, `port`, `leases_file`, `hosts_file`, `known_macs_file`, `dhcp_interface`, `log_level`, `app_version`, `release_date`, and `repo_url`.
+For native installs, manufacturer lookup uses an installed local OUI database when available (for example, Debian/Raspberry Pi OS package `ieee-data`). Set `OUI_DATABASE_FILE` to override its path. Docker images include a local IEEE OUI database. If no database is found, leases still load and the manufacturer column shows “Unknown”.\n\nThe same runtime settings can be supplied in a flat YAML-style configuration file. Example: [`config.example.yaml`](config.example.yaml). To use it, copy it to `/home/pi/Dnsmasq-Leases-UI/config.yaml` and launch the binary with `--config /home/pi/Dnsmasq-Leases-UI/config.yaml` (the supplied systemd unit does this). `CONFIG_FILE` can also specify the file path. Supported keys are `host`, `port`, `leases_file`, `hosts_file`, `known_macs_file`, `dhcp_interface`, `log_level`, `app_version`, `release_date`, and `repo_url`.
 
 Precedence is **defaults < environment variables < config file < command-line flags**. Available flags include `--config`, `--host`, `--port`, `--leases-file`, `--hosts-file`, `--known-macs-file`, `--dhcp-interface`, `--log-level`, `--app-version`, `--release-date`, and `--repo-url`.
 
@@ -236,7 +246,7 @@ On Debian/Raspberry Pi OS, install the utility and grant the service user (shown
 
 ```bash
 sudo apt-get install dnsmasq-utils
-sudo visudo -f /etc/sudoers.d/dnsmasq-leases-ui
+sudo visudo -f /etc/sudoers.d/leaselens-dnsmasq
 ```
 
 Add this line to the sudoers file:
@@ -248,8 +258,8 @@ pi ALL=(root) NOPASSWD: /usr/bin/dhcp_release eth1 *
 Then validate the file and set its permissions:
 
 ```bash
-sudo visudo -cf /etc/sudoers.d/dnsmasq-leases-ui
-sudo chmod 0440 /etc/sudoers.d/dnsmasq-leases-ui
+sudo visudo -cf /etc/sudoers.d/leaselens-dnsmasq
+sudo chmod 0440 /etc/sudoers.d/leaselens-dnsmasq
 ```
 
 Change `pi` to the account that runs the user service and replace `eth1` if your DHCP interface has another name. The application calls `sudo -n`, so it will never prompt for a password. Keep the web interface on localhost or a trusted network: the app's endpoints do not provide authentication. The button is not included in Docker builds. See [`docs/native-ipv4-lease-release.md`](docs/native-ipv4-lease-release.md) for the complete native setup.
@@ -274,7 +284,7 @@ Example in `compose.yaml`:
 
 ```yaml
 services:
-  dnsmasq-leases-ui:
+  leaselens-dnsmasq:
     environment:
       PORT: "3008"
       LOG_LEVEL: "INFO"
@@ -291,9 +301,9 @@ environment:
 View the container logs with Docker or Podman:
 
 ```bash
-docker logs -f dnsmasq-leases-ui
+docker logs -f leaselens-dnsmasq
 # or
-podman logs -f dnsmasq-leases-ui
+podman logs -f leaselens-dnsmasq
 ```
 
 Example messages:
@@ -314,13 +324,13 @@ The Go executable embeds `templates/index.html` and all files in `static/`. Afte
 
 ```bash
 go test ./...
-go build -trimpath -o dnsmasq-leases-ui .
+go build -trimpath -o leaselens-dnsmasq .
 ```
 
 Run the standalone executable with command-line options:
 
 ```bash
-./dnsmasq-leases-ui \
+./leaselens-dnsmasq \
   --host 0.0.0.0 \
   --port 3008 \
   --leases-file /var/lib/dnsmasq/dnsmasq.leases \
@@ -329,7 +339,7 @@ Run the standalone executable with command-line options:
   --log-level INFO
 ```
 
-All options are optional. `./dnsmasq-leases-ui --help` lists them. Command-line flags override their matching environment variables; environment-variable configuration remains supported. Only the dnsmasq input files and the remembered-device JSON file must exist outside the executable. The directory holding `known-macs.json` must be writable by the app.
+All options are optional. `./leaselens-dnsmasq --help` lists them. Command-line flags override their matching environment variables; environment-variable configuration remains supported. Only the dnsmasq input files and the remembered-device JSON file must exist outside the executable. The directory holding `known-macs.json` must be writable by the app.
 
 ### Prebuilt native Linux binaries (ARM64 and AMD64)
 
@@ -338,22 +348,22 @@ The native workflow supports two modes:
 - **Manual run:** Go tests and `go vet` run first; ARM64 and AMD64 binaries are then uploaded as temporary GitHub Actions artifacts (retained for 30 days). This does not build or publish a Docker image.
 - **Published GitHub Release or Pre-release:** the same native builds run automatically and attach both `.tar.gz` archives plus `SHA256SUMS` to the matching release.
 
-For a manual build, run **GitHub → Actions → Build dnsmasq-leases-ui native binaries → Run workflow**. For a published pre-release or stable release, download the files directly from that release's **Assets** section. Choose the artifact or release asset matching the target machine:
+For a manual build, run **GitHub → Actions → Build leaselens-dnsmasq native binaries → Run workflow**. For a published pre-release or stable release, download the files directly from that release's **Assets** section. Choose the artifact or release asset matching the target machine:
 
 | Artifact | Target architecture | Typical systems |
 |---|---|---|
-| `dnsmasq-leases-ui-linux-arm64` | ARM64 / AArch64 | 64-bit Raspberry Pi OS and other 64-bit ARM Linux systems |
-| `dnsmasq-leases-ui-linux-amd64` | AMD64 / x86_64 | 64-bit Intel/AMD Linux PCs and servers |
+| `leaselens-dnsmasq-linux-arm64` | ARM64 / AArch64 | 64-bit Raspberry Pi OS and other 64-bit ARM Linux systems |
+| `leaselens-dnsmasq-linux-amd64` | AMD64 / x86_64 | 64-bit Intel/AMD Linux PCs and servers |
 
 GitHub downloads each artifact as a ZIP containing a `.tar.gz` archive. Extract the downloaded ZIP first, then extract the matching `.tar.gz` file. For ARM64, for example:
 
 ```bash
-tar -xzf dnsmasq-leases-ui-linux-arm64.tar.gz
-chmod +x dnsmasq-leases-ui-linux-arm64
-./dnsmasq-leases-ui-linux-arm64 --config /home/pi/Dnsmasq-Leases-UI/config.yaml
+tar -xzf leaselens-dnsmasq-linux-arm64.tar.gz
+chmod +x leaselens-dnsmasq-linux-arm64
+./leaselens-dnsmasq-linux-arm64 --config /home/pi/Dnsmasq-Leases-UI/config.yaml
 ```
 
-For an AMD64 Linux host, use the `dnsmasq-leases-ui-linux-amd64.tar.gz` archive and run `./dnsmasq-leases-ui-linux-amd64` instead. The archive contains only the executable; the HTML, JavaScript, and other web assets are embedded in it. The downloaded artifacts are retained by GitHub Actions for 30 days.
+For an AMD64 Linux host, use the `leaselens-dnsmasq-linux-amd64.tar.gz` archive and run `./leaselens-dnsmasq-linux-amd64` instead. The archive contains only the executable; the HTML, JavaScript, and other web assets are embedded in it. The downloaded artifacts are retained by GitHub Actions for 30 days.
 
 For published GitHub Releases and Pre-releases, the native build embeds the release tag (without the leading `v`) and the release publication date, so the footer shows the correct version and date instead of `vdev`. A manual workflow run from a branch with the `release_tag` input left empty uses `dev` and the source commit date. To rebuild an existing release using the latest source, run the workflow from the updated branch and set `release_tag` to the existing tag (for example `v2.1.1-Beta.2`); the workflow embeds the right version/date and replaces the native assets on that release. When you manually run the workflow against an existing release tag, it embeds that tag and looks up the actual GitHub publication date (falling back to the tagged commit date if no published release exists). These embedded values are defaults; `APP_VERSION`, `APP_RELEASE_DATE`, the configuration file, and command-line flags can still override them according to the normal precedence. The native executable also checks for `dnsmasq --version` at startup and displays the detected version in the interface footer, provided `dnsmasq` is installed and available through `PATH`. This native-only dnsmasq version display is not enabled in Docker builds. The external dnsmasq lease file, optional DHCP hosts file, and writable remembered-device JSON file still need to be accessible at the configured paths.
 
@@ -362,12 +372,12 @@ For published GitHub Releases and Pre-releases, the native build embeds the rele
 The Dockerfile must copy all Go source files and build the package with `go build .` (or equivalent). Do not use `go build ./main.go`, because that compiles only the named file and omits the other source files.
 
 ```bash
-docker build -t dnsmasq-leases-ui:local .
+docker build -t leaselens-dnsmasq:local .
 docker run --rm --network host \
   -e PORT=3008 \
   -v /var/lib/dnsmasq:/var/lib/dnsmasq:ro \
   -v ./data:/data \
-  dnsmasq-leases-ui:local
+  leaselens-dnsmasq:local
 ```
 
 ## Docker image publishing
@@ -387,8 +397,8 @@ Use distinct SemVer tags for a pre-release and its later stable release. For exa
 
 When a release is **published** (not merely saved as a draft), the workflows build and attach these assets:
 
-- `dnsmasq-leases-ui-linux-arm64.tar.gz`
-- `dnsmasq-leases-ui-linux-amd64.tar.gz`
+- `leaselens-dnsmasq-linux-arm64.tar.gz`
+- `leaselens-dnsmasq-linux-amd64.tar.gz`
 - `SHA256SUMS`
 
 The native workflow builds the matching source at the release tag. The Docker workflow publishes a prerelease-specific version tag and `go-beta` for pre-releases, while stable releases receive SemVer aliases and `latest`. GitHub documents `release: types: [published]` as the event that catches both stable and pre-release publication, including pre-releases published from drafts. See [GitHub's release event documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).

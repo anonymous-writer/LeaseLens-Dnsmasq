@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Run this from the root of the dnsmasq-leases-ui Git repository, after
+# Run this from the root of the leaselens-dnsmasq Git repository, after
 # extracting this ZIP over the checkout so internal/app/ is updated.
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || {
   echo "ERROR: Bitte im Root-Verzeichnis eines Git-Checkouts ausführen." >&2

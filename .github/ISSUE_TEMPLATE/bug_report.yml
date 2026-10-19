@@ -1,5 +1,5 @@
 name: "Bug report"
-description: "Report a problem with dnsmasq-leases-ui"
+description: "Report a problem with leaselens-dnsmasq"
 title: "[Bug]: "
 labels: ["bug"]
 body:
@@ -28,7 +28,7 @@ body:
       label: Steps to reproduce
       description: Include the steps needed to reproduce the problem.
       placeholder: |
-        1. Start dnsmasq-leases-ui...
+        1. Start leaselens-dnsmasq...
         2. Open...
         3. Click...
         4. See error...
@@ -48,7 +48,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: dnsmasq-leases-ui version
+      label: leaselens-dnsmasq version
       description: Version shown in the page footer or release tag.
       placeholder: "v2.1.1-Beta.2"
     validations:

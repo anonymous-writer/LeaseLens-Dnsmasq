@@ -87,6 +87,9 @@ func readLeases(leasePath, hostsPath string) ([]LeaseEntry, error) {
 	if err != nil {
 		return nil, err
 	}
+	for i := range leases {
+		leases[i].Vendor, leases[i].PrivateMAC = macVendor(leases[i].MACAddress)
+	}
 	addWebURLs(leases)
 	LogDebugf("completed device reachability checks count=%d", len(leases))
 	return leases, nil

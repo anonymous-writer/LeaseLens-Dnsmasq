@@ -53,7 +53,7 @@ func Run(assets fs.FS, nativeBuild bool) {
 
 	handler := newHTTPHandler(cfg, known, tmpl, staticFS, dnsmasqVersion, nativeBuild)
 	address := net.JoinHostPort(cfg.Host, cfg.Port)
-	LogInfof("dnsmasq-leases-ui starting version=%s listen=%s", cfg.AppVersion, address)
+	LogInfof("leaselens-dnsmasq starting version=%s listen=%s", cfg.AppVersion, address)
 	if err := http.ListenAndServe(address, handler); err != nil {
 		LogFatalf("HTTP server stopped: %v", err)
 	}

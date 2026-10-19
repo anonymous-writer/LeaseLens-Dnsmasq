@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <title>dnsmasq-leases-ui</title>
+  <title>LeaseLens | Dnsmasq Network Dashboard</title>
   <!-- Das Icon wird statisch vom Webserver aus /static ausgeliefert. -->
   <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
   <style>
@@ -20,6 +20,10 @@
 @media(prefers-color-scheme:light) { :root:not([data-theme=dark]) { color-scheme:light; --bg:#f4f6f9; --surface:#fff; --surface-raised:#f7f9fc; --fg:#202633; --muted:#687386; --border:#dfe4ec; --accent:#075fbd; --shadow:0 8px 28px #18243a0d; } }
 * { box-sizing:border-box; }
 body { margin:0; padding:1.25rem clamp(.75rem,2vw,2rem) 2rem; font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--fg); }
+#brand-header { display:flex; align-items:center; gap:.9rem; margin:0 0 .45rem; padding:.45rem .65rem; background:var(--surface); border:1px solid var(--border); border-radius:12px; }
+#brand-logo { display:block; width:auto; height:3.2rem; max-width:min(28vw,8rem); object-fit:contain; border-radius:5px; }
+#brand-title { margin:0; font-size:1.12rem; font-weight:760; letter-spacing:-.025em; }
+#brand-subtitle { margin:.08rem 0 0; color:var(--muted); font-size:.8rem; }
 #toolbar { position:sticky; top:0; z-index:5; display:grid; grid-template-columns:minmax(14rem,1.5fr) repeat(3,minmax(8rem,.75fr)) auto; align-items:center; gap:.4rem; padding:.35rem 0; background:var(--bg); }
 #search,#ip-filter,#reservation-filter,#status-filter,#language-select,#toolbar button { min-height:2.2rem; padding:.42rem .65rem; font:inherit; color:var(--fg); background:var(--surface); border:1px solid var(--border); border-radius:8px; }
 #search { min-width:0; width:100%; }
@@ -46,7 +50,7 @@ body { margin:0; padding:1.25rem clamp(.75rem,2vw,2rem) 2rem; font:14px/1.45 sys
 .summary-dot { width:.6rem; height:.6rem; border-radius:50%; background:var(--muted); }
 .summary-card.online .summary-dot { background:var(--green); } .summary-card.reachable .summary-dot,.summary-card.ping .summary-dot { background:var(--yellow); } .summary-card.offline .summary-dot { background:var(--red); }
 .table-wrap { overflow:auto; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); }
-table { border-collapse:separate; border-spacing:0; width:100%; min-width:760px; }
+table { border-collapse:separate; border-spacing:0; width:100%; min-width:900px; }
 th,td { text-align:left; padding:.58rem .8rem; border-bottom:1px solid var(--border); }
 th { position:sticky; top:0; z-index:1; background:var(--surface-raised); color:var(--muted); font-size:.76rem; font-weight:700; text-transform:uppercase; letter-spacing:.045em; white-space:nowrap; cursor:pointer; }
 tbody tr:last-child td { border-bottom:0; } tbody tr:hover { background:var(--surface-raised); } tr.device-row { cursor:pointer; transition:background .12s; } tr.device-row:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
@@ -56,6 +60,7 @@ a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:under
 .refresh-icon { display:inline-block; } #refresh-button[aria-busy="true"] .refresh-icon { animation:refresh-spin .9s linear infinite; } @keyframes refresh-spin { to { transform:rotate(360deg); } }
 tr.new-device { background:color-mix(in srgb,var(--yellow) 9%,var(--surface)); } .new-badge { display:inline-block; background:#b45309; color:#fff; font-size:.68rem; font-weight:750; padding:.12rem .35rem; border-radius:5px; letter-spacing:.03em; }
 .device-status { white-space:nowrap; font-weight:600; font-size:.8rem; }
+.vendor-private,.vendor-unknown { color:var(--muted); font-style:italic; }
 .status-label { display:inline-block; padding:.2rem .48rem; border-radius:6px; background:var(--surface-raised); border:1px solid var(--border); }
 .device-status:has(.dot.online) .status-label { color:var(--green); background:color-mix(in srgb,var(--green) 9%,var(--surface)); border-color:color-mix(in srgb,var(--green) 24%,var(--border)); }
 .device-status:has(.dot.reachable) .status-label { color:var(--yellow); background:color-mix(in srgb,var(--yellow) 9%,var(--surface)); border-color:color-mix(in srgb,var(--yellow) 24%,var(--border)); }
@@ -86,14 +91,79 @@ tr.new-device { background:color-mix(in srgb,var(--yellow) 9%,var(--surface)); }
 footer { margin-top:1.2rem; color:var(--muted); font-size:.8rem; }
 #toolbar button,#toolbar select,#search { min-height:2.2rem; }
 @media(max-width:1000px) { #summary-cards { grid-template-columns:repeat(3,minmax(0,1fr)); } #toolbar { position:static; grid-template-columns:repeat(2,minmax(0,1fr)); } #search { grid-column:1/-1; } #theme-toggle { margin-left:0; justify-self:start; } }
-@media(max-width:620px) { body { padding:.7rem; } #device-details { padding:1rem; border-radius:14px; } #detail-title { font-size:1.25rem; } .detail-item { padding:.75rem; } .copy-button,#detail-close,#copy-device-details-button { min-height:2.55rem; } #toolbar { grid-template-columns:1fr 1fr; gap:.45rem; } #toolbar button,#toolbar select { width:100%; white-space:normal; min-height:2.7rem; } #summary-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; } .summary-card { padding:.65rem; } .summary-value { font-size:1.3rem; } .detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:620px) { body { padding:.7rem; } #brand-logo { height:2.65rem; max-width:5rem; } #brand-title { font-size:1rem; } #device-details { padding:1rem; border-radius:14px; } #detail-title { font-size:1.25rem; } .detail-item { padding:.75rem; } .copy-button,#detail-close,#copy-device-details-button { min-height:2.55rem; } #toolbar { grid-template-columns:1fr 1fr; gap:.45rem; } #toolbar button,#toolbar select { width:100%; white-space:normal; min-height:2.7rem; } #summary-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; } .summary-card { padding:.65rem; } .summary-value { font-size:1.3rem; } .detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+/* Kompakte Systeminformationen im Kopf und ein gemeinsamer Status-/Versionsbereich. */
+#brand-header { position:relative; }
+#brand-meta { margin-left:auto; display:flex; align-items:center; justify-content:flex-end; gap:clamp(.65rem,2vw,1.5rem); color:#c3d2e8; font-size:.82rem; }
+.brand-meta-item { display:flex; align-items:center; gap:.55rem; min-width:0; }
+.brand-meta-item svg { width:1.5rem; height:1.5rem; flex:0 0 auto; color:#a8c5ed; }
+.brand-meta-label { display:block; color:#8fa6c5; font-size:.72rem; }
+.brand-meta-value { display:block; color:#e8f1ff; white-space:nowrap; }
+#dnsmasq-state { color:#31d5a0; }
+#status-panel { display:flex; flex-wrap:wrap; align-items:center; gap:.35rem 1rem; margin-top:.85rem; padding:.7rem .85rem; border:1px solid var(--border); border-radius:9px; background:var(--surface); color:var(--muted); font-size:.8rem; }
+#status-panel #status { margin:0; flex:1 1 18rem; font-size:inherit; }
+#status-panel #refresh-meta { margin:0; gap:.25rem .8rem; }
+#status-panel footer { margin:0 0 0 auto; font-size:inherit; }
+@media(max-width:800px) { #brand-header { flex-wrap:wrap; } #brand-meta { width:100%; margin-left:0; justify-content:flex-start; flex-wrap:wrap; } }
+@media(max-width:520px) { #brand-meta { gap:.55rem 1rem; font-size:.75rem; } .brand-meta-item svg { width:1.15rem; height:1.15rem; } #status-panel footer { margin-left:0; flex-basis:100%; } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important; } }
+
+/* LeaseLens visual identity: preserves all existing controls and interactions. */
+:root { --bg:#0c1421; --surface:#141f30; --surface-raised:#1b2a40; --fg:#eaf2ff; --muted:#9eafc8; --border:#2a3b55; --accent:#4a97ff; --green:#19c994; --yellow:#f5ba39; --red:#fb6578; --shadow:0 8px 28px #020a1840; }
+:root[data-theme=light] { --bg:#edf3fb; --surface:#fff; --surface-raised:#f3f7fe; --fg:#1b2b43; --muted:#60738d; --border:#d7e2f1; --accent:#176ad0; --shadow:0 8px 28px #18243a0d; }
+@media(prefers-color-scheme:light) { :root:not([data-theme=dark]) { --bg:#edf3fb; --surface:#fff; --surface-raised:#f3f7fe; --fg:#1b2b43; --muted:#60738d; --border:#d7e2f1; --accent:#176ad0; --shadow:0 8px 28px #18243a0d; } }
+body { padding-top:0; }
+#brand-header { margin:0 calc(-1 * clamp(.75rem,2vw,2rem)) 1rem; padding:1.15rem clamp(.75rem,2vw,2rem); gap:1.25rem; border:0; border-bottom:1px solid #29496e; border-radius:0; background:linear-gradient(115deg,#101d30,#0d1727 65%,#101f35); color:#f3f7ff; box-shadow:0 8px 28px #0002; }
+#brand-logo { width:5.5rem; height:5.5rem; max-width:none; border-radius:0; object-fit:contain; }
+.brand-copy { min-width:0; }
+#brand-title { font-size:clamp(2rem,3.5vw,3.15rem); font-weight:800; letter-spacing:-.055em; line-height:1.02; }
+#brand-title span { color:#63a9ff; }
+#brand-subtitle { margin:.18rem 0 0; font-size:clamp(.9rem,1.4vw,1.15rem); color:#eef4ff; font-weight:680; }
+#brand-description { margin:.3rem 0 0; font-size:.82rem; color:#a4b9d4; }
+#toolbar { gap:.55rem; }
+#search,#ip-filter,#reservation-filter,#status-filter,#language-select,#toolbar button { border-radius:7px; }
+.summary-card { padding:.82rem .95rem; border-radius:10px; background:linear-gradient(145deg,var(--surface),color-mix(in srgb,var(--surface) 82%,var(--surface-raised))); }
+.summary-value { font-size:1.65rem; }
+.table-wrap { border-radius:10px; }
+th { color:var(--muted); }
+@media(max-width:620px) { #brand-header { margin:0 -.7rem .85rem; padding:.9rem .75rem; gap:.75rem; } #brand-logo { width:3.7rem; height:3.7rem; } #brand-title { font-size:1.8rem; } #brand-description { font-size:.7rem; } }
+
+/* LeaseLens theme — preserves all existing application functions. */
+:root { --bg:#0b1320; --surface:#131f30; --surface-raised:#1b2a3e; --fg:#eaf2ff; --muted:#9cacc3; --border:#27394f; --accent:#438cff; --green:#18ca90; --yellow:#f5bd40; --red:#fa6471; --shadow:0 10px 32px #02091355; }
+:root[data-theme=light] { --bg:#edf3fb; --surface:#fff; --surface-raised:#f1f6fc; --fg:#18283c; --muted:#63758b; --border:#d9e3f0; --accent:#176bd9; --shadow:0 10px 32px #18345c14; }
+@media(prefers-color-scheme:light) { :root:not([data-theme=dark]) { --bg:#edf3fb; --surface:#fff; --surface-raised:#f1f6fc; --fg:#18283c; --muted:#63758b; --border:#d9e3f0; --accent:#176bd9; --shadow:0 10px 32px #18345c14; } }
+body { padding:0 clamp(.8rem,2vw,2rem) 2rem; }
+#brand-header { margin:0 calc(-1 * clamp(.8rem,2vw,2rem)) 1rem; padding:1.15rem clamp(.8rem,2vw,2rem); border:0; border-bottom:1px solid #2c4b76; border-radius:0; background:linear-gradient(115deg,#101c2c,#0e1928 65%,#10243d); box-shadow:0 5px 24px #03091433; gap:1.25rem; }
+#brand-logo { height:5.4rem; max-width:6rem; border-radius:0; }
+#brand-title { color:#f3f7ff; font-size:clamp(1.8rem,3vw,2.9rem); line-height:1.05; font-weight:800; letter-spacing:-.055em; }
+#brand-title span { color:#60a5fa; }
+#brand-subtitle { color:#f0f5ff; font-size:1.04rem; font-weight:650; }
+.brand-tagline { color:#9db2d1; font-size:.82rem; margin:.3rem 0 0; }
+#toolbar { gap:.55rem; padding:.4rem 0 .6rem; }
+#search,#ip-filter,#reservation-filter,#status-filter,#language-select,#toolbar button { border-radius:8px; min-height:2.55rem; }
+#summary-cards { gap:.75rem; margin:.45rem 0 .85rem; }
+.summary-card { padding:.95rem 1rem; border-radius:10px; background:linear-gradient(125deg,var(--surface),color-mix(in srgb,var(--surface) 85%,var(--surface-raised))); }
+.summary-value { font-size:1.7rem; margin-top:.25rem; }
+.table-wrap { border-radius:12px; }
+th { background:var(--surface-raised); }
+tbody tr:nth-child(even) { background:color-mix(in srgb,var(--surface-raised) 22%,var(--surface)); }
+tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!important; }
+@media(max-width:620px) { #brand-header { gap:.75rem; padding:1rem; } #brand-logo { height:3.7rem; max-width:4rem; } #brand-title { font-size:1.7rem; } #brand-subtitle { font-size:.83rem; } .brand-tagline { font-size:.69rem; } }
 </style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}">
   <!--
     Hauptwerkzeugleiste.
     Wichtig: IDs werden von /static/app.js verwendet. Beim Umbenennen einer ID
     muss deshalb auch die Referenz in app.js angepasst werden.
   -->
+  <header id="brand-header">
+    <img id="brand-logo" src="/static/logo-WLM.png" alt="LeaseLens – WLM Logo" width="160" height="160">
+    <div class="brand-copy"><h1 id="brand-title">Lease<span>Lens</span></h1><p id="brand-subtitle" data-i18n="brandSubtitle">Dnsmasq Network Dashboard</p><p id="brand-description" data-i18n="brandDescription">DHCP Leases · Geräteerkennung · Hersteller · Netzwerkstatus</p></div>
+    <div id="brand-meta" aria-label="Systeminformationen">
+      <div class="brand-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div><span class="brand-meta-label" data-i18n="systemTime">Systemzeit</span><span class="brand-meta-value" id="system-clock">--:--:--</span><span class="brand-meta-label" id="system-date">--.--.----</span></div></div>
+      <div class="brand-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01M11 7h6M11 17h6"/></svg><div><span class="brand-meta-label" data-i18n="systemLabel">System</span><span class="brand-meta-value">LeaseLens</span><span class="brand-meta-label" data-i18n="systemDescription">Go · Web Dashboard</span></div></div>
+      <div class="brand-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2l2.2 2.2 3.1-.1.9 3 2.6 1.7-1 2.9 1 2.9-2.6 1.7-.9 3-3.1-.1L12 21l-2.2-2.2-3.1.1-.9-3-2.6-1.7 1-2.9-1-2.9 2.6-1.7.9-3 3.1.1z"/><circle cx="12" cy="12" r="3"/></svg><div><span class="brand-meta-label">Dnsmasq</span><span class="brand-meta-value" id="dnsmasq-state" data-i18n="dnsmasqRunning">● Läuft</span><span class="brand-meta-label" id="dnsmasq-version-label" data-i18n-version="{{.DnsmasqVersion}}">{{if .DnsmasqVersion}}Version {{.DnsmasqVersion}}{{else}}Status wird überwacht{{end}}</span></div></div>
+    </div>
+  </header>
   <div id="toolbar">
     <!-- Freitextsuche über geladene DHCP-Leases. -->
     <input id="search" type="search" placeholder="Filter leases…" data-i18n-placeholder="searchPlaceholder"
@@ -171,6 +241,7 @@ footer { margin-top:1.2rem; color:var(--muted); font-size:.8rem; }
         <th data-key="status"><span data-i18n="status">Status</span><span class="sort-indicator"></span></th>
         <th data-key="ipAddress"><span data-i18n="ipAddress">IP Address</span><span class="sort-indicator"></span></th>
         <th data-key="macAddress"><span data-i18n="macAddress">MAC Address</span><span class="sort-indicator"></span></th>
+        <th data-key="vendor"><span data-i18n="vendor">Manufacturer</span><span class="sort-indicator"></span></th>
         <th data-key="name"><span data-i18n="name">Name</span><span class="sort-indicator"></span></th>
         <th data-key="staticIP"><span data-i18n="dhcpReservation">DHCP Reservation</span><span class="sort-indicator"></span></th>
         <th data-key="leasetime"><span data-i18n="leaseEndsOn">Lease ends on</span><span class="sort-indicator"></span></th>
@@ -182,11 +253,11 @@ footer { margin-top:1.2rem; color:var(--muted); font-size:.8rem; }
   </div>
 
   <!-- Tabellenzusammenfassung sowie letzter Erfolg und aktueller Lade-/Fehlerstatus. -->
-  <div id="status" role="status" aria-live="polite" data-i18n="loading">Loading…</div>
-  <div id="refresh-meta" aria-live="polite">
-    <span id="last-updated"></span>
-    <span id="refresh-state"></span>
-  </div>
+  <section id="status-panel" aria-label="Anwendungsstatus">
+    <div id="status" role="status" aria-live="polite" data-i18n="loading">Loading…</div>
+    <div id="refresh-meta" aria-live="polite"><span id="last-updated"></span><span id="refresh-state"></span></div>
+    <footer><a href="{{.RepoURL}}" target="_blank" rel="noopener noreferrer">LeaseLens</a> v{{.Version}}{{if .ReleaseDate}} · <span data-i18n="released">released</span> {{.ReleaseDate}}{{end}}</footer>
+  </section>
 
   <!-- Modal: app.js befüllt #detail-content mit den gewählten Gerätedetails. -->
   <dialog id="device-details" aria-labelledby="detail-title">
@@ -201,10 +272,7 @@ footer { margin-top:1.2rem; color:var(--muted); font-size:.8rem; }
     eingesetzt. Diese Platzhalter nicht entfernen, wenn die Datei als Go-Template
     verwendet wird.
   -->
-  <footer>
-    <a href="{{.RepoURL}}" target="_blank" rel="noopener noreferrer">dnsmasq-leases-ui</a>
-    v{{.Version}}{{if .ReleaseDate}} · <span data-i18n="released">released</span> {{.ReleaseDate}}{{end}}{{if .DnsmasqVersion}} · dnsmasq {{.DnsmasqVersion}}{{end}}
-  </footer>
+
 
   <!-- Cache-Busting: Versionswert ändert die URL, wenn ein neues App-Build geladen wird. -->
   <script src="/static/translations.js?v={{.Version}}"></script>

@@ -1,3 +1,3 @@
-module github.com/anonymous-writer/dnsmasq-leases-ui
+module github.com/anonymous-writer/leaselens-dnsmasq
 
 go 1.25

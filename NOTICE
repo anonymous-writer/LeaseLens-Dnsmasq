@@ -1,8 +1,8 @@
-dnsmasq-leases-ui
+leaselens-dnsmasq
 =================
 
-This project is based on dnsmasq-leases-ui by Florian Schlag:
-https://github.com/fschlag/dnsmasq-leases-ui
+This project is based on leaselens-dnsmasq by Florian Schlag:
+https://github.com/fschlag/leaselens-dnsmasq
 
 The project's MIT license and copyright notices are provided in the LICENSE file.
 This file records notices for third-party assets used by this project.

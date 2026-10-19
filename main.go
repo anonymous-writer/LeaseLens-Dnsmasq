@@ -3,7 +3,7 @@ package main
 import (
 	"embed"
 
-	"github.com/anonymous-writer/dnsmasq-leases-ui/internal/app"
+	"github.com/anonymous-writer/leaselens-dnsmasq/internal/app"
 )
 
 // Set to "true" only for native builds that should display the installed dnsmasq version.

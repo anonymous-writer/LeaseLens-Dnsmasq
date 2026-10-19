@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Narrowly scoped privileged helper for dnsmasq-leases-ui lease removal."""
+"""Narrowly scoped privileged helper for leaselens-dnsmasq lease removal."""
 import ipaddress
 import os
 import re
@@ -65,7 +65,7 @@ def main():
     if os.geteuid() != 0:
         fail("helper must be run through sudo")
     if len(sys.argv) != 6:
-        fail("usage: dnsmasq-leases-ui-release INTERFACE IPv4 MAC CLIENT_ID HOSTNAME", 2)
+        fail("usage: leaselens-dnsmasq-release INTERFACE IPv4 MAC CLIENT_ID HOSTNAME", 2)
     iface, ip_text, mac, client_id, hostname = sys.argv[1:]
     if not IFACE_RE.fullmatch(iface):
         fail("invalid interface", 2)

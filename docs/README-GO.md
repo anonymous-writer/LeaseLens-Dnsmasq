@@ -1,4 +1,4 @@
-# dnsmasq-leases-ui — Go project layout
+# leaselens-dnsmasq — Go project layout
 
 The root `main.go` is intentionally kept small. It imports `internal/app` and calls `app.Run()` with the embedded asset filesystem and a build-mode flag.
 
@@ -12,8 +12,8 @@ Run these commands from the repository root:
 gofmt -w main.go internal/app/*.go
 go test ./...
 go vet ./...
-go build -trimpath -o dnsmasq-leases-ui .
-docker build -t dnsmasq-leases-ui:local .
+go build -trimpath -o leaselens-dnsmasq .
+docker build -t leaselens-dnsmasq:local .
 ```
 
 The Dockerfile copies the root `main.go` and the full `internal/` directory before building the program. Do not compile only `main.go` outside the module, because the entry point calls into `internal/app`.

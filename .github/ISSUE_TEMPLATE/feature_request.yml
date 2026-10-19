@@ -1,5 +1,5 @@
 name: "Feature request"
-description: "Suggest an improvement for dnsmasq-leases-ui"
+description: "Suggest an improvement for leaselens-dnsmasq"
 title: "[Feature]: "
 labels: ["enhancement"]
 body:

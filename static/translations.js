@@ -1,5 +1,5 @@
 /*
- * Central UI translations for dnsmasq-leases-ui.
+ * Central UI translations for leaselens-dnsmasq.
  * Add or edit visible English/German wording here instead of in app.js/index.html.
  * Language preference is stored in localStorage and shared by this browser.
  */
@@ -11,6 +11,7 @@
   const dictionaries = {
     en: {
       language: 'Language', selectLanguage: 'Select language',
+      brandSubtitle: 'Dnsmasq Network Dashboard', brandDescription: 'DHCP leases · Device discovery · Manufacturers · Network status', systemTime: 'System time', systemLabel: 'System', systemDescription: 'Go · Web Dashboard', dnsmasqRunning: '● Running', dnsmasqVersion: 'Version {version}', dnsmasqMonitoring: 'Status monitored',
       summaryTotal: 'Total leases', summaryOnline: 'Online · web reachable', summaryPing: 'Ping reachable', summaryExpiring: 'Expires within 24 hours', summaryOffline: 'No response',
       searchPlaceholder: 'Filter leases…', ipFilterTitle: 'Filter IPv4/IPv6',
       allIPs: 'All IPs', ipv4: 'IPv4', ipv6: 'IPv6',
@@ -27,7 +28,7 @@
       markAllIPv4ReservationsTitle: 'Mark all configured IPv4 reservations as known, including offline devices',
       resetRemembered: 'Reset remembered', resetRememberedTitle: 'Forget all remembered devices',
       toggleTheme: 'Toggle dark mode', status: 'Status', ipAddress: 'IP Address',
-      macAddress: 'MAC Address', iaid: 'IAID', duid: 'DUID', name: 'Name', dhcpReservation: 'DHCP Reservation',
+      macAddress: 'MAC Address', vendor: 'Manufacturer', vendorUnknown: 'Unknown', vendorUnknownTitle: 'No matching OUI entry in the local database', privateMACAddress: 'Private / randomized MAC', privateMACAddressTitle: 'Locally administered MAC address; manufacturer cannot be reliably inferred', iaid: 'IAID', duid: 'DUID', name: 'Name', dhcpReservation: 'DHCP Reservation',
       leaseEndsOn: 'Lease ends on', loading: 'Loading…', close: 'Close',
       deviceDetails: 'Device details', released: 'released', yes: 'Yes', no: 'No',
       never: 'Never', expired: 'Expired',
@@ -44,6 +45,8 @@
       markAsKnown: 'Mark as known', markAsNew: 'Mark as new', saving: 'Saving…',
       releaseIPv4Lease: 'Remove IPv4 lease', releaseIPv4LeaseTitle: 'Ask dnsmasq to release this IPv4 DHCP lease',
       confirmReleaseIPv4Lease: 'Release the DHCP lease for {ip} ({mac})? The device may request a new lease immediately.',
+      confirmMarkAsNewAfterRelease: 'Also mark this device as new again?',
+      couldNotMarkNewAfterRelease: 'The lease was released, but the device could not be marked as new: {error}',
       releasingIPv4Lease: 'Releasing lease…', releasedIPv4Lease: 'The DHCP release request was sent to dnsmasq.',
       releaseIPv4LeaseFailed: 'Could not release the DHCP lease',
       resetting: 'Resetting…', marking: 'Marking…',
@@ -69,6 +72,7 @@
     },
     de: {
       language: 'Sprache', selectLanguage: 'Sprache auswählen',
+      brandSubtitle: 'Dnsmasq Network Dashboard', brandDescription: 'DHCP-Leases · Geräteerkennung · Hersteller · Netzwerkstatus', systemTime: 'Systemzeit', systemLabel: 'System', systemDescription: 'Go · Web-Dashboard', dnsmasqRunning: '● Läuft', dnsmasqVersion: 'Version {version}', dnsmasqMonitoring: 'Status wird überwacht',
       summaryTotal: 'Leases gesamt', summaryOnline: 'Online · Web erreichbar', summaryPing: 'Ping erreichbar', summaryExpiring: 'Läuft in 24 Stunden ab', summaryOffline: 'Keine Antwort',
       searchPlaceholder: 'Leases filtern…', ipFilterTitle: 'IPv4/IPv6 filtern',
       allIPs: 'Alle IPs', ipv4: 'IPv4', ipv6: 'IPv6',
@@ -85,7 +89,7 @@
       markAllIPv4ReservationsTitle: 'Alle konfigurierten IPv4-Reservierungen als bekannt markieren, auch offline Geräte',
       resetRemembered: 'Merkliste zurücksetzen', resetRememberedTitle: 'Alle gemerkten Geräte vergessen',
       toggleTheme: 'Dunkelmodus umschalten', status: 'Status', ipAddress: 'IP-Adresse',
-      macAddress: 'MAC-Adresse', iaid: 'IAID (DHCPv6-Kennung)', duid: 'DUID (DHCPv6-Clientkennung)', name: 'Name', dhcpReservation: 'DHCP-Reservierung',
+      macAddress: 'MAC-Adresse', vendor: 'Hersteller', vendorUnknown: 'Unbekannt', vendorUnknownTitle: 'Kein passender OUI-Eintrag in der lokalen Datenbank', privateMACAddress: 'Private / zufällige MAC', privateMACAddressTitle: 'Lokal vergebene MAC-Adresse; Hersteller nicht zuverlässig ermittelbar', iaid: 'IAID (DHCPv6-Kennung)', duid: 'DUID (DHCPv6-Clientkennung)', name: 'Name', dhcpReservation: 'DHCP-Reservierung',
       leaseEndsOn: 'Lease läuft ab', loading: 'Wird geladen…', close: 'Schließen',
       deviceDetails: 'Gerätedetails', released: 'veröffentlicht', yes: 'Ja', no: 'Nein',
       never: 'Nie', expired: 'Abgelaufen',
@@ -102,6 +106,8 @@
       markAsKnown: 'Als bekannt markieren', markAsNew: 'Wieder als neu markieren', saving: 'Wird gespeichert…',
       releaseIPv4Lease: 'IPv4-Lease entfernen', releaseIPv4LeaseTitle: 'dnsmasq auffordern, diese IPv4-DHCP-Lease freizugeben',
       confirmReleaseIPv4Lease: 'DHCP-Lease für {ip} ({mac}) freigeben? Das Gerät kann sofort eine neue Lease anfordern.',
+      confirmMarkAsNewAfterRelease: 'Soll das Gerät zusätzlich wieder als neu markiert werden?',
+      couldNotMarkNewAfterRelease: 'Die Lease wurde freigegeben, aber das Gerät konnte nicht wieder als neu markiert werden: {error}',
       releasingIPv4Lease: 'Lease wird freigegeben…', releasedIPv4Lease: 'Die Freigabe-Anfrage wurde an dnsmasq gesendet.',
       releaseIPv4LeaseFailed: 'DHCP-Lease konnte nicht freigegeben werden',
       resetting: 'Wird zurückgesetzt…', marking: 'Wird gemerkt…',
@@ -126,6 +132,7 @@
       sortAscending: 'ascending', sortDescending: 'descending'    },
     es: {
       language: 'Idioma', selectLanguage: 'Seleccionar idioma',
+      brandSubtitle: 'Panel de red Dnsmasq', brandDescription: 'Concesiones DHCP · Dispositivos · Fabricantes · Estado de red', systemTime: 'Hora del sistema', systemLabel: 'Sistema', systemDescription: 'Go · Panel web', dnsmasqRunning: '● En ejecución', dnsmasqVersion: 'Versión {version}', dnsmasqMonitoring: 'Estado supervisado',
       summaryTotal: 'Concesiones totales', summaryOnline: 'En línea · web accesible', summaryPing: 'Ping accesible', summaryExpiring: 'Caduca en 24 horas', summaryOffline: 'Sin respuesta',
       searchPlaceholder: 'Filtrar concesiones DHCP…', ipFilterTitle: 'Filtrar IPv4/IPv6',
       allIPs: 'Todas las IP', ipv4: 'IPv4', ipv6: 'IPv6',
@@ -143,7 +150,7 @@
       resetRemembered: 'Restablecer dispositivos recordados',
       resetRememberedTitle: 'Olvidar todos los dispositivos recordados',
       toggleTheme: 'Cambiar modo oscuro', status: 'Estado', ipAddress: 'Dirección IP',
-      macAddress: 'Dirección MAC', iaid: 'IAID (identificador DHCPv6)', duid: 'DUID (identificador del cliente DHCPv6)', name: 'Nombre', dhcpReservation: 'Reserva DHCP',
+      macAddress: 'Dirección MAC', vendor: 'Fabricante', vendorUnknown: 'Desconocido', vendorUnknownTitle: 'No hay una entrada OUI coincidente en la base de datos local', privateMACAddress: 'MAC privada / aleatoria', privateMACAddressTitle: 'Dirección MAC administrada localmente; no se puede inferir el fabricante con fiabilidad', iaid: 'IAID (identificador DHCPv6)', duid: 'DUID (identificador del cliente DHCPv6)', name: 'Nombre', dhcpReservation: 'Reserva DHCP',
       leaseEndsOn: 'Fin de la concesión', loading: 'Cargando…', close: 'Cerrar',
       deviceDetails: 'Detalles del dispositivo', released: 'publicado', yes: 'Sí', no: 'No',
       never: 'Nunca', expired: 'Caducado',
@@ -162,6 +169,8 @@
       markAsKnown: 'Marcar como conocido', markAsNew: 'Marcar como nuevo',
       releaseIPv4Lease: 'Eliminar lease IPv4', releaseIPv4LeaseTitle: 'Solicitar a dnsmasq que libere esta lease DHCP IPv4',
       confirmReleaseIPv4Lease: '¿Liberar la lease DHCP de {ip} ({mac})? El dispositivo puede solicitar otra inmediatamente.',
+      confirmMarkAsNewAfterRelease: '¿Marcar también este dispositivo como nuevo otra vez?',
+      couldNotMarkNewAfterRelease: 'La lease se liberó, pero no se pudo volver a marcar el dispositivo como nuevo: {error}',
       releasingIPv4Lease: 'Liberando lease…', releasedIPv4Lease: 'Se envió la solicitud de liberación a dnsmasq.',
       releaseIPv4LeaseFailed: 'No se pudo liberar la lease DHCP',
       saving: 'Guardando…', resetting: 'Restableciendo…', marking: 'Marcando…',
@@ -227,6 +236,10 @@
     });
     root.querySelectorAll('[data-i18n-aria-label]').forEach((element) => {
       element.setAttribute('aria-label', t(element.dataset.i18nAriaLabel));
+    });
+    root.querySelectorAll('[data-i18n-version]').forEach((element) => {
+      const version = element.dataset.i18nVersion || '';
+      element.textContent = version ? t('dnsmasqVersion', { version }) : t('dnsmasqMonitoring');
     });
   }
 

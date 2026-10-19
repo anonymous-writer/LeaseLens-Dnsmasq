@@ -140,7 +140,7 @@ func checkWebUI(ip string, timeout time.Duration) string {
 			continue
 		}
 		req.Header.Set("Connection", "close")
-		req.Header.Set("User-Agent", "dnsmasq-leases-ui")
+		req.Header.Set("User-Agent", "leaselens-dnsmasq")
 		resp, err := client.Do(req)
 		if err != nil {
 			continue
