@@ -21,7 +21,7 @@ sudo apt-get install dnsmasq-utils
 Grant the account running the user service permission to execute only that utility without an interactive password prompt. For a service running as `pi`:
 
 ```bash
-sudo visudo -f /etc/sudoers.d/dnsmasq-leases-ui
+sudo visudo -f /etc/sudoers.d/leaselens-dnsmasq
 ```
 
 Add:
@@ -33,8 +33,8 @@ pi ALL=(root) NOPASSWD: /usr/bin/dhcp_release eth1 *
 Validate the file and set its permissions:
 
 ```bash
-sudo visudo -cf /etc/sudoers.d/dnsmasq-leases-ui
-sudo chmod 0440 /etc/sudoers.d/dnsmasq-leases-ui
+sudo visudo -cf /etc/sudoers.d/leaselens-dnsmasq
+sudo chmod 0440 /etc/sudoers.d/leaselens-dnsmasq
 ```
 
 Change `pi` to the actual service account if needed. The application calls the command with `sudo -n`; it will not wait for a password prompt.

@@ -1,4 +1,4 @@
-name: Build dnsmasq-leases-ui native binaries
+name: Build leaselens-dnsmasq native binaries
 
 on:
   workflow_dispatch:
@@ -106,19 +106,19 @@ jobs:
           set -euo pipefail
           mkdir -p dist
           go build -trimpath \
-            -ldflags="-s -w -X github.com/anonymous-writer/dnsmasq-leases-ui/internal/app.buildVersion=${APP_VERSION} -X github.com/anonymous-writer/dnsmasq-leases-ui/internal/app.buildReleaseDate=${APP_RELEASE_DATE} -X main.nativeBuild=true" \
-            -o "dist/dnsmasq-leases-ui-linux-${GOARCH}" .
+            -ldflags="-s -w -X github.com/anonymous-writer/leaselens-dnsmasq/internal/app.buildVersion=${APP_VERSION} -X github.com/anonymous-writer/leaselens-dnsmasq/internal/app.buildReleaseDate=${APP_RELEASE_DATE} -X main.nativeBuild=true" \
+            -o "dist/leaselens-dnsmasq-linux-${GOARCH}" .
 
       - name: Package binary (preserve executable permissions)
         run: |
-          tar -czf "dist/dnsmasq-leases-ui-linux-${{ matrix.arch }}.tar.gz" \
-            -C dist "dnsmasq-leases-ui-linux-${{ matrix.arch }}"
+          tar -czf "dist/leaselens-dnsmasq-linux-${{ matrix.arch }}.tar.gz" \
+            -C dist "leaselens-dnsmasq-linux-${{ matrix.arch }}"
 
       - name: Upload standalone binary artifact
         uses: actions/upload-artifact@v7
         with:
-          name: dnsmasq-leases-ui-linux-${{ matrix.arch }}
-          path: dist/dnsmasq-leases-ui-linux-${{ matrix.arch }}.tar.gz
+          name: leaselens-dnsmasq-linux-${{ matrix.arch }}
+          path: dist/leaselens-dnsmasq-linux-${{ matrix.arch }}.tar.gz
           if-no-files-found: error
           retention-days: 30
 
@@ -133,13 +133,13 @@ jobs:
       - name: Download ARM64 and AMD64 artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: dnsmasq-leases-ui-linux-*
+          pattern: leaselens-dnsmasq-linux-*
           path: dist
           merge-multiple: true
 
       - name: Generate SHA256 checksums
         working-directory: dist
-        run: sha256sum dnsmasq-leases-ui-linux-*.tar.gz > SHA256SUMS
+        run: sha256sum leaselens-dnsmasq-linux-*.tar.gz > SHA256SUMS
 
       - name: Attach archives and checksums to the release
         env:
@@ -148,7 +148,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           gh release upload "$RELEASE_TAG" \
-            dist/dnsmasq-leases-ui-linux-arm64.tar.gz \
-            dist/dnsmasq-leases-ui-linux-amd64.tar.gz \
+            dist/leaselens-dnsmasq-linux-arm64.tar.gz \
+            dist/leaselens-dnsmasq-linux-amd64.tar.gz \
             dist/SHA256SUMS \
             --clobber

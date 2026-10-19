@@ -1,4 +1,4 @@
-# dnsmasq-leases-ui native configuration
+# leaselens-dnsmasq native configuration
 # File path for the systemd service: /home/pi/Dnsmasq-Leases-UI/config.yaml
 
 # Web server
@@ -21,4 +21,4 @@ log_level: "INFO"
 # Optional UI metadata
 # app_version: "2.2.0"
 # release_date: "2026-10-12"
-# repo_url: "https://github.com/anonymous-writer/dnsmasq-leases-ui"
+# repo_url: "https://github.com/anonymous-writer/leaselens-dnsmasq"

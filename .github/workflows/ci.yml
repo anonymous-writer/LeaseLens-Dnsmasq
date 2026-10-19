@@ -34,7 +34,7 @@ jobs:
         run: go vet ./...
 
       - name: Build
-        run: go build -trimpath -o dnsmasq-leases-ui .
+        run: go build -trimpath -o leaselens-dnsmasq .
 
   docker:
     name: Docker build and smoke test
@@ -44,7 +44,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Build image
-        run: docker build -t dnsmasq-leases-ui:ci .
+        run: docker build -t leaselens-dnsmasq:ci .
 
       - name: Prepare sample dnsmasq files
         run: |
@@ -54,7 +54,7 @@ jobs:
 
       - name: Run container
         run: |
-          docker run -d --name ci             -p 5000:5000             -e DNSMASQ_LEASES_FILE=/test/dnsmasq.leases             -e DNSMASQ_HOSTS_FILE=/test/dnsmasq.dhcphosts             -v "$RUNNER_TEMP/dnsmasq:/test:ro"             dnsmasq-leases-ui:ci
+          docker run -d --name ci             -p 5000:5000             -e DNSMASQ_LEASES_FILE=/test/dnsmasq.leases             -e DNSMASQ_HOSTS_FILE=/test/dnsmasq.dhcphosts             -v "$RUNNER_TEMP/dnsmasq:/test:ro"             leaselens-dnsmasq:ci
 
       - name: Smoke test
         run: |

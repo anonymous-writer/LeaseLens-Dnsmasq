@@ -1,6 +1,6 @@
 services:
-  dnsmasq-leases-ui:
-    container_name: dnsmasq-leases-ui
+  leaselens-dnsmasq:
+    container_name: leaselens-dnsmasq
     build: .
     restart: unless-stopped
     environment:

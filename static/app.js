@@ -1,5 +1,5 @@
 /*
- * dnsmasq-leases-ui frontend behavior.
+ * leaselens-dnsmasq frontend behavior.
  * All user-visible UI text is provided by static/translations.js.
  */
 'use strict';

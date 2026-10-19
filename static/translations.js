@@ -1,5 +1,5 @@
 /*
- * Central UI translations for dnsmasq-leases-ui.
+ * Central UI translations for leaselens-dnsmasq.
  * Add or edit visible English/German wording here instead of in app.js/index.html.
  * Language preference is stored in localStorage and shared by this browser.
  */

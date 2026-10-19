@@ -5,25 +5,25 @@ set -Eeuo pipefail
 # This script intentionally does not access the internet.
 
 BASE_DIR="/media/pi/Ablage/Datenablage"
-ARCHIVE_NAME="dnsmasq-leases-ui-linux-arm64.tar.gz"
-BINARY_NAME="dnsmasq-leases-ui-linux-arm64"
+ARCHIVE_NAME="leaselens-dnsmasq-linux-arm64.tar.gz"
+BINARY_NAME="leaselens-dnsmasq-linux-arm64"
 ARCHIVE_PATH="${BASE_DIR}/${ARCHIVE_NAME}"
 EXTRACTED_PATH="${BASE_DIR}/${BINARY_NAME}"
-INSTALL_PATH="/usr/bin/dnsmasq-leases-ui"
-SERVICE_NAME="dnsmasq-leases-ui.service"
+INSTALL_PATH="/usr/bin/leaselens-dnsmasq"
+SERVICE_NAME="leaselens-dnsmasq.service"
 SUMS_PATH="${BASE_DIR}/SHA256SUMS"
 
 usage() {
   cat <<'USAGE'
-Usage: ./update-dnsmasq-leases-ui-arm64.sh
+Usage: ./update-leaselens-dnsmasq-arm64.sh
 
 Place the manually downloaded release archive here first:
-  /media/pi/Ablage/Datenablage/dnsmasq-leases-ui-linux-arm64.tar.gz
+  /media/pi/Ablage/Datenablage/leaselens-dnsmasq-linux-arm64.tar.gz
 
 Optional: also place the release's SHA256SUMS file in the same directory.
 The script extracts the ARM64 executable to that directory, installs it as
-/usr/bin/dnsmasq-leases-ui, backs up an existing installation, and restarts
-the dnsmasq-leases-ui systemd user service when available.
+/usr/bin/leaselens-dnsmasq, backs up an existing installation, and restarts
+the leaselens-dnsmasq systemd user service when available.
 
 The script does not download anything from the internet.
 Run it as your normal user (e.g. pi), not with sudo. It invokes sudo only
@@ -91,7 +91,7 @@ trap cleanup EXIT
 
 # Find the expected executable in the archive. Extract only that member, rather
 # than unpacking arbitrary archive paths into the filesystem.
-ARCHIVE_MEMBER="$(tar -tzf "$ARCHIVE_PATH" | grep -E '(^|/)dnsmasq-leases-ui-linux-arm64$' | head -n 1 || true)"
+ARCHIVE_MEMBER="$(tar -tzf "$ARCHIVE_PATH" | grep -E '(^|/)leaselens-dnsmasq-linux-arm64$' | head -n 1 || true)"
 if [[ -z "$ARCHIVE_MEMBER" ]]; then
   echo "Error: Archive does not contain ${BINARY_NAME}." >&2
   echo "Archive contents:" >&2
