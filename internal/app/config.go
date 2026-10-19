@@ -55,6 +55,7 @@ type Config struct {
 	AppVersion    string
 	ReleaseDate   string
 	RepoURL       string
+	SystemName    string
 }
 
 // loadConfig reads runtime options from environment variables.
@@ -69,6 +70,7 @@ func loadConfig() Config {
 		AppVersion:    getenv("APP_VERSION", buildVersion),
 		ReleaseDate:   getenv("APP_RELEASE_DATE", buildReleaseDate),
 		RepoURL:       getenv("REPO_URL", "https://github.com/anonymous-writer/leaselens-dnsmasq"),
+		SystemName:    getenv("SYSTEM_NAME", "LeaseLens"),
 	}
 }
 
@@ -123,6 +125,7 @@ func loadConfigFromArgs(args []string) (Config, string, error) {
 	flags.StringVar(&cfg.AppVersion, "app-version", cfg.AppVersion, "Application version (environment: APP_VERSION)")
 	flags.StringVar(&cfg.ReleaseDate, "release-date", cfg.ReleaseDate, "Application release date (environment: APP_RELEASE_DATE)")
 	flags.StringVar(&cfg.RepoURL, "repo-url", cfg.RepoURL, "Repository URL (environment: REPO_URL)")
+	flags.StringVar(&cfg.SystemName, "system-name", cfg.SystemName, "System display name (environment: SYSTEM_NAME)")
 
 	if err := flags.Parse(args); err != nil {
 		return Config{}, "", err
@@ -194,6 +197,8 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 			cfg.ReleaseDate = value
 		case "repo_url", "repo-url":
 			cfg.RepoURL = value
+		case "system_name", "system-name":
+			cfg.SystemName = value
 		default:
 			return fmt.Errorf("config file %q line %d: unknown key %q", path, lineNo, key)
 		}

@@ -7,6 +7,7 @@ services:
       HOME: /tmp
       XDG_RUNTIME_DIR: /tmp
       PORT: "3008"
+      SYSTEM_NAME: "Raspberry Pi 5"
     network_mode: host
     volumes:
       - /var/lib/dnsmasq:/var/lib/dnsmasq:ro

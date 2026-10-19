@@ -52,6 +52,7 @@ type PageData struct {
 	Version            string
 	ReleaseDate        string
 	RepoURL            string
+	SystemName         string
 	DnsmasqVersion     string
 	EnableLeaseRelease bool
 }
