@@ -20,6 +20,10 @@
 @media(prefers-color-scheme:light) { :root:not([data-theme=dark]) { color-scheme:light; --bg:#f4f6f9; --surface:#fff; --surface-raised:#f7f9fc; --fg:#202633; --muted:#687386; --border:#dfe4ec; --accent:#075fbd; --shadow:0 8px 28px #18243a0d; } }
 * { box-sizing:border-box; }
 body { margin:0; padding:1.25rem clamp(.75rem,2vw,2rem) 2rem; font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--fg); }
+#brand-header { display:flex; align-items:center; gap:.9rem; margin:0 0 .45rem; padding:.45rem .65rem; background:var(--surface); border:1px solid var(--border); border-radius:12px; }
+#brand-logo { display:block; width:auto; height:3.2rem; max-width:min(28vw,8rem); object-fit:contain; border-radius:5px; }
+#brand-title { margin:0; font-size:1.12rem; font-weight:760; letter-spacing:-.025em; }
+#brand-subtitle { margin:.08rem 0 0; color:var(--muted); font-size:.8rem; }
 #toolbar { position:sticky; top:0; z-index:5; display:grid; grid-template-columns:minmax(14rem,1.5fr) repeat(3,minmax(8rem,.75fr)) auto; align-items:center; gap:.4rem; padding:.35rem 0; background:var(--bg); }
 #search,#ip-filter,#reservation-filter,#status-filter,#language-select,#toolbar button { min-height:2.2rem; padding:.42rem .65rem; font:inherit; color:var(--fg); background:var(--surface); border:1px solid var(--border); border-radius:8px; }
 #search { min-width:0; width:100%; }
@@ -87,7 +91,7 @@ tr.new-device { background:color-mix(in srgb,var(--yellow) 9%,var(--surface)); }
 footer { margin-top:1.2rem; color:var(--muted); font-size:.8rem; }
 #toolbar button,#toolbar select,#search { min-height:2.2rem; }
 @media(max-width:1000px) { #summary-cards { grid-template-columns:repeat(3,minmax(0,1fr)); } #toolbar { position:static; grid-template-columns:repeat(2,minmax(0,1fr)); } #search { grid-column:1/-1; } #theme-toggle { margin-left:0; justify-self:start; } }
-@media(max-width:620px) { body { padding:.7rem; } #device-details { padding:1rem; border-radius:14px; } #detail-title { font-size:1.25rem; } .detail-item { padding:.75rem; } .copy-button,#detail-close,#copy-device-details-button { min-height:2.55rem; } #toolbar { grid-template-columns:1fr 1fr; gap:.45rem; } #toolbar button,#toolbar select { width:100%; white-space:normal; min-height:2.7rem; } #summary-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; } .summary-card { padding:.65rem; } .summary-value { font-size:1.3rem; } .detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:620px) { body { padding:.7rem; } #brand-logo { height:2.65rem; max-width:5rem; } #brand-title { font-size:1rem; } #device-details { padding:1rem; border-radius:14px; } #detail-title { font-size:1.25rem; } .detail-item { padding:.75rem; } .copy-button,#detail-close,#copy-device-details-button { min-height:2.55rem; } #toolbar { grid-template-columns:1fr 1fr; gap:.45rem; } #toolbar button,#toolbar select { width:100%; white-space:normal; min-height:2.7rem; } #summary-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; } .summary-card { padding:.65rem; } .summary-value { font-size:1.3rem; } .detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important; } }
 </style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}">
   <!--
@@ -95,6 +99,10 @@ footer { margin-top:1.2rem; color:var(--muted); font-size:.8rem; }
     Wichtig: IDs werden von /static/app.js verwendet. Beim Umbenennen einer ID
     muss deshalb auch die Referenz in app.js angepasst werden.
   -->
+  <header id="brand-header">
+    <img id="brand-logo" src="/static/logo-WLM.png" alt="WLM Logo" width="160" height="160">
+    <div><h1 id="brand-title">dnsmasq-leases-ui</h1><p id="brand-subtitle">DHCP-Leases und Netzwerkgeräte</p></div>
+  </header>
   <div id="toolbar">
     <!-- Freitextsuche über geladene DHCP-Leases. -->
     <input id="search" type="search" placeholder="Filter leases…" data-i18n-placeholder="searchPlaceholder"

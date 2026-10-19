@@ -498,6 +498,7 @@ async function releaseIPv4Lease(lease, button) {
   const ip = netIPv4(lease.ipAddress);
   if (!ip || !validMac(lease.macAddress)) return;
   if (!confirm(t('confirmReleaseIPv4Lease', { ip, mac: lease.macAddress }))) return;
+  const markAsNewAfterRelease = confirm(t('confirmMarkAsNewAfterRelease'));
 
   button.disabled = true;
   button.textContent = t('releasingIPv4Lease');
@@ -508,8 +509,21 @@ async function releaseIPv4Lease(lease, button) {
       body: JSON.stringify({ ip, mac: lease.macAddress })
     });
     if (!response.ok) throw new Error((await response.text()).trim() || t('releaseIPv4LeaseFailed'));
+    let resultMessage = t('releasedIPv4Lease');
+    if (markAsNewAfterRelease) {
+      const knownResponse = await fetch(KNOWN_MACS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mac: lease.macAddress, action: 'unmark' })
+      });
+      if (!knownResponse.ok) {
+        resultMessage += '\n\n' + t('couldNotMarkNewAfterRelease', { error: (await knownResponse.text()).trim() });
+      } else {
+        leases = leases.map(item => item.macAddress === lease.macAddress ? { ...item, isNew: true } : item);
+      }
+    }
     document.querySelector('#device-details').close();
-    alert(t('releasedIPv4Lease'));
+    alert(resultMessage);
     await load();
   } catch (error) {
     alert(t('releaseIPv4LeaseFailed') + ': ' + error.message);
