@@ -19,6 +19,8 @@ known_macs_file: "/home/pi/Dnsmasq-Leases-UI/known-macs.json"
 log_level: "INFO"
 
 # Optional UI metadata
+# Native builds detect hardware model/hostname automatically unless overridden.
+# system_name: "Homeserver"
 # app_version: "2.2.0"
 # release_date: "2026-10-12"
 # repo_url: "https://github.com/anonymous-writer/leaselens-dnsmasq"

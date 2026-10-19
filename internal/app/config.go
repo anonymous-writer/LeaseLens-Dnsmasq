@@ -70,7 +70,7 @@ func loadConfig() Config {
 		AppVersion:    getenv("APP_VERSION", buildVersion),
 		ReleaseDate:   getenv("APP_RELEASE_DATE", buildReleaseDate),
 		RepoURL:       getenv("REPO_URL", "https://github.com/anonymous-writer/leaselens-dnsmasq"),
-		SystemName:    getenv("SYSTEM_NAME", "LeaseLens"),
+		SystemName:    getenv("SYSTEM_NAME", ""),
 	}
 }
 

@@ -24,6 +24,13 @@ func Run(assets fs.FS, nativeBuild bool) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
+	if cfg.SystemName == "" {
+		if nativeBuild {
+			cfg.SystemName = detectNativeSystemName()
+		} else {
+			cfg.SystemName = "LeaseLens"
+		}
+	}
 	SetLogLevel(logLevel)
 
 	known := newKnownMACs(cfg.KnownMACsPath)
