@@ -159,6 +159,7 @@ func leasesHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 			}
 			leases[i].IsNew = !known.has(mac)
 		}
+		applyDHCPEventState(leases, cfg.DHCPEventsPath, time.Now())
 		w.Header().Set("Content-Type", "application/json")
 		LogDebugf("served lease list count=%d", len(leases))
 		if err := json.NewEncoder(w).Encode(map[string]any{"leases": leases}); err != nil {

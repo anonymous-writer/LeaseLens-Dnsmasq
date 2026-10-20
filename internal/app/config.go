@@ -46,31 +46,33 @@ func getenv(k, d string) string {
 
 // Config contains paths, server settings, and build metadata.
 type Config struct {
-	Host          string
-	Port          string
-	LeasePath     string
-	HostsPath     string
-	KnownMACsPath string
-	DHCPInterface string
-	AppVersion    string
-	ReleaseDate   string
-	RepoURL       string
-	SystemName    string
+	Host           string
+	Port           string
+	LeasePath      string
+	HostsPath      string
+	KnownMACsPath  string
+	DHCPEventsPath string
+	DHCPInterface  string
+	AppVersion     string
+	ReleaseDate    string
+	RepoURL        string
+	SystemName     string
 }
 
 // loadConfig reads runtime options from environment variables.
 func loadConfig() Config {
 	return Config{
-		Host:          getenv("HOST", "0.0.0.0"),
-		Port:          getenv("PORT", "5000"),
-		LeasePath:     getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
-		HostsPath:     getenv("DNSMASQ_HOSTS_FILE", "/var/lib/dnsmasq/dnsmasq.dhcphosts"),
-		KnownMACsPath: getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
-		DHCPInterface: getenv("DNSMASQ_INTERFACE", ""),
-		AppVersion:    getenv("APP_VERSION", buildVersion),
-		ReleaseDate:   getenv("APP_RELEASE_DATE", buildReleaseDate),
-		RepoURL:       getenv("REPO_URL", "https://github.com/anonymous-writer/leaselens-dnsmasq"),
-		SystemName:    getenv("SYSTEM_NAME", ""),
+		Host:           getenv("HOST", "0.0.0.0"),
+		Port:           getenv("PORT", "5000"),
+		LeasePath:      getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
+		HostsPath:      getenv("DNSMASQ_HOSTS_FILE", "/var/lib/dnsmasq/dnsmasq.dhcphosts"),
+		KnownMACsPath:  getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
+		DHCPEventsPath: getenv("DNSMASQ_EVENTS_FILE", ""),
+		DHCPInterface:  getenv("DNSMASQ_INTERFACE", ""),
+		AppVersion:     getenv("APP_VERSION", buildVersion),
+		ReleaseDate:    getenv("APP_RELEASE_DATE", buildReleaseDate),
+		RepoURL:        getenv("REPO_URL", "https://github.com/anonymous-writer/leaselens-dnsmasq"),
+		SystemName:     getenv("SYSTEM_NAME", ""),
 	}
 }
 
@@ -187,6 +189,8 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 			cfg.HostsPath = value
 		case "known_macs_file", "known-macs-file":
 			cfg.KnownMACsPath = value
+		case "dhcp_events_file", "dhcp-events-file":
+			cfg.DHCPEventsPath = value
 		case "dhcp_interface", "dhcp-interface":
 			cfg.DHCPInterface = value
 		case "log_level", "log-level":

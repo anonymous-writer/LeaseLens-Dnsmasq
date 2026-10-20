@@ -24,3 +24,6 @@ log_level: "INFO"
 # app_version: "2.2.0"
 # release_date: "2026-10-12"
 # repo_url: "https://github.com/anonymous-writer/leaselens-dnsmasq"
+
+# Optional: dnsmasq DHCP event log (add/del/old), enables last-login info in table
+# dhcp_events_file: "/home/pi/leaselens-dnsmasq/dhcp-events.log"
