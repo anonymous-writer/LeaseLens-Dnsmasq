@@ -88,8 +88,46 @@ function match(lease, query) {
     ...reservationTerms, lease.status].some(value => String(value ?? '').toLowerCase().includes(query));
 }
 
+function elapsedSeconds(value) {
+  // The API's age string is formatted as e.g. "2d 3h 5m".
+  // Convert it to a duration so sorting follows time, not the event label ("old"/"add"/"del").
+  const text = String(value ?? '');
+  const units = [
+    [/([0-9]+)\s*d/i, 86400],
+    [/([0-9]+)\s*h/i, 3600],
+    [/([0-9]+)\s*m/i, 60],
+    [/([0-9]+)\s*s/i, 1]
+  ];
+  let total = 0;
+  let found = false;
+  for (const [pattern, multiplier] of units) {
+    const match = text.match(pattern);
+    if (match) {
+      total += Number(match[1]) * multiplier;
+      found = true;
+    }
+  }
+  return found ? total : null;
+}
+
 function sorted(items) {
   return [...items].sort((a, b) => {
+    if (sort.column === 'lastDhcpEventAge') {
+      const leftAge = elapsedSeconds(a.lastDhcpEventAge);
+      const rightAge = elapsedSeconds(b.lastDhcpEventAge);
+      // Entries without an event timestamp always go to the end.
+      if (leftAge === null && rightAge !== null) return 1;
+      if (rightAge === null && leftAge !== null) return -1;
+      if (leftAge !== null && rightAge !== null && leftAge !== rightAge) {
+        const result = leftAge - rightAge;
+        return sort.dir === 'asc' ? result : -result;
+      }
+      // Equal ages are ordered by event type, with "old" after add/del.
+      const rank = value => ({ add: 0, del: 1, old: 2 })[String(value ?? '').toLowerCase()] ?? 3;
+      const result = rank(a.dhcpEventStatus) - rank(b.dhcpEventStatus);
+      return sort.dir === 'asc' ? result : -result;
+    }
+
     let left = a[sort.column];
     let right = b[sort.column];
     if (sort.column === 'staticIP') {
