@@ -11,8 +11,9 @@ import (
 // readDHCPEventState reads the bounded tab-separated log written by the
 // dnsmasq dhcp-script. It never performs network probes.
 type dhcpEventState struct {
-	status  string
-	lastAdd time.Time
+	status    string
+	lastEvent time.Time
+	lastAdd   time.Time
 }
 
 func readDHCPEventState(path string) map[string]dhcpEventState {
@@ -41,9 +42,12 @@ func readDHCPEventState(path string) map[string]dhcpEventState {
 			continue
 		}
 		state := out[mac]
-		// Keep latest event status by timestamp; "old" is dnsmasq restoring
-		// an existing lease and is not treated as a fresh login.
-		state.status = action
+		// Track the latest recorded event separately from a real "add" login.
+		// "old" restores an existing lease and is not a fresh login.
+		if state.lastEvent.IsZero() || ts.After(state.lastEvent) {
+			state.status = action
+			state.lastEvent = ts
+		}
 		if action == "add" && ts.After(state.lastAdd) {
 			state.lastAdd = ts
 		}
@@ -61,6 +65,9 @@ func applyDHCPEventState(leases []LeaseEntry, path string, now time.Time) {
 			continue
 		}
 		leases[i].DHCPEventStatus = state.status
+		if !state.lastEvent.IsZero() {
+			leases[i].LastDHCPEventAge = formatElapsed(now.Sub(state.lastEvent))
+		}
 		if !state.lastAdd.IsZero() {
 			leases[i].LastDHCPAddAt = state.lastAdd.Local().Format("2006-01-02 15:04:05")
 			leases[i].LastDHCPAddAge = formatElapsed(now.Sub(state.lastAdd))
