@@ -213,7 +213,7 @@ function render() {
     row.appendChild(statusCell(lease));
     const displayMAC = validMac(lease.macAddress) ? lease.macAddress : '—';
     [lease.ipAddress, displayMAC, displayVendor(lease) || '—', lease.name,
-      lease.staticIP ? t('yes') : t('no'), formatLease(lease)]
+      lease.staticIP ? t('yes') : t('no'), formatLease(lease), (Number(lease.lastOnline) > 0 ? formattedTimestamp(new Date(Number(lease.lastOnline) * 1000)) : '—')]
       .forEach((value, index) => {
         const cell = document.createElement('td');
         if (index === 1 && lease.isNew && validMac(lease.macAddress)) {

@@ -22,6 +22,7 @@ type LeaseEntry struct {
 	WebURL      string `json:"webUrl"`
 	WebHostURL  string `json:"webHostUrl"`
 	Status      string `json:"status"`
+	LastOnline  int64  `json:"lastOnline"`
 	IsNew       bool   `json:"isNew"`
 }
 
