@@ -49,7 +49,7 @@ body { margin:0; padding:1.25rem clamp(.75rem,2vw,2rem) 2rem; font:14px/1.45 sys
 .summary-value { display:flex; align-items:center; gap:.48rem; font-size:1.45rem; font-weight:750; letter-spacing:-.035em; line-height:1.15; }
 .summary-dot { width:.6rem; height:.6rem; border-radius:50%; background:var(--muted); }
 .summary-card.online .summary-dot { background:var(--green); } .summary-card.reachable .summary-dot,.summary-card.ping .summary-dot { background:var(--yellow); } .summary-card.offline .summary-dot { background:var(--red); }
-.table-wrap { overflow:auto; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); }
+.table-wrap { overflow:visible; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); }
 table { border-collapse:separate; border-spacing:0; width:100%; min-width:900px; }
 th,td { text-align:left; padding:.58rem .8rem; border-bottom:1px solid var(--border); }
 th { position:sticky; top:5.8rem; z-index:10; background:var(--surface-raised); color:var(--muted); font-size:.76rem; font-weight:700; text-transform:uppercase; letter-spacing:.045em; white-space:nowrap; cursor:pointer; }
