@@ -212,12 +212,14 @@ function render() {
     row.setAttribute('aria-label', t('detailsFor', { device: lease.name || lease.ipAddress }));
     row.appendChild(statusCell(lease));
     const displayMAC = validMac(lease.macAddress) ? lease.macAddress : '—';
-    [lease.ipAddress, displayMAC, displayVendor(lease) || '—', lease.name,
-      lease.staticIP ? t('yes') : t('no'), formatLease(lease),
-      lease.dhcpEventStatus
+    const values = [lease.ipAddress, displayMAC, displayVendor(lease) || '—', lease.name,
+      lease.staticIP ? t('yes') : t('no'), formatLease(lease)];
+    if (document.body.dataset.dhcpEventsEnabled === 'true') {
+      values.push(lease.dhcpEventStatus
         ? `${lease.dhcpEventStatus}${lease.lastDhcpAddAge ? ` · last add ${lease.lastDhcpAddAge} ago` : ''}`
-        : '—']
-      .forEach((value, index) => {
+        : '—');
+    }
+    values.forEach((value, index) => {
         const cell = document.createElement('td');
         if (index === 1 && lease.isNew && validMac(lease.macAddress)) {
           const badge = document.createElement('span');
