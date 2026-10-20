@@ -1,0 +1,154 @@
+name: Build leaselens-dnsmasq native binaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Optional existing release tag to rebuild (for example v2.1.1-Beta.2). Leave empty for a dev build."
+        required: false
+        type: string
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test Go application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.release_tag || github.ref }}
+
+      - name: Validate release tag
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag || '' }}
+        run: |
+          if [[ -n "$RELEASE_TAG" && ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Invalid release tag: $RELEASE_TAG"
+            exit 1
+          fi
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Run go vet
+        run: go vet ./...
+
+  build-native:
+    name: Build Linux ${{ matrix.arch }} native binary
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm64, amd64]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.release_tag || github.ref }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set build metadata
+        id: metadata
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag || '' }}
+          RELEASE_PUBLISHED_AT: ${{ github.event.release.published_at || '' }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$RELEASE_TAG" ]]; then
+            if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+              echo "::error::Invalid release tag: $RELEASE_TAG"
+              exit 1
+            fi
+            version="${RELEASE_TAG#v}"
+            published_at="$RELEASE_PUBLISHED_AT"
+            if [[ -z "$published_at" ]]; then
+              published_at="$(gh release view "$RELEASE_TAG" --json publishedAt --jq '.publishedAt')"
+            fi
+            release_date="${published_at%%T*}"
+            if [[ -z "$release_date" ]]; then
+              echo "::error::Could not determine release date for $RELEASE_TAG"
+              exit 1
+            fi
+          else
+            version="dev"
+            release_date=""
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "release_date=$release_date" >> "$GITHUB_OUTPUT"
+          echo "Building native binary version=$version release_date=$release_date"
+
+      - name: Build standalone Linux binary
+        env:
+          GOOS: linux
+          GOARCH: ${{ matrix.arch }}
+          CGO_ENABLED: "0"
+          APP_VERSION: ${{ steps.metadata.outputs.version }}
+          APP_RELEASE_DATE: ${{ steps.metadata.outputs.release_date }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          go build -trimpath \
+            -ldflags="-s -w -X github.com/anonymous-writer/leaselens-dnsmasq/internal/app.buildVersion=${APP_VERSION} -X github.com/anonymous-writer/leaselens-dnsmasq/internal/app.buildReleaseDate=${APP_RELEASE_DATE} -X main.nativeBuild=true" \
+            -o "dist/leaselens-dnsmasq-linux-${GOARCH}" .
+
+      - name: Package binary (preserve executable permissions)
+        run: |
+          tar -czf "dist/leaselens-dnsmasq-linux-${{ matrix.arch }}.tar.gz" \
+            -C dist "leaselens-dnsmasq-linux-${{ matrix.arch }}"
+
+      - name: Upload standalone binary artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: leaselens-dnsmasq-linux-${{ matrix.arch }}
+          path: dist/leaselens-dnsmasq-linux-${{ matrix.arch }}.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-release-assets:
+    name: Attach native binaries to GitHub Release
+    if: github.event_name == 'release' || inputs.release_tag != ''
+    needs: build-native
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download ARM64 and AMD64 artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: leaselens-dnsmasq-linux-*
+          path: dist
+          merge-multiple: true
+
+      - name: Generate SHA256 checksums
+        working-directory: dist
+        run: sha256sum leaselens-dnsmasq-linux-*.tar.gz > SHA256SUMS
+
+      - name: Attach archives and checksums to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release upload "$RELEASE_TAG" \
+            dist/leaselens-dnsmasq-linux-arm64.tar.gz \
+            dist/leaselens-dnsmasq-linux-amd64.tar.gz \
+            dist/SHA256SUMS \
+            --clobber
