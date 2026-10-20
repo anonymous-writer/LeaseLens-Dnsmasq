@@ -58,5 +58,4 @@ type PageData struct {
 	SystemName         string
 	DnsmasqVersion     string
 	EnableLeaseRelease bool
-	ShowDHCPEvents     bool
 }

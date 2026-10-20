@@ -216,7 +216,7 @@ function render() {
       lease.staticIP ? t('yes') : t('no'), formatLease(lease)];
     if (document.body.dataset.dhcpEventsEnabled === 'true') {
       values.push(lease.dhcpEventStatus
-        ? `${lease.dhcpEventStatus}${lease.lastDhcpAddAge ? ` · last add ${lease.lastDhcpAddAge} ago` : ''}`
+        ? `${t(({ add: 'dhcpEventAdd', old: 'dhcpEventOld', del: 'dhcpEventDel' })[String(lease.dhcpEventStatus).toLowerCase()] || 'dhcpEventOld')}${lease.lastDhcpAddAge ? ` · ${t('lastDHCPAdd', { age: lease.lastDhcpAddAge })}` : ` · ${t('lastDHCPAddUnknown')}`}`
         : '—');
     }
     values.forEach((value, index) => {
