@@ -26,6 +26,8 @@ let activeDetailLease = null;
 const status = document.querySelector('#status');
 const lastUpdated = document.querySelector('#last-updated');
 const refreshState = document.querySelector('#refresh-state');
+const changeSummary = document.querySelector('#change-summary');
+const SNAPSHOT_KEY = 'leaselens-lease-snapshot-v1';
 
 // Zeigt die lokale Systemzeit des Browsers im LeaseLens-Kopf an.
 function updateBrandClock() {
@@ -213,7 +215,7 @@ function render() {
     row.appendChild(statusCell(lease));
     const displayMAC = validMac(lease.macAddress) ? lease.macAddress : '—';
     [lease.ipAddress, displayMAC, displayVendor(lease) || '—', lease.name,
-      lease.staticIP ? t('yes') : t('no'), formatLease(lease), (Number(lease.lastOnline) > 0 ? formattedTimestamp(new Date(Number(lease.lastOnline) * 1000)) : '—')]
+      lease.staticIP ? t('yes') : t('no'), formatLease(lease)]
       .forEach((value, index) => {
         const cell = document.createElement('td');
         if (index === 1 && lease.isNew && validMac(lease.macAddress)) {
@@ -627,6 +629,26 @@ document.querySelector('#leases thead').addEventListener('click', event => {
   render();
 });
 
+function leaseSnapshot(items) {
+  return items.map(item => String(item.macAddress || '').trim().toUpperCase()).filter(Boolean).sort();
+}
+
+function showLeaseChanges(previous, current) {
+  if (!changeSummary) return;
+  const before = new Set(previous);
+  const after = new Set(current);
+  const added = [...after].filter(mac => !before.has(mac));
+  const removed = [...before].filter(mac => !after.has(mac));
+  const lang = LANGUAGE_API().language;
+  const labels = {
+    de: `Seit der letzten Aktualisierung: ${added.length} neu in der Lease-Liste, ${removed.length} nicht mehr vorhanden.`,
+    en: `Since last refresh: ${added.length} newly listed, ${removed.length} no longer listed.`,
+    es: `Desde la última actualización: ${added.length} nuevos en la lista, ${removed.length} ya no aparecen.`
+  };
+  changeSummary.textContent = labels[lang] || labels.en;
+  changeSummary.title = [...(added.length ? [`Neu: ${added.join(', ')}`] : []), ...(removed.length ? [`Nicht mehr vorhanden: ${removed.join(', ')}`] : [])].join('\n');
+}
+
 async function load() {
   if (refreshing) return;
   refreshing = true;
@@ -641,6 +663,16 @@ async function load() {
     if (!response.ok) throw new Error(t('httpError', { status: response.status }));
     const payload = await response.json();
     if (!payload || !Array.isArray(payload.leases)) throw new Error(t('invalidLeaseResponse'));
+
+    // Compare only on an explicit button click. The initial page load establishes a baseline.
+    const currentSnapshot = leaseSnapshot(payload.leases);
+    let previousSnapshot = [];
+    try {
+      const saved = JSON.parse(localStorage.getItem(SNAPSHOT_KEY) || 'null');
+      if (Array.isArray(saved)) previousSnapshot = saved;
+      if (event && Array.isArray(saved)) showLeaseChanges(previousSnapshot, currentSnapshot);
+      localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(currentSnapshot));
+    } catch (_) { /* Snapshot comparison is optional if browser storage is unavailable. */ }
 
     // Replace the table only after a valid response arrives, preserving stale-but-useful data on failure.
     leases = payload.leases;

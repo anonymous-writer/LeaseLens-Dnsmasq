@@ -245,7 +245,6 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
         <th data-key="name"><span data-i18n="name">Name</span><span class="sort-indicator"></span></th>
         <th data-key="staticIP"><span data-i18n="dhcpReservation">DHCP Reservation</span><span class="sort-indicator"></span></th>
         <th data-key="leasetime"><span data-i18n="leaseEndsOn">Lease ends on</span><span class="sort-indicator"></span></th>
-        <th data-key="lastOnline"><span data-i18n="lastOnline">Last online</span><span class="sort-indicator"></span></th>
       </tr>
     </thead>
     <!-- Bleibt leer, bis app.js Lease-Daten von /leases geladen hat. -->
@@ -256,7 +255,7 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
   <!-- Tabellenzusammenfassung sowie letzter Erfolg und aktueller Lade-/Fehlerstatus. -->
   <section id="status-panel" aria-label="Anwendungsstatus">
     <div id="status" role="status" aria-live="polite" data-i18n="loading">Loading…</div>
-    <div id="refresh-meta" aria-live="polite"><span id="last-updated"></span><span id="refresh-state"></span></div>
+    <div id="refresh-meta" aria-live="polite"><span id="last-updated"></span><span id="refresh-state"></span><span id="change-summary" role="status"></span></div>
     <footer><a href="{{.RepoURL}}" target="_blank" rel="noopener noreferrer">LeaseLens</a> v{{.Version}}{{if .ReleaseDate}} · <span data-i18n="released">released</span> {{.ReleaseDate}}{{end}}</footer>
   </section>
 

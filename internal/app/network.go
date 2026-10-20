@@ -6,12 +6,10 @@ import (
 	"bufio"
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -171,100 +169,17 @@ func pingReachable(ip string, timeout time.Duration) bool {
 	return cmd.Run() == nil
 }
 
-type reachabilityRecord struct {
-	CheckedAt  int64  `json:"checkedAt"`
-	Status     string `json:"status"`
-	WebURL     string `json:"webUrl"`
-	LastOnline int64  `json:"lastOnline"`
-}
-
-var reachabilityMu sync.Mutex
-var reachabilityCache = map[string]reachabilityRecord{}
-var reachabilityLoaded bool
-
-func reachabilityPath() string { return getenv("LEASELENS_STATUS_FILE", "/data/last-online.json") }
-func loadReachabilityCache() {
-	if reachabilityLoaded {
-		return
-	}
-	reachabilityLoaded = true
-	b, err := os.ReadFile(reachabilityPath())
-	if err != nil {
-		return
-	}
-	_ = json.Unmarshal(b, &reachabilityCache)
-}
-func saveReachabilityCache() {
-	path := reachabilityPath()
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		LogErrorf("cannot create status cache directory: %v", err)
-		return
-	}
-	b, err := json.MarshalIndent(reachabilityCache, "", "  ")
-	if err != nil {
-		return
-	}
-	tmp := path + ".tmp"
-	if err = os.WriteFile(tmp, b, 0644); err != nil {
-		LogErrorf("cannot save status cache: %v", err)
-		return
-	}
-	if err = os.Rename(tmp, path); err != nil {
-		LogErrorf("cannot replace status cache: %v", err)
-	}
-}
-
 func addWebURLs(leases []LeaseEntry) {
-	// Cache network probes for five minutes per IP/MAC; page refreshes only read cached results.
-	reachabilityMu.Lock()
-	defer reachabilityMu.Unlock()
-	loadReachabilityCache()
-	now := time.Now()
-	var due []int
-	for i := range leases {
-		key := strings.ToLower(strings.TrimSpace(leases[i].MACAddress)) + "|" + leases[i].IPAddress
-		rec, ok := reachabilityCache[key]
-		if ok {
-			leases[i].Status, leases[i].WebURL, leases[i].LastOnline = rec.Status, rec.WebURL, rec.LastOnline
-		}
-		if !ok || now.Unix()-rec.CheckedAt >= int64(envDuration("DEVICE_CHECK_INTERVAL", 5*time.Minute).Seconds()) {
-			due = append(due, i)
-		}
-	}
-	if len(due) == 0 {
-		for i := range leases {
-			leases[i].WebHostURL = checkWebHostname(leases[i].IPAddress, leases[i].Name, leases[i].WebURL, envDuration("WEB_UI_TIMEOUT", 500*time.Millisecond))
-		}
-		return
-	}
-	probeLeases(leases, due)
-	for _, i := range due {
-		key := strings.ToLower(strings.TrimSpace(leases[i].MACAddress)) + "|" + leases[i].IPAddress
-		old := reachabilityCache[key]
-		last := old.LastOnline
-		if leases[i].Status == "online" || leases[i].Status == "reachable" {
-			last = now.Unix()
-		}
-		leases[i].LastOnline = last
-		reachabilityCache[key] = reachabilityRecord{CheckedAt: now.Unix(), Status: leases[i].Status, WebURL: leases[i].WebURL, LastOnline: last}
-	}
-	saveReachabilityCache()
-	for i := range leases {
-		leases[i].WebHostURL = checkWebHostname(leases[i].IPAddress, leases[i].Name, leases[i].WebURL, envDuration("WEB_UI_TIMEOUT", 500*time.Millisecond))
-	}
-}
-
-func probeLeases(leases []LeaseEntry, due []int) {
 	if len(leases) == 0 {
 		return
 	}
 	timeout := envDuration("WEB_UI_TIMEOUT", 500*time.Millisecond)
-	workers := envInt("WEB_UI_MAX_WORKERS", 4)
+	workers := envInt("WEB_UI_MAX_WORKERS", 16)
 	if workers < 1 {
 		workers = 1
 	}
-	if workers > len(due) {
-		workers = len(due)
+	if workers > len(leases) {
+		workers = len(leases)
 	}
 	jobs := make(chan int)
 	var wg sync.WaitGroup
@@ -285,9 +200,12 @@ func probeLeases(leases []LeaseEntry, due []int) {
 			}
 		}()
 	}
-	for _, i := range due {
+	for i := range leases {
 		jobs <- i
 	}
 	close(jobs)
 	wg.Wait()
+	for i := range leases {
+		leases[i].WebHostURL = checkWebHostname(leases[i].IPAddress, leases[i].Name, leases[i].WebURL, timeout)
+	}
 }
