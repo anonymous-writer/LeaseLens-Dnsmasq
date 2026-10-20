@@ -149,7 +149,7 @@ th { background:var(--surface-raised); }
 tbody tr:nth-child(even) { background:color-mix(in srgb,var(--surface-raised) 22%,var(--surface)); }
 tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!important; }
 @media(max-width:620px) { #brand-header { gap:.75rem; padding:1rem; } #brand-logo { height:3.7rem; max-width:4rem; } #brand-title { font-size:1.7rem; } #brand-subtitle { font-size:.83rem; } .brand-tagline { font-size:.69rem; } }
-</style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}">
+</style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}" data-dhcp-events-enabled="{{if .ShowDHCPEvents}}true{{else}}false{{end}}">
   <!--
     Hauptwerkzeugleiste.
     Wichtig: IDs werden von /static/app.js verwendet. Beim Umbenennen einer ID
@@ -245,7 +245,7 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
         <th data-key="name"><span data-i18n="name">Name</span><span class="sort-indicator"></span></th>
         <th data-key="staticIP"><span data-i18n="dhcpReservation">DHCP Reservation</span><span class="sort-indicator"></span></th>
         <th data-key="leasetime"><span data-i18n="leaseEndsOn">Lease ends on</span><span class="sort-indicator"></span></th>
-        <th data-key="lastDhcpAddAge"><span data-i18n="dhcpEventLastLogin">DHCP event / last login</span><span class="sort-indicator"></span></th>
+        {{if .ShowDHCPEvents}}<th data-key="lastDhcpAddAge"><span data-i18n="dhcpEventLastLogin">DHCP event / last login</span><span class="sort-indicator"></span></th>{{end}}
       </tr>
     </thead>
     <!-- Bleibt leer, bis app.js Lease-Daten von /leases geladen hat. -->
