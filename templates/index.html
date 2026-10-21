@@ -207,6 +207,43 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
   #status-panel { font-size: .75rem; }
 }
 
+
+  /* Sticky toolbar: fully opaque layer; table header sits directly beneath it. */
+  #toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    isolation: isolate;
+    background-color: var(--bg) !important;
+    background-image: none !important;
+    box-shadow: 0 8px 0 var(--bg);
+  }
+  #toolbar::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: -2px;
+    bottom: -8px;
+    left: -1rem;
+    right: -1rem;
+    background: var(--bg);
+    pointer-events: none;
+  }
+  table thead th {
+    top: 4.6rem;
+    z-index: 900;
+    background: var(--surface-raised) !important;
+    background-clip: padding-box;
+  }
+  @media (max-width: 1000px) and (min-width: 621px) {
+    table thead th { top: 8.1rem; }
+  }
+  @media (max-width: 620px) {
+    #toolbar { position: static; box-shadow: none; }
+    #toolbar::before { display: none; }
+    table thead th { position: static; top: auto; }
+  }
+
 </style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}" data-dhcp-events-enabled="{{if .ShowDHCPEvents}}true{{else}}false{{end}}">
   <!--
     Hauptwerkzeugleiste.
