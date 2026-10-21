@@ -208,12 +208,13 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
 }
 
 
-  /* Sticky toolbar: fully opaque layer; table header sits directly beneath it. */
+  /* Fix: keep the toolbar sticky at every viewport size and cover scrolled content. */
   #toolbar {
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
     isolation: isolate;
+    background: var(--bg) !important;
     background-color: var(--bg) !important;
     background-image: none !important;
     box-shadow: 0 8px 0 var(--bg);
@@ -230,17 +231,17 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
     pointer-events: none;
   }
   table thead th {
-    top: 4.6rem;
     z-index: 900;
     background: var(--surface-raised) !important;
     background-clip: padding-box;
   }
-  @media (max-width: 1000px) and (min-width: 621px) {
-    table thead th { top: 8.1rem; }
-  }
   @media (max-width: 620px) {
-    #toolbar { position: static; box-shadow: none; }
-    #toolbar::before { display: none; }
+    #toolbar {
+      position: sticky !important;
+      top: 0 !important;
+      box-shadow: 0 8px 0 var(--bg);
+    }
+    #toolbar::before { display: block; }
     table thead th { position: static; top: auto; }
   }
 
