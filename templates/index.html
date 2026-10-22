@@ -220,16 +220,7 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
     box-shadow: none !important;
   }
   #toolbar::before { content: none !important; }
-  #toolbar::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    height: 10px;
-    background: var(--bg);
-    pointer-events: none;
-  }
+  #toolbar::after { content: none !important; }
   table thead th {
     z-index: 900;
     background: var(--surface-raised) !important;
@@ -241,7 +232,6 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
       top: 0 !important;
       box-shadow: none !important;
     }
-    #toolbar::after { height: 10px; }
     table thead th { position: static; top: auto; }
   }
 
