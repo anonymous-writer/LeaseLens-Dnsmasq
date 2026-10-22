@@ -245,6 +245,15 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
     table thead th { position: static; top: auto; }
   }
 
+
+  /* Mobile polish: reduce the gap between toolbar controls and summary cards. */
+  @media (max-width: 620px) {
+    #summary-cards {
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
+  }
+
 </style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}" data-dhcp-events-enabled="{{if .ShowDHCPEvents}}true{{else}}false{{end}}">
   <!--
     Hauptwerkzeugleiste.
