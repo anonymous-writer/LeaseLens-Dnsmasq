@@ -208,7 +208,8 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
 }
 
 
-  /* Sticky toolbar with a narrow opaque mask BELOW it only. */
+  /* Stable sticky layout: measure the real toolbar height instead of guessing offsets. */
+  :root { --toolbar-height: 6rem; }
   #toolbar {
     position: sticky !important;
     top: 0 !important;
@@ -219,9 +220,10 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
     background-image: none !important;
     box-shadow: none !important;
   }
-  #toolbar::before { content: none !important; }
-  #toolbar::after { content: none !important; }
+  #toolbar::before, #toolbar::after { content: none !important; display: none !important; }
   table thead th {
+    position: sticky;
+    top: var(--toolbar-height) !important;
     z-index: 900;
     background: var(--surface-raised) !important;
     background-clip: padding-box;
@@ -230,18 +232,9 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
     #toolbar {
       position: sticky !important;
       top: 0 !important;
-      box-shadow: none !important;
+      z-index: 1000 !important;
     }
-    table thead th { position: static; top: auto; }
-  }
-
-
-  /* Mobile polish: reduce the gap between toolbar controls and summary cards. */
-  @media (max-width: 620px) {
-    #summary-cards {
-      margin-top: 0 !important;
-      padding-top: 0 !important;
-    }
+    table thead th { position: static !important; top: auto !important; }
   }
 
 </style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}" data-dhcp-events-enabled="{{if .ShowDHCPEvents}}true{{else}}false{{end}}">
@@ -373,5 +366,24 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
   <!-- Cache-Busting: Versionswert ändert die URL, wenn ein neues App-Build geladen wird. -->
   <script src="/static/translations.js?v={{.Version}}"></script>
   <script src="/static/app.js?v={{.Version}}"></script>
+
+<script>
+(() => {
+  const toolbar = document.getElementById('toolbar');
+  if (!toolbar) return;
+  const updateToolbarHeight = () => {
+    const height = Math.ceil(toolbar.getBoundingClientRect().height);
+    document.documentElement.style.setProperty('--toolbar-height', `${height}px`);
+  };
+  updateToolbarHeight();
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(updateToolbarHeight).observe(toolbar);
+  } else {
+    window.addEventListener('resize', updateToolbarHeight, { passive: true });
+  }
+  window.addEventListener('load', updateToolbarHeight, { once: true });
+})();
+</script>
+
 </body>
 </html>
