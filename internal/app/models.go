@@ -8,21 +8,25 @@ import (
 )
 
 type LeaseEntry struct {
-	StaticIP    bool   `json:"staticIP"`
-	LeaseTime   string `json:"leasetime"`
-	LeaseExpiry int64  `json:"leaseExpiry"`
-	MACAddress  string `json:"macAddress"`
-	Vendor      string `json:"vendor,omitempty"`
-	PrivateMAC  bool   `json:"privateMAC,omitempty"`
-	ClientID    string `json:"-"`              // IPv4 DHCP client ID, retained internally for dhcp_release.
-	IAID        string `json:"iaid,omitempty"` // DHCPv6 Identity Association Identifier
-	DUID        string `json:"duid,omitempty"` // DHCPv6 Client Identifier
-	IPAddress   string `json:"ipAddress"`
-	Name        string `json:"name"`
-	WebURL      string `json:"webUrl"`
-	WebHostURL  string `json:"webHostUrl"`
-	Status      string `json:"status"`
-	IsNew       bool   `json:"isNew"`
+	StaticIP         bool   `json:"staticIP"`
+	LeaseTime        string `json:"leasetime"`
+	LeaseExpiry      int64  `json:"leaseExpiry"`
+	MACAddress       string `json:"macAddress"`
+	Vendor           string `json:"vendor,omitempty"`
+	PrivateMAC       bool   `json:"privateMAC,omitempty"`
+	ClientID         string `json:"-"`              // IPv4 DHCP client ID, retained internally for dhcp_release.
+	IAID             string `json:"iaid,omitempty"` // DHCPv6 Identity Association Identifier
+	DUID             string `json:"duid,omitempty"` // DHCPv6 Client Identifier
+	IPAddress        string `json:"ipAddress"`
+	Name             string `json:"name"`
+	WebURL           string `json:"webUrl"`
+	WebHostURL       string `json:"webHostUrl"`
+	Status           string `json:"status"`
+	IsNew            bool   `json:"isNew"`
+	DHCPEventStatus  string `json:"dhcpEventStatus,omitempty"`
+	LastDHCPEventAge string `json:"lastDhcpEventAge,omitempty"`
+	LastDHCPAddAt    string `json:"lastDhcpAddAt,omitempty"`
+	LastDHCPAddAge   string `json:"lastDhcpAddAge,omitempty"`
 }
 
 type Reservations struct{ ips, names, identifiers map[string]struct{} }
@@ -52,6 +56,8 @@ type PageData struct {
 	Version            string
 	ReleaseDate        string
 	RepoURL            string
+	SystemName         string
 	DnsmasqVersion     string
 	EnableLeaseRelease bool
+	ShowDHCPEvents     bool
 }

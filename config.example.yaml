@@ -1,24 +1,41 @@
-# leaselens-dnsmasq native configuration
-# File path for the systemd service: /home/pi/Dnsmasq-Leases-UI/config.yaml
+# LeaseLens-Dnsmasq — native Linux configuration
+# Example for a systemd service on a Raspberry Pi.
+# Copy this file to your chosen location, for example:
+#   /home/pi/leaselens-dnsmasq/config.yaml
+# Then point the service at it with --config or CONFIG_FILE.
 
 # Web server
 host: "0.0.0.0"
 port: "3008"
 
-# dnsmasq files (adjust to match your Raspberry Pi installation)
+# dnsmasq input files — adjust these paths to your system.
+# Common Debian/Raspberry Pi OS lease path:
 leases_file: "/var/lib/misc/dnsmasq.leases"
+# Optional file containing configured DHCP reservations:
 hosts_file: "/var/lib/misc/dnsmasq.dhcphosts"
 
-# Interface used to release native IPv4 DHCP leases (empty disables the button)
-# dhcp_interface: "eth1"
+# Native-only: enable the "Remove IPv4 lease" action by setting your DHCP
+# interface. Leave commented out to disable the action.
+# The service account must have narrowly scoped passwordless sudo permission
+# to run dhcp_release for this interface. See the main README.
+# dhcp_interface: "eth0"
 
-# Writable persistent list of devices marked as known
-known_macs_file: "/home/pi/Dnsmasq-Leases-UI/known-macs.json"
+# Persistent list of devices marked as known; parent directory must be writable.
+known_macs_file: "/home/pi/leaselens-dnsmasq/data/known-macs.json"
 
 # Logging: DEBUG, INFO, WARN, or ERROR
 log_level: "INFO"
 
-# Optional UI metadata
+# Optional: dnsmasq DHCP event log (add/del/old).
+# Configure dnsmasq to write the events to this file and ensure the service
+# account can read it. When enabled and supported by this build, LeaseLens
+# can show last-login information in the table.
+# dhcp_events_file: "/var/log/dnsmasq/dhcp-events.log"
+
+# Optional UI metadata.
+# Native builds detect the hardware model and hostname automatically when possible.
+# Uncomment to override the detected values:
+# system_name: "Homeserver"
 # app_version: "2.2.0"
-# release_date: "2026-10-12"
+# release_date: "2026-10-22"
 # repo_url: "https://github.com/anonymous-writer/leaselens-dnsmasq"

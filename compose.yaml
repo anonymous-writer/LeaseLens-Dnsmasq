@@ -1,3 +1,8 @@
+# LeaseLens-Dnsmasq — local Docker/Podman Compose example
+# This example builds the Docker image from the checked-out source tree.
+# Docker images do not include the native-only IPv4 lease-release action
+# or the native dnsmasq-version display.
+
 services:
   leaselens-dnsmasq:
     container_name: leaselens-dnsmasq
@@ -6,8 +11,20 @@ services:
     environment:
       HOME: /tmp
       XDG_RUNTIME_DIR: /tmp
+      HOST: "0.0.0.0"
       PORT: "3008"
+      LOG_LEVEL: "INFO"
+      # Optional label shown in the UI; omit to use the Docker default.
+      SYSTEM_NAME: "Raspberry Pi 5"
+      # Defaults shown here for clarity. Change them if your host uses
+      # different paths inside the mounted dnsmasq directory.
+      DNSMASQ_LEASES_FILE: "/var/lib/dnsmasq/dnsmasq.leases"
+      DNSMASQ_HOSTS_FILE: "/var/lib/dnsmasq/dnsmasq.dhcphosts"
+      KNOWN_MACS_FILE: "/data/known-macs.json"
     network_mode: host
     volumes:
+      # Mount the directory, not individual files, so lease-file replacement
+      # by dnsmasq is handled correctly. Adjust the host path as needed.
       - /var/lib/dnsmasq:/var/lib/dnsmasq:ro
+      # Persistent storage for devices marked as known.
       - ./data:/data:Z

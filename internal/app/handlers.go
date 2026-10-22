@@ -36,7 +36,7 @@ func homeHandler(cfg Config, tmpl *template.Template, dnsmasqVersion string, ena
 			http.NotFound(w, r)
 			return
 		}
-		data := PageData{Version: cfg.AppVersion, ReleaseDate: cfg.ReleaseDate, RepoURL: cfg.RepoURL, DnsmasqVersion: dnsmasqVersion, EnableLeaseRelease: enableLeaseRelease}
+		data := PageData{Version: cfg.AppVersion, ReleaseDate: cfg.ReleaseDate, RepoURL: cfg.RepoURL, SystemName: cfg.SystemName, DnsmasqVersion: dnsmasqVersion, EnableLeaseRelease: enableLeaseRelease, ShowDHCPEvents: strings.TrimSpace(cfg.DHCPEventsPath) != ""}
 		if err := tmpl.Execute(w, data); err != nil {
 			LogErrorf("cannot render home page: %v", err)
 			http.Error(w, "template error", http.StatusInternalServerError)
@@ -159,6 +159,7 @@ func leasesHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 			}
 			leases[i].IsNew = !known.has(mac)
 		}
+		applyDHCPEventState(leases, cfg.DHCPEventsPath, time.Now())
 		w.Header().Set("Content-Type", "application/json")
 		LogDebugf("served lease list count=%d", len(leases))
 		if err := json.NewEncoder(w).Encode(map[string]any{"leases": leases}); err != nil {

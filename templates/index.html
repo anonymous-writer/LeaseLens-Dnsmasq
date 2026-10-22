@@ -24,7 +24,7 @@ body { margin:0; padding:1.25rem clamp(.75rem,2vw,2rem) 2rem; font:14px/1.45 sys
 #brand-logo { display:block; width:auto; height:3.2rem; max-width:min(28vw,8rem); object-fit:contain; border-radius:5px; }
 #brand-title { margin:0; font-size:1.12rem; font-weight:760; letter-spacing:-.025em; }
 #brand-subtitle { margin:.08rem 0 0; color:var(--muted); font-size:.8rem; }
-#toolbar { position:sticky; top:0; z-index:5; display:grid; grid-template-columns:minmax(14rem,1.5fr) repeat(3,minmax(8rem,.75fr)) auto; align-items:center; gap:.4rem; padding:.35rem 0; background:var(--bg); }
+#toolbar { position:sticky; top:0; z-index:20; display:grid; grid-template-columns:minmax(14rem,1.5fr) repeat(3,minmax(8rem,.75fr)) auto; align-items:center; gap:.4rem; padding:.35rem 0; background:var(--bg); }
 #search,#ip-filter,#reservation-filter,#status-filter,#language-select,#toolbar button { min-height:2.2rem; padding:.42rem .65rem; font:inherit; color:var(--fg); background:var(--surface); border:1px solid var(--border); border-radius:8px; }
 #search { min-width:0; width:100%; }
 #search:focus,#toolbar select:focus-visible,#toolbar button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
@@ -43,16 +43,16 @@ body { margin:0; padding:1.25rem clamp(.75rem,2vw,2rem) 2rem; font:14px/1.45 sys
 #reset-known-button:disabled,#mark-reservations-button:disabled,#mark-all-ipv4-reservations-button:disabled,#refresh-button:disabled { opacity:.58; cursor:wait; box-shadow:none!important; }
 #theme-toggle { justify-self:end; width:2.45rem; padding:.4rem!important; display:grid; place-items:center; color:var(--accent)!important; background:color-mix(in srgb,var(--accent) 8%,var(--surface))!important; border-color:color-mix(in srgb,var(--accent) 35%,var(--border))!important; }
 .icon-sun { display:none; } :root[data-theme=dark] .icon-moon { display:none; } :root[data-theme=dark] .icon-sun { display:inline; }
-#summary-cards { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:.6rem; margin:.35rem 0 .65rem; }
+#summary-cards { position:static; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:.6rem; margin:.35rem 0 .65rem; padding:.25rem 0; background:var(--bg); }
 .summary-card { min-width:0; padding:.62rem .85rem; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:none; }
 .summary-label { display:block; color:var(--muted); font-size:.76rem; margin-bottom:.12rem; }
 .summary-value { display:flex; align-items:center; gap:.48rem; font-size:1.45rem; font-weight:750; letter-spacing:-.035em; line-height:1.15; }
 .summary-dot { width:.6rem; height:.6rem; border-radius:50%; background:var(--muted); }
 .summary-card.online .summary-dot { background:var(--green); } .summary-card.reachable .summary-dot,.summary-card.ping .summary-dot { background:var(--yellow); } .summary-card.offline .summary-dot { background:var(--red); }
-.table-wrap { overflow:auto; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); }
+.table-wrap { overflow:visible; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); }
 table { border-collapse:separate; border-spacing:0; width:100%; min-width:900px; }
 th,td { text-align:left; padding:.58rem .8rem; border-bottom:1px solid var(--border); }
-th { position:sticky; top:0; z-index:1; background:var(--surface-raised); color:var(--muted); font-size:.76rem; font-weight:700; text-transform:uppercase; letter-spacing:.045em; white-space:nowrap; cursor:pointer; }
+th { position:sticky; top:7.25rem; z-index:10; background:var(--surface-raised); color:var(--muted); font-size:.76rem; font-weight:700; text-transform:uppercase; letter-spacing:.045em; white-space:nowrap; cursor:pointer; }
 tbody tr:last-child td { border-bottom:0; } tbody tr:hover { background:var(--surface-raised); } tr.device-row { cursor:pointer; transition:background .12s; } tr.device-row:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
 a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
 #status { margin-top:.85rem; color:var(--muted); font-size:.85rem; } #status.error,#refresh-state.error { color:var(--red); }
@@ -90,8 +90,8 @@ tr.new-device { background:color-mix(in srgb,var(--yellow) 9%,var(--surface)); }
 .copy-button:disabled,#copy-device-details-button:disabled { opacity:.65; cursor:wait; }
 footer { margin-top:1.2rem; color:var(--muted); font-size:.8rem; }
 #toolbar button,#toolbar select,#search { min-height:2.2rem; }
-@media(max-width:1000px) { #summary-cards { grid-template-columns:repeat(3,minmax(0,1fr)); } #toolbar { position:static; grid-template-columns:repeat(2,minmax(0,1fr)); } #search { grid-column:1/-1; } #theme-toggle { margin-left:0; justify-self:start; } }
-@media(max-width:620px) { body { padding:.7rem; } #brand-logo { height:2.65rem; max-width:5rem; } #brand-title { font-size:1rem; } #device-details { padding:1rem; border-radius:14px; } #detail-title { font-size:1.25rem; } .detail-item { padding:.75rem; } .copy-button,#detail-close,#copy-device-details-button { min-height:2.55rem; } #toolbar { grid-template-columns:1fr 1fr; gap:.45rem; } #toolbar button,#toolbar select { width:100%; white-space:normal; min-height:2.7rem; } #summary-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; } .summary-card { padding:.65rem; } .summary-value { font-size:1.3rem; } .detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:1000px) { th { top:9.5rem; } #summary-cards { grid-template-columns:repeat(3,minmax(0,1fr)); } #toolbar { position:sticky; top:0; z-index:20; grid-template-columns:repeat(2,minmax(0,1fr)); } #search { grid-column:1/-1; } #theme-toggle { margin-left:0; justify-self:start; } }
+@media(max-width:620px) { th { top:12.5rem; } body { padding:.7rem; } #brand-logo { height:2.65rem; max-width:5rem; } #brand-title { font-size:1rem; } #device-details { padding:1rem; border-radius:14px; } #detail-title { font-size:1.25rem; } .detail-item { padding:.75rem; } .copy-button,#detail-close,#copy-device-details-button { min-height:2.55rem; } #toolbar { grid-template-columns:1fr 1fr; gap:.45rem; } #toolbar button,#toolbar select { width:100%; white-space:normal; min-height:2.7rem; } #summary-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; } .summary-card { padding:.65rem; } .summary-value { font-size:1.3rem; } .detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 /* Kompakte Systeminformationen im Kopf und ein gemeinsamer Status-/Versionsbereich. */
 #brand-header { position:relative; }
 #brand-meta { margin-left:auto; display:flex; align-items:center; justify-content:flex-end; gap:clamp(.65rem,2vw,1.5rem); color:#c3d2e8; font-size:.82rem; }
@@ -149,7 +149,95 @@ th { background:var(--surface-raised); }
 tbody tr:nth-child(even) { background:color-mix(in srgb,var(--surface-raised) 22%,var(--surface)); }
 tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!important; }
 @media(max-width:620px) { #brand-header { gap:.75rem; padding:1rem; } #brand-logo { height:3.7rem; max-width:4rem; } #brand-title { font-size:1.7rem; } #brand-subtitle { font-size:.83rem; } .brand-tagline { font-size:.69rem; } }
-</style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}">
+
+/* Mobile layout: compact controls and contain table overflow within its own scroller. */
+@media (max-width: 620px) {
+  html, body { max-width: 100%; overflow-x: clip; }
+  body { padding: .45rem .5rem 1rem; }
+  #brand-header { margin: 0 -.5rem .55rem; padding: .55rem .65rem; gap: .55rem; }
+  #brand-logo { width: 2.55rem; height: 2.55rem; max-width: 2.55rem; }
+  #brand-title { font-size: 1.25rem; line-height: 1.15; }
+  #brand-subtitle { font-size: .75rem; }
+  #brand-description, .brand-tagline { font-size: .64rem; }
+  #brand-meta { gap: .35rem .6rem; font-size: .65rem; }
+  #toolbar {
+    position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: .35rem;
+    padding: .25rem 0 .45rem;
+    width: 100%;
+  }
+  #search { grid-column: 1 / -1; min-width: 0; width: 100%; }
+  #toolbar select, #toolbar button {
+    min-width: 0;
+    width: 100%;
+    min-height: 2.35rem;
+    padding: .38rem .45rem;
+    font-size: .78rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  #toolbar button { line-height: 1.2; }
+  #mark-reservations-button,
+  #mark-all-ipv4-reservations-button,
+  #reset-known-button { min-height: 2.7rem; }
+  #theme-toggle { min-height: 2.35rem; }
+  #summary-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .35rem;
+    margin: .2rem 0 .5rem;
+    padding: 0;
+  }
+  .summary-card { min-width: 0; padding: .55rem .6rem; }
+  .summary-label { font-size: .68rem; }
+  .summary-value { font-size: 1.2rem; }
+  .table-wrap {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+  }
+  table { min-width: 850px; width: max-content; }
+  th { position: static; top: auto; font-size: .68rem; padding: .5rem .55rem; }
+  td { padding: .5rem .55rem; font-size: .78rem; white-space: nowrap; }
+  #status-panel { font-size: .75rem; }
+}
+
+
+  /* Stable sticky layout: measure the real toolbar height instead of guessing offsets. */
+  :root { --toolbar-height: 6rem; }
+  #toolbar {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    isolation: isolate;
+    background: var(--bg) !important;
+    background-color: var(--bg) !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+  #toolbar::before, #toolbar::after { content: none !important; display: none !important; }
+  table thead th {
+    position: sticky;
+    top: var(--toolbar-height) !important;
+    z-index: 900;
+    background: var(--surface-raised) !important;
+    background-clip: padding-box;
+  }
+  @media (max-width: 620px) {
+    #toolbar {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 1000 !important;
+    }
+    table thead th { position: static !important; top: auto !important; }
+  }
+
+</style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}" data-dhcp-events-enabled="{{if .ShowDHCPEvents}}true{{else}}false{{end}}">
   <!--
     Hauptwerkzeugleiste.
     Wichtig: IDs werden von /static/app.js verwendet. Beim Umbenennen einer ID
@@ -160,7 +248,7 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
     <div class="brand-copy"><h1 id="brand-title">Lease<span>Lens</span></h1><p id="brand-subtitle" data-i18n="brandSubtitle">Dnsmasq Network Dashboard</p><p id="brand-description" data-i18n="brandDescription">DHCP Leases · Geräteerkennung · Hersteller · Netzwerkstatus</p></div>
     <div id="brand-meta" aria-label="Systeminformationen">
       <div class="brand-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div><span class="brand-meta-label" data-i18n="systemTime">Systemzeit</span><span class="brand-meta-value" id="system-clock">--:--:--</span><span class="brand-meta-label" id="system-date">--.--.----</span></div></div>
-      <div class="brand-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01M11 7h6M11 17h6"/></svg><div><span class="brand-meta-label" data-i18n="systemLabel">System</span><span class="brand-meta-value">LeaseLens</span><span class="brand-meta-label" data-i18n="systemDescription">Go · Web Dashboard</span></div></div>
+      <div class="brand-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01M11 7h6M11 17h6"/></svg><div><span class="brand-meta-label" data-i18n="systemLabel">System</span><span class="brand-meta-value">{{.SystemName}}</span><span class="brand-meta-label" data-i18n="systemDescription">Go · Web Dashboard</span></div></div>
       <div class="brand-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2l2.2 2.2 3.1-.1.9 3 2.6 1.7-1 2.9 1 2.9-2.6 1.7-.9 3-3.1-.1L12 21l-2.2-2.2-3.1.1-.9-3-2.6-1.7 1-2.9-1-2.9 2.6-1.7.9-3 3.1.1z"/><circle cx="12" cy="12" r="3"/></svg><div><span class="brand-meta-label">Dnsmasq</span><span class="brand-meta-value" id="dnsmasq-state" data-i18n="dnsmasqRunning">● Läuft</span><span class="brand-meta-label" id="dnsmasq-version-label" data-i18n-version="{{.DnsmasqVersion}}">{{if .DnsmasqVersion}}Version {{.DnsmasqVersion}}{{else}}Status wird überwacht{{end}}</span></div></div>
     </div>
   </header>
@@ -245,6 +333,7 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
         <th data-key="name"><span data-i18n="name">Name</span><span class="sort-indicator"></span></th>
         <th data-key="staticIP"><span data-i18n="dhcpReservation">DHCP Reservation</span><span class="sort-indicator"></span></th>
         <th data-key="leasetime"><span data-i18n="leaseEndsOn">Lease ends on</span><span class="sort-indicator"></span></th>
+        {{if .ShowDHCPEvents}}<th data-key="lastDhcpEventAge"><span data-i18n="dhcpEventLastLogin">Last DHCP event</span><span class="sort-indicator"></span></th>{{end}}
       </tr>
     </thead>
     <!-- Bleibt leer, bis app.js Lease-Daten von /leases geladen hat. -->
@@ -277,5 +366,24 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
   <!-- Cache-Busting: Versionswert ändert die URL, wenn ein neues App-Build geladen wird. -->
   <script src="/static/translations.js?v={{.Version}}"></script>
   <script src="/static/app.js?v={{.Version}}"></script>
+
+<script>
+(() => {
+  const toolbar = document.getElementById('toolbar');
+  if (!toolbar) return;
+  const updateToolbarHeight = () => {
+    const height = Math.ceil(toolbar.getBoundingClientRect().height);
+    document.documentElement.style.setProperty('--toolbar-height', `${height}px`);
+  };
+  updateToolbarHeight();
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(updateToolbarHeight).observe(toolbar);
+  } else {
+    window.addEventListener('resize', updateToolbarHeight, { passive: true });
+  }
+  window.addEventListener('load', updateToolbarHeight, { once: true });
+})();
+</script>
+
 </body>
 </html>
