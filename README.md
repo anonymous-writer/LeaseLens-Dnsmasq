@@ -33,7 +33,7 @@ A lightweight web interface for the [dnsmasq](https://thekelleys.org.uk/dnsmasq/
 - Detects newly seen devices by MAC address and marks them with a `NEW` indicator
 - Persistently remembers acknowledged devices in `/data/known-macs.json`
 - Per-device actions to mark a device as known or mark it as new again
-- Bulk actions to mark all detected DHCP reservations as known or reset the remembered-device list
+- Bulk actions to mark currently detected DHCP reservations as known, mark all configured IPv4 reservations (including offline devices) as known, or reset the remembered-device list
 - IPv6 leases without a valid MAC address remain visible but are not marked as new
 - Dark/light theme and responsive web interface
 - JSON API at `/leases` and POST actions at `/known-macs`
@@ -181,7 +181,7 @@ The remembered list is stored in `known-macs.json` and persists across container
 
 ### Remembering configured IPv4 reservations
 
-The existing **Mark reservations known** action processes DHCP reservations that are currently detected in the lease list. The separate **Mark all IPv4 reservations** action reads the configured DHCP hosts file directly, so IPv4 reservations are included even when their devices are offline. Only lines that contain both a valid MAC address and an IPv4 address are remembered; IPv6-only and ignored entries are skipped. The action uses the same persistent `known-macs.json` list as the per-device actions.
+The **Mark reservations known** action processes DHCP reservations currently detected in the lease list. The separate **Mark all IPv4 reservations** action reads the configured DHCP hosts file directly, so configured IPv4 reservations are included even when their devices are offline. Only entries containing both a valid MAC address and an IPv4 address are remembered; IPv6-only and ignored entries are skipped. Both actions use the same persistent `known-macs.json` list as the per-device actions. This bulk action is available in the web interface; its availability through the JSON API depends on the actions implemented by the running version.
 
 ## Endpoints
 
@@ -208,7 +208,7 @@ Each object in the `leases` array can include `staticIP`, `leasetime`, `leaseExp
 | `reset` | `{"action":"reset"}` | Clear the remembered list |
 | `mark-reservations` | `{"action":"mark-reservations"}` | Remember all currently detected DHCP reservations with valid MAC addresses |
 
-The `mark-reservations` response also includes a `count` field. These endpoints do not provide authentication; keep the application on a trusted network and do not expose it directly to the public internet.
+The `mark-reservations` response also includes a `count` field. The documented API actions are `mark`, `unmark`, `reset`, and `mark-reservations`; do not assume every web-interface bulk action has a matching API action. These endpoints do not provide authentication; keep the application on a trusted network and do not expose it directly to the public internet.
 
 ## Configuration
 
@@ -236,6 +236,10 @@ For native installs, manufacturer lookup uses an installed local OUI database wh
 Precedence is **defaults < environment variables < config file < command-line flags**. Available flags include `--config`, `--host`, `--port`, `--leases-file`, `--hosts-file`, `--known-macs-file`, `--dhcp-interface`, `--log-level`, `--app-version`, `--release-date`, and `--repo-url`.
 
 The native ARM64 and AMD64 builds query `dnsmasq --version` at startup and show the detected version in the page footer. This is enabled only in the standalone/native build workflow; Docker builds do not show the dnsmasq version. If the `dnsmasq` executable is not available in `PATH`, the footer omits that part.
+
+### Native version versus Docker version
+
+The native Linux binaries have capabilities that are intentionally not enabled in the Docker image. In particular, native builds can detect the installed dnsmasq version for the footer and can optionally offer **Remove IPv4 lease** when `dhcp_interface` is configured and the service account has narrowly scoped permission to run `dhcp_release`. These native-only features are described below; do not expect them in the Docker container. The normal dashboard, lease viewing, device reachability checks, remembered-device actions, and configured-reservation handling are available in the Docker version when the required files and permissions are provided.
 
 #### Optional native-only IPv4 lease release
 
