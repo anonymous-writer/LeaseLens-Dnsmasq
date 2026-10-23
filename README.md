@@ -6,6 +6,11 @@
 
 LeaseLens ist die Weboberfläche zur Verwaltung und Anzeige von dnsmasq-DHCP-Leases.
 
+## Projekt-Links
+
+- [GitHub-Repository und Dokumentation](https://github.com/anonymous-writer/LeaseLens-Dnsmasq)
+- [Docker Hub – LeaseLens-Dnsmasq](https://hub.docker.com/r/1968michael1968/leaselens-dnsmasq)
+
 # leaselens-dnsmasq
 
 [![GHCR](https://img.shields.io/badge/GHCR-docker%20image-blue?logo=github)](https://github.com/anonymous-writer/leaselens-dnsmasq/pkgs/container/leaselens-dnsmasq)
