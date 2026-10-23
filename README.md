@@ -92,7 +92,7 @@ Example `compose.yaml`:
 ```yaml
 services:
   leaselens-dnsmasq:
-    image: ghcr.io/anonymous-writer/leaselens-dnsmasq:go-beta
+    image: ghcr.io/anonymous-writer/leaselens-dnsmasq:latest
     container_name: leaselens-dnsmasq
     restart: unless-stopped
     environment:
