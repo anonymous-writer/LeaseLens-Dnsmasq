@@ -43,10 +43,10 @@ A lightweight web interface for the [dnsmasq](https://thekelleys.org.uk/dnsmasq/
 
 ## Quick start
 
-The current development image is published to GitHub Container Registry with the `go-beta` tag. Pull it with:
+The current development image is published to GitHub Container Registry with the `latest` tag. Pull it with:
 
 ```bash
-docker pull ghcr.io/anonymous-writer/leaselens-dnsmasq:go-beta
+docker pull ghcr.io/anonymous-writer/leaselens-dnsmasq:latest
 ```
 
 The `go-beta` tag follows the most recently published pre-release. Stable releases publish version tags plus `latest`; pre-releases never update `latest`. Publishing either kind of GitHub Release also attaches native ARM64 and AMD64 binaries to that release.
