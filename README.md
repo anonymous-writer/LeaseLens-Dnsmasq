@@ -70,7 +70,7 @@ docker run -d \
   -e PORT=3008 \
   -v /var/lib/dnsmasq:/var/lib/dnsmasq:ro \
   -v "$(pwd)/data:/data" \
-  ghcr.io/anonymous-writer/leaselens-dnsmasq:go-beta
+  ghcr.io/anonymous-writer/leaselens-dnsmasq:latest
 ```
 
 Create the persistent data directory before starting the container:
