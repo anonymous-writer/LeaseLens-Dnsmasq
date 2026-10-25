@@ -261,7 +261,8 @@ function render() {
     }
     values.forEach((value, index) => {
         const cell = document.createElement('td');
-        if (index === 4 && !hasGroups) cell.hidden = true;\n        if (index === 1 && lease.isNew && validMac(lease.macAddress)) {
+        if (index === 4 && !hasGroups) cell.hidden = true;
+        if (index === 1 && lease.isNew && validMac(lease.macAddress)) {
           const badge = document.createElement('span');
           badge.className = 'new-badge';
           badge.textContent = t('newBadge');
