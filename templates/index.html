@@ -25,7 +25,7 @@ body { margin:0; padding:1.25rem clamp(.75rem,2vw,2rem) 2rem; font:14px/1.45 sys
 #brand-title { margin:0; font-size:1.12rem; font-weight:760; letter-spacing:-.025em; }
 #brand-subtitle { margin:.08rem 0 0; color:var(--muted); font-size:.8rem; }
 #toolbar { position:sticky; top:0; z-index:20; display:grid; grid-template-columns:minmax(14rem,1.5fr) repeat(3,minmax(8rem,.75fr)) auto; align-items:center; gap:.4rem; padding:.35rem 0; background:var(--bg); }
-#search,#ip-filter,#reservation-filter,#status-filter,#language-select,#toolbar button { min-height:2.2rem; padding:.42rem .65rem; font:inherit; color:var(--fg); background:var(--surface); border:1px solid var(--border); border-radius:8px; }
+#search,#ip-filter,#reservation-filter,#status-filter,#group-filter,#language-select,#toolbar button { min-height:2.2rem; padding:.42rem .65rem; font:inherit; color:var(--fg); background:var(--surface); border:1px solid var(--border); border-radius:8px; }
 #search { min-width:0; width:100%; }
 #search:focus,#toolbar select:focus-visible,#toolbar button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 #toolbar button { cursor:pointer; white-space:nowrap; font-weight:620; border-color:color-mix(in srgb,var(--border) 75%,var(--muted)); box-shadow:0 1px 2px #0001; transition:background .16s,border-color .16s,box-shadow .16s,transform .12s,filter .16s; }
@@ -121,7 +121,7 @@ body { padding-top:0; }
 #brand-subtitle { margin:.18rem 0 0; font-size:clamp(.9rem,1.4vw,1.15rem); color:#eef4ff; font-weight:680; }
 #brand-description { margin:.3rem 0 0; font-size:.82rem; color:#a4b9d4; }
 #toolbar { gap:.55rem; }
-#search,#ip-filter,#reservation-filter,#status-filter,#language-select,#toolbar button { border-radius:7px; }
+#search,#ip-filter,#reservation-filter,#status-filter,#group-filter,#language-select,#toolbar button { border-radius:7px; }
 .summary-card { padding:.82rem .95rem; border-radius:10px; background:linear-gradient(145deg,var(--surface),color-mix(in srgb,var(--surface) 82%,var(--surface-raised))); }
 .summary-value { font-size:1.65rem; }
 .table-wrap { border-radius:10px; }
@@ -140,7 +140,7 @@ body { padding:0 clamp(.8rem,2vw,2rem) 2rem; }
 #brand-subtitle { color:#f0f5ff; font-size:1.04rem; font-weight:650; }
 .brand-tagline { color:#9db2d1; font-size:.82rem; margin:.3rem 0 0; }
 #toolbar { gap:.55rem; padding:.4rem 0 .6rem; }
-#search,#ip-filter,#reservation-filter,#status-filter,#language-select,#toolbar button { border-radius:8px; min-height:2.55rem; }
+#search,#ip-filter,#reservation-filter,#status-filter,#group-filter,#language-select,#toolbar button { border-radius:8px; min-height:2.55rem; }
 #summary-cards { gap:.75rem; margin:.45rem 0 .85rem; }
 .summary-card { padding:.95rem 1rem; border-radius:10px; background:linear-gradient(125deg,var(--surface),color-mix(in srgb,var(--surface) 85%,var(--surface-raised))); }
 .summary-value { font-size:1.7rem; margin-top:.25rem; }
@@ -277,6 +277,9 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
       <option value="online" data-i18n="webOnlineFilter">HTTP/HTTPS responds</option>
       <option value="reachable" data-i18n="pingOnlyFilter">Ping responds, no web UI</option>
       <option value="offline" data-i18n="noResponseFilter">No ping or web response</option>
+    </select>
+    <select id="group-filter" aria-label="Filter by group" title="Filter by group" hidden>
+      <option value="all">All groups</option>
     </select>
 
     <!-- Refresh wird in app.js verdrahtet; es ist kein automatischer Polling-Timer. -->

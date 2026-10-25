@@ -17,7 +17,7 @@ let leases = [];
 let filterQuery = '';
 let ipFilter = 'all';
 let reservationFilter = 'all';
-let statusFilter = 'all';
+let statusFilter = 'all'; let groupFilter = 'all';
 let sort = loadSort();
 let refreshing = false;
 let lastLoadError = null;
@@ -188,6 +188,7 @@ function matchesFilters(lease) {
   if (reservationFilter === 'reserved' && !lease.staticIP) return false;
   if (reservationFilter === 'dynamic' && lease.staticIP) return false;
   if (statusFilter !== 'all' && String(lease.status ?? 'unknown') !== statusFilter) return false;
+  if (groupFilter !== 'all' && String(lease.group ?? '') !== groupFilter) return false;
   return true;
 }
 
@@ -241,7 +242,15 @@ function updateStatusCards() {
 
 function render() {
   updateStatusCards();
-  const hasGroups = leases.some(lease => Boolean(lease.group));
+  const groupSelect = document.querySelector('#group-filter');
+  const selectedGroup = groupFilter;
+  const groups = [...new Set(leases.map(lease => String(lease.group || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const hasGroups = groups.length > 0;
+  groupSelect.hidden = !hasGroups;
+  groupSelect.replaceChildren(new Option(t('allGroups'), 'all'));
+  groups.forEach(group => groupSelect.add(new Option(group, group)));
+  groupFilter = groups.includes(selectedGroup) ? selectedGroup : 'all';
+  groupSelect.value = groupFilter;
   document.querySelector('#group-header').hidden = !hasGroups;
   const rows = sorted(leases.filter(lease => match(lease, filterQuery) && matchesFilters(lease)));
   const tbody = document.querySelector('#leases tbody');
@@ -660,6 +669,10 @@ document.querySelector('#reservation-filter').addEventListener('change', event =
 });
 document.querySelector('#status-filter').addEventListener('change', event => {
   statusFilter = event.target.value;
+  render();
+});
+document.querySelector('#group-filter').addEventListener('change', event => {
+  groupFilter = event.target.value;
   render();
 });
 document.querySelector('#leases thead').addEventListener('click', event => {
