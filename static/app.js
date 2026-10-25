@@ -84,7 +84,7 @@ function match(lease, query) {
   if (!query) return true;
   query = query.toLowerCase();
   const reservationTerms = lease.staticIP ? ['yes', 'ja'] : ['no', 'nein'];
-  return [lease.ipAddress, lease.macAddress, lease.vendor, lease.privateMAC ? t('privateMACAddress') : '', lease.iaid, lease.duid, lease.name, lease.leasetime, formatLease(lease),
+  return [lease.ipAddress, lease.macAddress, lease.vendor, lease.privateMAC ? t('privateMACAddress') : '', lease.iaid, lease.duid, lease.name, lease.group, lease.leasetime, formatLease(lease),
     ...reservationTerms, lease.status].some(value => String(value ?? '').toLowerCase().includes(query));
 }
 
@@ -241,6 +241,8 @@ function updateStatusCards() {
 
 function render() {
   updateStatusCards();
+  const hasGroups = leases.some(lease => Boolean(lease.group));
+  document.querySelector('#group-header').hidden = !hasGroups;
   const rows = sorted(leases.filter(lease => match(lease, filterQuery) && matchesFilters(lease)));
   const tbody = document.querySelector('#leases tbody');
   tbody.replaceChildren(...rows.map(lease => {
@@ -250,7 +252,7 @@ function render() {
     row.setAttribute('aria-label', t('detailsFor', { device: lease.name || lease.ipAddress }));
     row.appendChild(statusCell(lease));
     const displayMAC = validMac(lease.macAddress) ? lease.macAddress : '—';
-    const values = [lease.ipAddress, displayMAC, displayVendor(lease) || '—', lease.name,
+    const values = [lease.ipAddress, displayMAC, displayVendor(lease) || '—', lease.name, lease.group || '—',
       lease.staticIP ? t('yes') : t('no'), formatLease(lease)];
     if (document.body.dataset.dhcpEventsEnabled === 'true') {
       values.push(lease.dhcpEventStatus
@@ -259,7 +261,7 @@ function render() {
     }
     values.forEach((value, index) => {
         const cell = document.createElement('td');
-        if (index === 1 && lease.isNew && validMac(lease.macAddress)) {
+        if (index === 4 && !hasGroups) cell.hidden = true;\n        if (index === 1 && lease.isNew && validMac(lease.macAddress)) {
           const badge = document.createElement('span');
           badge.className = 'new-badge';
           badge.textContent = t('newBadge');

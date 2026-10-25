@@ -155,3 +155,41 @@ func (r *Reservations) matches(identifier, ip, name, clientID string) bool {
 	}
 	return false
 }
+
+// readReservationGroups reads LeaseEditor group markers and associates each
+// subsequent reservation line with the current group. Group markers are
+// comments of the form "# LeaseEditor-Gruppe: Group name".
+func readReservationGroups(path string) map[string]string {
+	groups := make(map[string]string)
+	f, err := os.Open(path)
+	if err != nil {
+		return groups
+	}
+	defer f.Close()
+
+	group := ""
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(line, "#") {
+			comment := strings.TrimSpace(strings.TrimPrefix(line, "#"))
+			const marker = "LeaseEditor-Gruppe:"
+			if strings.HasPrefix(comment, marker) {
+				group = strings.TrimSpace(strings.TrimPrefix(comment, marker))
+			}
+			continue
+		}
+		// Strip any ordinary inline comment before parsing dnsmasq fields.
+		line = strings.TrimSpace(strings.SplitN(line, "#", 2)[0])
+		if line == "" || group == "" {
+			continue
+		}
+		for _, field := range strings.Split(line, ",") {
+			value := strings.Trim(strings.TrimSpace(field), "[]")
+			if macRE.MatchString(value) {
+				groups[strings.ToUpper(value)] = group
+			}
+		}
+	}
+	return groups
+}

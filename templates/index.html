@@ -331,6 +331,7 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
         <th data-key="macAddress"><span data-i18n="macAddress">MAC Address</span><span class="sort-indicator"></span></th>
         <th data-key="vendor"><span data-i18n="vendor">Manufacturer</span><span class="sort-indicator"></span></th>
         <th data-key="name"><span data-i18n="name">Name</span><span class="sort-indicator"></span></th>
+        <th data-key="group" id="group-header" hidden>Group<span class="sort-indicator"></span></th>
         <th data-key="staticIP"><span data-i18n="dhcpReservation">DHCP Reservation</span><span class="sort-indicator"></span></th>
         <th data-key="leasetime"><span data-i18n="leaseEndsOn">Lease ends on</span><span class="sort-indicator"></span></th>
         {{if .ShowDHCPEvents}}<th data-key="lastDhcpEventAge"><span data-i18n="dhcpEventLastLogin">Last DHCP event</span><span class="sort-indicator"></span></th>{{end}}

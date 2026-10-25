@@ -149,8 +149,10 @@ func leasesHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 			_, _ = w.Write([]byte(`{"error":"leases file unavailable"}`))
 			return
 		}
+		groups := readReservationGroups(cfg.HostsPath)
 		for i := range leases {
-			mac := strings.TrimSpace(leases[i].MACAddress)
+			mac := strings.ToUpper(strings.TrimSpace(leases[i].MACAddress))
+			leases[i].Group = groups[mac]
 			ip := net.ParseIP(leases[i].IPAddress)
 			// IPv6 entries without a valid MAC stay visible but are not labelled new.
 			if ip != nil && ip.To4() == nil && !macRE.MatchString(mac) {
