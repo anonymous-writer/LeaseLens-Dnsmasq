@@ -10,7 +10,7 @@
 
   const dictionaries = {
     en: {
-      language: 'Language', selectLanguage: 'Select language',
+      group: 'Group', language: 'Language', selectLanguage: 'Select language',
       brandSubtitle: 'Dnsmasq Network Dashboard', brandDescription: 'DHCP leases · Device discovery · Manufacturers · Network status', systemTime: 'System time', systemLabel: 'System', systemDescription: 'Go · Web Dashboard', dnsmasqRunning: '● Running', dnsmasqVersion: 'Version {version}', dnsmasqMonitoring: 'Status monitored',
       summaryTotal: 'Total leases', summaryOnline: 'Online · web reachable', summaryPing: 'Ping reachable', summaryExpiring: 'Expires within 24 hours', summaryOffline: 'No response',
       searchPlaceholder: 'Filter leases…', ipFilterTitle: 'Filter IPv4/IPv6',
@@ -71,13 +71,13 @@
       sortAscending: 'ascending', sortDescending: 'descending'
     },
     de: {
-      language: 'Sprache', selectLanguage: 'Sprache auswählen',
+      group: 'Gruppe', language: 'Sprache', selectLanguage: 'Sprache auswählen',
       brandSubtitle: 'Dnsmasq Network Dashboard', brandDescription: 'DHCP-Leases · Geräteerkennung · Hersteller · Netzwerkstatus', systemTime: 'Systemzeit', systemLabel: 'System', systemDescription: 'Go · Web-Dashboard', dnsmasqRunning: '● Läuft', dnsmasqVersion: 'Version {version}', dnsmasqMonitoring: 'Status wird überwacht',
       summaryTotal: 'Leases gesamt', summaryOnline: 'Online · Web erreichbar', summaryPing: 'Ping erreichbar', summaryExpiring: 'Läuft in 24 Stunden ab', summaryOffline: 'Keine Antwort',
       searchPlaceholder: 'Leases filtern…', ipFilterTitle: 'IPv4/IPv6 filtern',
       allIPs: 'Alle IPs', ipv4: 'IPv4', ipv6: 'IPv6',
       reservationFilterTitle: 'DHCP-Reservierungen filtern', allLeases: 'Alle Leases',
-      allGroups: 'Alle Gruppen', allGroups: 'Todos los grupos', statusFilterTitle: 'Nach Gerätestatus filtern', allStatuses: 'Alle Status',
+      allGroups: 'Alle Gruppen', statusFilterTitle: 'Nach Gerätestatus filtern', allStatuses: 'Alle Status',
       webOnlineFilter: 'HTTP/HTTPS antwortet', pingOnlyFilter: 'Ping antwortet, keine Weboberfläche', noResponseFilter: 'Keine Antwort auf Ping oder Web',
       reservations: 'Reservierungen', dynamicOnly: 'Nur dynamische Leases',
       refresh: 'Aktualisieren', refreshing: 'Wird aktualisiert…', loadingLeases: 'DHCP-Leases werden geprüft…',
@@ -131,7 +131,7 @@
       httpError: 'HTTP {status}',
       sortAscending: 'ascending', sortDescending: 'descending'    },
     es: {
-      language: 'Idioma', selectLanguage: 'Seleccionar idioma',
+      allGroups: 'Todos los grupos', group: 'Grupo', language: 'Idioma', selectLanguage: 'Seleccionar idioma',
       brandSubtitle: 'Panel de red Dnsmasq', brandDescription: 'Concesiones DHCP · Dispositivos · Fabricantes · Estado de red', systemTime: 'Hora del sistema', systemLabel: 'Sistema', systemDescription: 'Go · Panel web', dnsmasqRunning: '● En ejecución', dnsmasqVersion: 'Versión {version}', dnsmasqMonitoring: 'Estado supervisado',
       summaryTotal: 'Concesiones totales', summaryOnline: 'En línea · web accesible', summaryPing: 'Ping accesible', summaryExpiring: 'Caduca en 24 horas', summaryOffline: 'Sin respuesta',
       searchPlaceholder: 'Filtrar concesiones DHCP…', ipFilterTitle: 'Filtrar IPv4/IPv6',

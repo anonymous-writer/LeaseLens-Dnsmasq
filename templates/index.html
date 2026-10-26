@@ -24,7 +24,7 @@ body { margin:0; padding:1.25rem clamp(.75rem,2vw,2rem) 2rem; font:14px/1.45 sys
 #brand-logo { display:block; width:auto; height:3.2rem; max-width:min(28vw,8rem); object-fit:contain; border-radius:5px; }
 #brand-title { margin:0; font-size:1.12rem; font-weight:760; letter-spacing:-.025em; }
 #brand-subtitle { margin:.08rem 0 0; color:var(--muted); font-size:.8rem; }
-#toolbar { position:sticky; top:0; z-index:20; display:grid; grid-template-columns:minmax(14rem,1.5fr) repeat(4,minmax(8rem,.75fr)) auto; align-items:center; gap:.4rem; padding:.35rem 0; background:var(--bg); }
+#toolbar { position:sticky; top:0; z-index:20; display:grid; grid-template-columns:minmax(14rem,1.5fr) repeat(4,minmax(8rem,.75fr)) auto auto; align-items:center; gap:.4rem; padding:.35rem 0; background:var(--bg); }
 #search,#ip-filter,#reservation-filter,#status-filter,#group-filter,#language-select,#toolbar button { min-height:2.2rem; padding:.42rem .65rem; font:inherit; color:var(--fg); background:var(--surface); border:1px solid var(--border); border-radius:8px; }
 #search { min-width:0; width:100%; }
 #search:focus,#toolbar select:focus-visible,#toolbar button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
@@ -32,7 +32,7 @@ body { margin:0; padding:1.25rem clamp(.75rem,2vw,2rem) 2rem; font:14px/1.45 sys
 #toolbar button:hover:not(:disabled) { background:var(--surface-raised); border-color:var(--accent); box-shadow:0 3px 10px #0002; }
 #toolbar button:active:not(:disabled) { transform:translateY(1px); }
 /* Hauptaktion: kräftiges Blau, passend zur hervorgehobenen Aktion im Detaildialog. */
-#refresh-button { grid-column:6; grid-row:2; justify-self:end; width:max-content; min-width:2.45rem; padding-inline:.65rem; background:var(--accent)!important; border-color:var(--accent)!important; color:#fff!important; font-weight:750!important; box-shadow:0 3px 10px color-mix(in srgb,var(--accent) 24%,transparent)!important; }
+#refresh-button { grid-column:6; grid-row:1; justify-self:end; width:max-content; min-width:2.45rem; padding-inline:.65rem; background:var(--accent)!important; border-color:var(--accent)!important; color:#fff!important; font-weight:750!important; box-shadow:0 3px 10px color-mix(in srgb,var(--accent) 24%,transparent)!important; }
 #refresh-button:hover:not(:disabled) { filter:brightness(1.08); box-shadow:0 5px 14px color-mix(in srgb,var(--accent) 30%,transparent)!important; }
 /* Nützliche Sammelaktionen bekommen einen dezenten Akzent und bleiben klar sekundär. */
 #mark-reservations-button,#mark-all-ipv4-reservations-button { color:var(--fg); background:color-mix(in srgb,var(--accent) 9%,var(--surface))!important; border-color:color-mix(in srgb,var(--accent) 48%,var(--border))!important; }
@@ -41,7 +41,7 @@ body { margin:0; padding:1.25rem clamp(.75rem,2vw,2rem) 2rem; font:14px/1.45 sys
 #reset-known-button { color:var(--red)!important; background:color-mix(in srgb,var(--red) 7%,var(--surface))!important; border-color:color-mix(in srgb,var(--red) 52%,var(--border))!important; }
 #reset-known-button:hover:not(:disabled) { color:#fff!important; background:#c93643!important; border-color:#c93643!important; }
 #reset-known-button:disabled,#mark-reservations-button:disabled,#mark-all-ipv4-reservations-button:disabled,#refresh-button:disabled { opacity:.58; cursor:wait; box-shadow:none!important; }
-#theme-toggle { grid-column:6; grid-row:1; justify-self:end; width:2.45rem; padding:.4rem!important; display:grid; place-items:center; color:var(--accent)!important; background:color-mix(in srgb,var(--accent) 8%,var(--surface))!important; border-color:color-mix(in srgb,var(--accent) 35%,var(--border))!important; }
+#theme-toggle { grid-column:7; grid-row:1; justify-self:end; width:2.45rem; padding:.4rem!important; display:grid; place-items:center; color:var(--accent)!important; background:color-mix(in srgb,var(--accent) 8%,var(--surface))!important; border-color:color-mix(in srgb,var(--accent) 35%,var(--border))!important; }
 .icon-sun { display:none; } :root[data-theme=dark] .icon-moon { display:none; } :root[data-theme=dark] .icon-sun { display:inline; }
 #summary-cards { position:static; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:.6rem; margin:.35rem 0 .65rem; padding:.25rem 0; background:var(--bg); }
 .summary-card { min-width:0; padding:.62rem .85rem; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:none; }
@@ -334,7 +334,7 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
         <th data-key="macAddress"><span data-i18n="macAddress">MAC Address</span><span class="sort-indicator"></span></th>
         <th data-key="vendor"><span data-i18n="vendor">Manufacturer</span><span class="sort-indicator"></span></th>
         <th data-key="name"><span data-i18n="name">Name</span><span class="sort-indicator"></span></th>
-        <th data-key="group" id="group-header" hidden>Group<span class="sort-indicator"></span></th>
+        <th data-key="group" id="group-header" hidden><span data-i18n="group">Group</span><span class="sort-indicator"></span></th>
         <th data-key="staticIP"><span data-i18n="dhcpReservation">DHCP Reservation</span><span class="sort-indicator"></span></th>
         <th data-key="leasetime"><span data-i18n="leaseEndsOn">Lease ends on</span><span class="sort-indicator"></span></th>
         {{if .ShowDHCPEvents}}<th data-key="lastDhcpEventAge"><span data-i18n="dhcpEventLastLogin">Last DHCP event</span><span class="sort-indicator"></span></th>{{end}}
