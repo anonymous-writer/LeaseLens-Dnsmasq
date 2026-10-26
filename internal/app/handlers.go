@@ -24,7 +24,10 @@ func newHTTPHandler(cfg Config, known *KnownMACs, tmpl *template.Template, stati
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 	mux.HandleFunc("/known-macs", knownMACsHandler(cfg, known))
 	mux.HandleFunc("/leases", leasesHandler(cfg, known))
-	settingsPath := getenv("UI_SETTINGS_FILE", "/data/ui-settings.json")
+	settingsPath := cfg.UISettingsPath
+	if strings.TrimSpace(settingsPath) == "" {
+		settingsPath = "/data/ui-settings.json"
+	}
 	mux.Handle("/ui-settings", newUISettingsStore(settingsPath).handler())
 	if enableLeaseRelease {
 		mux.HandleFunc("/release-lease", releaseLeaseHandler(cfg))

@@ -23,6 +23,9 @@ hosts_file: "/var/lib/misc/dnsmasq.dhcphosts"
 # Persistent list of devices marked as known; parent directory must be writable.
 known_macs_file: "/home/pi/leaselens-dnsmasq/data/known-macs.json"
 
+# Persistent dashboard preferences (language and visible controls).
+ui_settings_file: "/home/pi/leaselens-dnsmasq/data/ui-settings.json"
+
 # Logging: DEBUG, INFO, WARN, or ERROR
 log_level: "INFO"
 

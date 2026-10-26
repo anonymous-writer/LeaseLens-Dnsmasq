@@ -51,6 +51,7 @@ type Config struct {
 	LeasePath      string
 	HostsPath      string
 	KnownMACsPath  string
+	UISettingsPath string
 	DHCPEventsPath string
 	DHCPInterface  string
 	AppVersion     string
@@ -67,6 +68,7 @@ func loadConfig() Config {
 		LeasePath:      getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
 		HostsPath:      getenv("DNSMASQ_HOSTS_FILE", "/var/lib/dnsmasq/dnsmasq.dhcphosts"),
 		KnownMACsPath:  getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
+		UISettingsPath: getenv("UI_SETTINGS_FILE", "/data/ui-settings.json"),
 		DHCPEventsPath: getenv("DNSMASQ_EVENTS_FILE", ""),
 		DHCPInterface:  getenv("DNSMASQ_INTERFACE", ""),
 		AppVersion:     getenv("APP_VERSION", buildVersion),
@@ -105,6 +107,11 @@ func loadConfigFromArgs(args []string) (Config, string, error) {
 			return Config{}, "", err
 		}
 	}
+	// Keep UI_SETTINGS_FILE as an optional environment override for containers.
+	// Explicit command-line flags still take precedence over environment values.
+	if v := os.Getenv("UI_SETTINGS_FILE"); v != "" {
+		cfg.UISettingsPath = v
+	}
 
 	flags := flag.NewFlagSet("leaselens-dnsmasq", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
@@ -122,6 +129,7 @@ func loadConfigFromArgs(args []string) (Config, string, error) {
 	flags.StringVar(&cfg.LeasePath, "leases-file", cfg.LeasePath, "Path to dnsmasq lease file (environment: DNSMASQ_LEASES_FILE)")
 	flags.StringVar(&cfg.HostsPath, "hosts-file", cfg.HostsPath, "Path to optional dnsmasq DHCP hosts file (environment: DNSMASQ_HOSTS_FILE)")
 	flags.StringVar(&cfg.KnownMACsPath, "known-macs-file", cfg.KnownMACsPath, "Path to persistent remembered-MAC JSON file (environment: KNOWN_MACS_FILE)")
+	flags.StringVar(&cfg.UISettingsPath, "ui-settings-file", cfg.UISettingsPath, "Path to persistent UI settings JSON file (environment: UI_SETTINGS_FILE)")
 	flags.StringVar(&cfg.DHCPInterface, "dhcp-interface", cfg.DHCPInterface, "Interface used by dhcp_release for native IPv4 lease release (environment: DNSMASQ_INTERFACE)")
 	flags.StringVar(&logLevel, "log-level", logLevel, "Log level: DEBUG, INFO, WARN, or ERROR (environment: LOG_LEVEL)")
 	flags.StringVar(&cfg.AppVersion, "app-version", cfg.AppVersion, "Application version (environment: APP_VERSION)")
@@ -189,6 +197,8 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 			cfg.HostsPath = value
 		case "known_macs_file", "known-macs-file":
 			cfg.KnownMACsPath = value
+		case "ui_settings_file", "ui-settings-file":
+			cfg.UISettingsPath = value
 		case "dhcp_events_file", "dhcp-events-file":
 			cfg.DHCPEventsPath = value
 		case "dhcp_interface", "dhcp-interface":
