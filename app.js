@@ -730,3 +730,89 @@ window.addEventListener('app-language-change', () => {
 
 load();
 window.setInterval(() => { if (leases.length) render(); }, COUNTDOWN_RENDER_INTERVAL_MS);
+
+// Persistent view preferences and capability-aware feature catalog.
+(() => {
+  const API = '/ui-settings';
+  const dialog = document.querySelector('#settings-dialog');
+  if (!dialog) return;
+  const features = [
+    { id: 'search', label: 'Lease-Suche', desc: 'Geräte anhand der Lease-Daten filtern.', element: '#search', supported: true },
+    { id: 'ip-filter', label: 'IP-Filter', desc: 'Alle IPs, IPv4 oder IPv6 anzeigen.', element: '#ip-filter', supported: true },
+    { id: 'reservation-filter', label: 'Lease-Filter', desc: 'Reservierungen oder dynamische Leases auswählen.', element: '#reservation-filter', supported: true },
+    { id: 'status-filter', label: 'Status-Filter', desc: 'Nach Online-, Ping- oder Offline-Status filtern.', element: '#status-filter', supported: true },
+    { id: 'group-filter', label: 'Gruppenfilter', desc: 'Geräte nach Gruppe filtern.', element: '#group-filter', supported: true },
+    { id: 'refresh-button', label: 'Aktualisieren', desc: 'Lease-Daten manuell neu laden.', element: '#refresh-button', supported: true },
+    { id: 'mark-reservations-button', label: 'Reservierungen merken', desc: 'Erkannte DHCP-Reservierungen als bekannt markieren.', element: '#mark-reservations-button', supported: true },
+    { id: 'mark-all-ipv4-reservations-button', label: 'Alle IPv4-Reservierungen merken', desc: 'Reservierungen aus der DHCP-Hosts-Datei übernehmen.', element: '#mark-all-ipv4-reservations-button', supported: true },
+    { id: 'reset-known-button', label: 'Merkliste zurücksetzen', desc: 'Alle gespeicherten bekannten Geräte vergessen.', element: '#reset-known-button', supported: true },
+    { id: 'theme-toggle', label: 'Design umschalten', desc: 'Zwischen hellem und dunklem Design wechseln.', element: '#theme-toggle', supported: true },
+    { id: 'release-lease', label: 'IPv4-Lease freigeben', desc: 'Native Funktion; benötigt Native-Build und konfigurierte DHCP-Schnittstelle.', element: '#release-lease-button', supported: !!document.querySelector('#release-lease-button') },
+    { id: 'dhcp-events', label: 'DHCP-Ereignisprotokoll', desc: 'Benötigt eine konfigurierte DHCP-Eventdatei.', element: '#dhcp-events', supported: !!document.querySelector('#dhcp-events') }
+  ];
+  const list = document.querySelector('#settings-feature-list');
+  const visible = {};
+  let settings = { language: 'de', visible: {} };
+
+  function applyVisibility() {
+    features.forEach(f => {
+      const el = document.querySelector(f.element);
+      if (!el) return;
+      const show = f.supported && settings.visible[f.id] !== false;
+      // Respect the app's own hidden state (for example, the group filter is
+      // only shown after groups have actually been discovered).
+      // Keep grid layout tidy when toolbar controls are hidden.
+      if (!show) el.style.display = 'none';
+      else el.style.removeProperty('display');
+    });
+  }
+
+  function renderFeatures() {
+    list.replaceChildren();
+    features.forEach(f => {
+      const row = document.createElement('label');
+      row.className = `settings-feature${f.supported ? '' : ' unavailable'}`;
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = f.supported && settings.visible[f.id] !== false;
+      checkbox.disabled = !f.supported;
+      checkbox.addEventListener('change', () => { settings.visible[f.id] = checkbox.checked; });
+      const text = document.createElement('span');
+      const title = document.createElement('strong'); title.textContent = f.label;
+      const desc = document.createElement('small'); desc.textContent = f.supported ? f.desc : `${f.desc} In dieser Installation nicht verfügbar.`;
+      text.append(title, desc); row.append(checkbox, text); list.append(row);
+    });
+  }
+
+  async function loadSettings() {
+    try {
+      const response = await fetch(API, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const loaded = await response.json();
+      settings = { language: loaded.language || 'de', visible: loaded.visible || {} };
+      if (window.DnsmasqI18n) window.DnsmasqI18n.setLanguage(settings.language);
+    } catch (err) {
+      // The UI remains usable with defaults if the settings file is read-only/unavailable.
+      settings = { language: (window.DnsmasqI18n && window.DnsmasqI18n.language) || 'de', visible: {} };
+    }
+    document.querySelector('#settings-language').value = settings.language;
+    renderFeatures(); applyVisibility();
+  }
+
+  document.querySelector('#settings-button').addEventListener('click', () => dialog.showModal());
+  document.querySelector('#settings-close').addEventListener('click', () => dialog.close());
+  document.querySelector('#settings-language').addEventListener('change', e => { settings.language = e.target.value; });
+  document.querySelector('#settings-save').addEventListener('click', async () => {
+    const state = document.querySelector('#settings-save-state');
+    settings.language = document.querySelector('#settings-language').value;
+    state.textContent = 'Speichere…';
+    try {
+      const response = await fetch(API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (window.DnsmasqI18n) window.DnsmasqI18n.setLanguage(settings.language);
+      applyVisibility(); state.textContent = 'Gespeichert';
+      window.setTimeout(() => { state.textContent = ''; dialog.close(); }, 500);
+    } catch (_) { state.textContent = 'Speichern fehlgeschlagen – Schreibrechte für /data prüfen.'; }
+  });
+  loadSettings();
+})();

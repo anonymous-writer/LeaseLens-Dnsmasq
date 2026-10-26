@@ -21,6 +21,8 @@ services:
       DNSMASQ_LEASES_FILE: "/var/lib/dnsmasq/dnsmasq.leases"
       DNSMASQ_HOSTS_FILE: "/var/lib/dnsmasq/dnsmasq.dhcphosts"
       KNOWN_MACS_FILE: "/data/known-macs.json"
+      # Persistent UI preferences (language and visible controls).
+      UI_SETTINGS_FILE: "/data/ui-settings.json"
     network_mode: host
     volumes:
       # Mount the directory, not individual files, so lease-file replacement

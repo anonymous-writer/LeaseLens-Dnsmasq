@@ -439,3 +439,8 @@ Issues and pull requests are welcome. Please include reproduction steps for bugs
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+
+### UI settings
+
+The dashboard's **Ansicht & Einstellungen** dialog stores the selected language and visible controls in `/data/ui-settings.json` by default. In Docker/Podman, keep `/data` mounted persistently. Override the path with `UI_SETTINGS_FILE` if needed. This file is separate from `KNOWN_MACS_FILE` so remembered MAC addresses and interface preferences remain independent. Unsupported runtime-specific features are shown disabled in the feature list.

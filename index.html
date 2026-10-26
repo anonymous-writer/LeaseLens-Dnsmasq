@@ -237,6 +237,24 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
     table thead th { position: static !important; top: auto !important; }
   }
 
+
+#settings-dialog { width:min(680px,calc(100% - 2rem)); max-height:85vh; overflow:auto; color:var(--fg); background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.2rem; box-shadow:0 18px 60px #0008; }
+#settings-dialog::backdrop { background:#020617bb; backdrop-filter:blur(3px); }
+.settings-head,.settings-actions { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.settings-head h2 { margin:0; font-size:1.25rem; }
+#settings-dialog h3 { margin:.9rem 0 .5rem; font-size:1rem; }
+#settings-dialog p { color:var(--muted); font-size:.9rem; }
+#settings-dialog button,#settings-language { color:var(--fg); background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:.5rem .7rem; }
+.settings-language { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin:.8rem 0; }
+#settings-feature-list { display:grid; gap:.45rem; }
+.settings-feature { display:flex; align-items:flex-start; gap:.65rem; padding:.65rem; border:1px solid var(--border); border-radius:8px; }
+.settings-feature small { display:block; color:var(--muted); margin-top:.15rem; }
+.settings-feature.unavailable { opacity:.42; }
+.settings-actions { margin-top:1rem; justify-content:flex-end; }
+#settings-save { background:var(--accent); color:white; font-weight:700; }
+#settings-button { white-space:nowrap; }
+#language-select { display:none; }
+
 </style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}" data-dhcp-events-enabled="{{if .ShowDHCPEvents}}true{{else}}false{{end}}">
   <!--
     Hauptwerkzeugleiste.
@@ -311,7 +329,19 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
         <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
       </svg>
     </button>
+    <button id="settings-button" type="button" title="Ansicht & Einstellungen" aria-label="Ansicht & Einstellungen">⚙ Einstellungen</button>
   </div>
+
+  <dialog id="settings-dialog" aria-labelledby="settings-title">
+    <div class="settings-head"><h2 id="settings-title">Ansicht & Einstellungen</h2><button type="button" id="settings-close" aria-label="Schließen">×</button></div>
+    <p id="settings-description">Wähle, welche Bedienelemente angezeigt werden. Grau markierte Funktionen werden von dieser Installation nicht unterstützt.</p>
+    <label class="settings-language" for="settings-language">Sprache
+      <select id="settings-language"><option value="de">Deutsch</option><option value="en">English</option><option value="es">Español</option></select>
+    </label>
+    <h3 id="settings-functions-heading">Buttons und Menüpunkte</h3>
+    <div id="settings-feature-list"></div>
+    <div class="settings-actions"><span id="settings-save-state" aria-live="polite"></span><button id="settings-save" type="button">Speichern</button></div>
+  </dialog>
 
   <section id="summary-cards" aria-label="Lease summary">
     <div class="summary-card"><span class="summary-label" data-i18n="summaryTotal">Total leases</span><div class="summary-value"><span id="summary-total">—</span></div></div>
