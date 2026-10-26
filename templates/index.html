@@ -250,7 +250,7 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
 .settings-feature { display:flex; align-items:flex-start; gap:.65rem; padding:.65rem; border:1px solid var(--border); border-radius:8px; }
 .settings-feature small { display:block; color:var(--muted); margin-top:.15rem; }
 .settings-feature.unavailable { opacity:.42; }
-.settings-actions { margin-top:1rem; justify-content:flex-end; }
+.settings-actions { position:sticky; top:-1.2rem; z-index:5; margin:0 -1.2rem .8rem; padding:.65rem 1.2rem; background:var(--surface); border-bottom:1px solid var(--border); justify-content:flex-end; }
 #settings-save { background:var(--accent); color:white; font-weight:700; }
 #settings-button { white-space:nowrap; }
 #language-select { display:none; }
@@ -334,13 +334,13 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
 
   <dialog id="settings-dialog" aria-labelledby="settings-title">
     <div class="settings-head"><h2 id="settings-title">Ansicht & Einstellungen</h2><button type="button" id="settings-close" aria-label="Schließen">×</button></div>
+    <div class="settings-actions"><span id="settings-save-state" aria-live="polite"></span><button id="settings-save" type="button">Speichern</button></div>
     <p id="settings-description">Wähle, welche Bedienelemente angezeigt werden. Grau markierte Funktionen werden von dieser Installation nicht unterstützt.</p>
-    <label class="settings-language" for="settings-language">Sprache
+    <label class="settings-language" for="settings-language"><span id="settings-language-label">Sprache</span>
       <select id="settings-language"><option value="de">Deutsch</option><option value="en">English</option><option value="es">Español</option></select>
     </label>
     <h3 id="settings-functions-heading">Buttons und Menüpunkte</h3>
     <div id="settings-feature-list"></div>
-    <div class="settings-actions"><span id="settings-save-state" aria-live="polite"></span><button id="settings-save" type="button">Speichern</button></div>
   </dialog>
 
   <section id="summary-cards" aria-label="Lease summary">
