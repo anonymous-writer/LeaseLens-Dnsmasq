@@ -31,7 +31,7 @@ func openDatabase(path, knownMACsPath, uiSettingsPath, dhcpEventsPath string) (*
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 	db.SetConnMaxLifetime(0)
-	pragmas := []string{"PRAGMA journal_mode=WAL", "PRAGMA foreign_keys=ON", "PRAGMA busy_timeout=5000"}
+	pragmas := []string{"PRAGMA journal_mode=DELETE", "PRAGMA foreign_keys=ON", "PRAGMA busy_timeout=5000"}
 	for _, q := range pragmas {
 		if _, err = db.Exec(q); err != nil {
 			db.Close()
@@ -66,24 +66,19 @@ func openDatabase(path, knownMACsPath, uiSettingsPath, dhcpEventsPath string) (*
 	return db, nil
 }
 
-// checkpointAndCloseDatabase flushes committed WAL pages into the main database
-// and closes the pool. On a clean shutdown SQLite can then remove the -wal and
-// -shm sidecar files. These files must never be deleted manually while running.
+// checkpointAndCloseDatabase closes the database pool during graceful shutdown.
+// DELETE journal mode keeps the normal on-disk state in leaselens.db; SQLite may
+// create a short-lived -journal file while a transaction is in progress. Never
+// delete journal files manually while the application or another process runs.
 func checkpointAndCloseDatabase(db *sql.DB) {
-	if db == nil {
-		return
-	}
-	var busy, logFrames, checkpointed int
-	if err := db.QueryRow(`PRAGMA wal_checkpoint(TRUNCATE)`).Scan(&busy, &logFrames, &checkpointed); err != nil {
-		LogWarnf("SQLite WAL checkpoint failed: %v", err)
-	} else if busy != 0 {
-		LogWarnf("SQLite WAL checkpoint was busy (log frames=%d, checkpointed=%d); sidecar files may remain", logFrames, checkpointed)
-	} else {
-		LogInfof("SQLite WAL checkpoint complete (frames=%d, checkpointed=%d)", logFrames, checkpointed)
-	}
-	if err := db.Close(); err != nil {
-		LogWarnf("close SQLite database: %v", err)
-	}
+    if db == nil {
+        return
+    }
+    if err := db.Close(); err != nil {
+        LogWarnf("close SQLite database: %v", err)
+    } else {
+        LogInfof("SQLite database closed")
+    }
 }
 
 func alreadyImported(db *sql.DB, key string) (bool, error) {

@@ -22,7 +22,7 @@ working_dir: "/home/pi/leaselens-dnsmasq"
 
 For Docker, mount the directory containing the database as a persistent volume.
 Back up `leaselens.db` while LeaseLens is stopped, or use SQLite's backup API;
-copying only the main file while WAL mode is active may omit recent changes.
+copying only the main file while DELETE journal mode is active may omit recent changes.
 
 Do not delete the old JSON files or DHCP event log until the new version has
 started successfully and the imported records have been checked.
