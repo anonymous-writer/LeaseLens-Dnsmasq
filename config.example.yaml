@@ -57,9 +57,11 @@ database_path: "/data/leaselens.db"
 
 # PostgreSQL settings (used only when database_type is "postgres").
 # The target PostgreSQL database must already exist. LeaseLens creates its tables.
-# Set the password in the POSTGRES_PASSWORD environment variable.
+# Password can be set here or via POSTGRES_PASSWORD environment variable.
+# Prefer a protected config file (chmod 600) if storing a password here.
 # postgres_host: "192.168.1.10"
 # postgres_port: "5432"
 # postgres_database: "leaselens"
 # postgres_user: "leaselens"
+# postgres_password: "change-me"
 # postgres_sslmode: "require"

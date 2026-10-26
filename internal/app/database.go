@@ -59,10 +59,10 @@ func adaptSQL(query string) string {
 // openDatabase opens the single persistent LeaseLens database and creates its schema.
 // Legacy JSON files are imported transactionally and are deliberately not deleted.
 func openDatabase(path, knownMACsPath, uiSettingsPath, dhcpEventsPath string) (*sql.DB, error) {
-	return openConfiguredDatabase("sqlite", path, "", "", "", "", "", knownMACsPath, uiSettingsPath, dhcpEventsPath)
+	return openConfiguredDatabase("sqlite", path, "", "", "", "", "", "", knownMACsPath, uiSettingsPath, dhcpEventsPath)
 }
 
-func openConfiguredDatabase(dbType, path, pgHost, pgPort, pgName, pgUser, pgSSLMode, knownMACsPath, uiSettingsPath, dhcpEventsPath string) (*sql.DB, error) {
+func openConfiguredDatabase(dbType, path, pgHost, pgPort, pgName, pgUser, pgPassword, pgSSLMode, knownMACsPath, uiSettingsPath, dhcpEventsPath string) (*sql.DB, error) {
 	dbType = strings.ToLower(strings.TrimSpace(dbType))
 	if dbType == "" {
 		dbType = "sqlite"
@@ -88,7 +88,10 @@ func openConfiguredDatabase(dbType, path, pgHost, pgPort, pgName, pgUser, pgSSLM
 		if pgSSLMode == "" {
 			pgSSLMode = "require"
 		}
-		password := os.Getenv("POSTGRES_PASSWORD")
+		password := pgPassword
+		if password == "" {
+			password = os.Getenv("POSTGRES_PASSWORD")
+		}
 		dsnURL := &url.URL{Scheme: "postgres", User: url.UserPassword(pgUser, password), Host: net.JoinHostPort(pgHost, pgPort), Path: "/" + pgName}
 		query := dsnURL.Query()
 		query.Set("sslmode", pgSSLMode)

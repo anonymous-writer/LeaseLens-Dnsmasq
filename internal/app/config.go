@@ -54,6 +54,7 @@ type Config struct {
 	PostgresPort     string
 	PostgresDatabase string
 	PostgresUser     string
+	PostgresPassword string
 	PostgresSSLMode  string
 	Host             string
 	Port             string
@@ -79,6 +80,7 @@ func loadConfig() Config {
 		PostgresPort:     getenv("POSTGRES_PORT", "5432"),
 		PostgresDatabase: getenv("POSTGRES_DATABASE", "leaselens"),
 		PostgresUser:     getenv("POSTGRES_USER", "leaselens"),
+		PostgresPassword: getenv("POSTGRES_PASSWORD", ""),
 		PostgresSSLMode:  getenv("POSTGRES_SSLMODE", "require"),
 		Host:             getenv("HOST", "0.0.0.0"),
 		Port:             getenv("PORT", "5000"),
@@ -222,6 +224,8 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 			cfg.PostgresDatabase = value
 		case "postgres_user", "postgres-user":
 			cfg.PostgresUser = value
+		case "postgres_password", "postgres-password":
+			cfg.PostgresPassword = value
 		case "postgres_sslmode", "postgres-sslmode":
 			cfg.PostgresSSLMode = value
 		case "host":

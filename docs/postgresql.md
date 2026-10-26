@@ -12,14 +12,14 @@ postgres_host: "192.168.1.10"
 postgres_port: "5432"
 postgres_database: "leaselens"
 postgres_user: "leaselens"
+postgres_password: "replace-with-your-secret"
 postgres_sslmode: "require"
 ```
 
-Set the password in the environment, not in `config.yaml`:
-
-```ini
-Environment="POSTGRES_PASSWORD=replace-with-your-secret"
-```
+The password may be set in `config.yaml` with `postgres_password`. Alternatively,
+leave that key out and provide `POSTGRES_PASSWORD` through the environment. A value
+in `config.yaml` takes precedence over the environment variable. If storing the
+password in the file, restrict its permissions (for example, `chmod 600 config.yaml`).
 
 The PostgreSQL database itself must already exist, and the configured user must
 have permission to create tables and indexes in it. `postgres_sslmode` accepts
