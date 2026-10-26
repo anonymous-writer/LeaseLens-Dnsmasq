@@ -4,6 +4,7 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,18 +18,14 @@ import (
 )
 
 // newHTTPHandler wires the page, static assets, and API endpoints together.
-func newHTTPHandler(cfg Config, known *KnownMACs, tmpl *template.Template, staticFS fs.FS, dnsmasqVersion string, nativeBuild bool) http.Handler {
+func newHTTPHandler(cfg Config, db *sql.DB, known *KnownMACs, tmpl *template.Template, staticFS fs.FS, dnsmasqVersion string, nativeBuild bool) http.Handler {
 	mux := http.NewServeMux()
 	enableLeaseRelease := nativeBuild && validInterfaceName(cfg.DHCPInterface)
 	mux.HandleFunc("/", homeHandler(cfg, tmpl, dnsmasqVersion, enableLeaseRelease))
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 	mux.HandleFunc("/known-macs", knownMACsHandler(cfg, known))
-	mux.HandleFunc("/leases", leasesHandler(cfg, known))
-	settingsPath := cfg.UISettingsPath
-	if strings.TrimSpace(settingsPath) == "" {
-		settingsPath = "/data/ui-settings.json"
-	}
-	mux.Handle("/ui-settings", newUISettingsStore(settingsPath).handler())
+	mux.HandleFunc("/leases", leasesHandler(cfg, db, known))
+	mux.Handle("/ui-settings", newUISettingsStore(db).handler())
 	if enableLeaseRelease {
 		mux.HandleFunc("/release-lease", releaseLeaseHandler(cfg))
 	}
@@ -144,7 +141,7 @@ func knownMACsHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 	}
 }
 
-func leasesHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
+func leasesHandler(cfg Config, db *sql.DB, known *KnownMACs) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		leases, err := readLeases(cfg.LeasePath, cfg.HostsPath)
 		if err != nil {
@@ -165,6 +162,11 @@ func leasesHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 				continue
 			}
 			leases[i].IsNew = !known.has(mac)
+		}
+		if strings.TrimSpace(cfg.DHCPEventsPath) != "" {
+			if err := importLegacyDHCPEvents(db, cfg.DHCPEventsPath); err != nil {
+				LogWarnf("cannot sync DHCP events into SQLite: %v", err)
+			}
 		}
 		applyDHCPEventState(leases, cfg.DHCPEventsPath, time.Now())
 		w.Header().Set("Content-Type", "application/json")

@@ -1,66 +1,26 @@
 package app
 
-// Persist devices explicitly marked as known.
-
 import (
-	"encoding/json"
+	"database/sql"
 	"net/http"
-	"os"
-	"path/filepath"
-	"sort"
 	"strings"
 	"sync"
 )
 
+// KnownMACs persists remembered devices in SQLite.
 type KnownMACs struct {
-	mu   sync.Mutex
-	path string
-	macs map[string]bool
+	mu sync.Mutex
+	db *sql.DB
 }
 
-func newKnownMACs(path string) *KnownMACs {
-	k := &KnownMACs{path: path, macs: map[string]bool{}}
-	data, err := os.ReadFile(path)
-	if err == nil {
-		var values []string
-		if unmarshalErr := json.Unmarshal(data, &values); unmarshalErr != nil {
-			LogWarnf("cannot parse remembered-MAC file path=%s: %v", path, unmarshalErr)
-		} else {
-			for _, m := range values {
-				k.macs[strings.ToUpper(strings.TrimSpace(m))] = true
-			}
-			LogDebugf("loaded remembered-MAC list count=%d", len(k.macs))
-		}
-	} else if !os.IsNotExist(err) {
-		LogWarnf("cannot read remembered-MAC file path=%s: %v", path, err)
-	} else {
-		LogDebugf("remembered-MAC file does not exist yet path=%s", path)
-	}
-	return k
-}
-
+func newKnownMACs(db *sql.DB) *KnownMACs { return &KnownMACs{db: db} }
 func (k *KnownMACs) has(mac string) bool {
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	return k.macs[strings.ToUpper(strings.TrimSpace(mac))]
+	var found int
+	err := k.db.QueryRow(`SELECT 1 FROM known_devices WHERE mac=? COLLATE NOCASE`, strings.ToUpper(strings.TrimSpace(mac))).Scan(&found)
+	return err == nil
 }
-
-func (k *KnownMACs) saveLocked() error {
-	if err := os.MkdirAll(filepath.Dir(k.path), 0755); err != nil {
-		return err
-	}
-	values := make([]string, 0, len(k.macs))
-	for m := range k.macs {
-		values = append(values, m)
-	}
-	sort.Strings(values)
-	data, err := json.MarshalIndent(values, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(k.path, data, 0644)
-}
-
 func (k *KnownMACs) mark(mac string) error {
 	mac = strings.ToUpper(strings.TrimSpace(mac))
 	if !macRE.MatchString(mac) {
@@ -68,50 +28,34 @@ func (k *KnownMACs) mark(mac string) error {
 	}
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	wasKnown := k.macs[mac]
-	k.macs[mac] = true
-	if err := k.saveLocked(); err != nil {
-		if !wasKnown {
-			delete(k.macs, mac)
-		}
-		return err
-	}
-	return nil
+	_, err := k.db.Exec(`INSERT OR IGNORE INTO known_devices(mac) VALUES(?)`, mac)
+	return err
 }
-
-// markMany remembers each unique valid MAC in one persistent write.
-// It returns the number of unique valid MAC addresses supplied.
-
 func (k *KnownMACs) markMany(macs []string) (int, error) {
 	unique := make(map[string]struct{}, len(macs))
-	for _, mac := range macs {
-		mac = strings.ToUpper(strings.TrimSpace(mac))
-		if macRE.MatchString(mac) {
-			unique[mac] = struct{}{}
+	for _, m := range macs {
+		m = strings.ToUpper(strings.TrimSpace(m))
+		if macRE.MatchString(m) {
+			unique[m] = struct{}{}
 		}
 	}
-
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	added := make([]string, 0, len(unique))
-	for mac := range unique {
-		if !k.macs[mac] {
-			k.macs[mac] = true
-			added = append(added, mac)
+	tx, err := k.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	for m := range unique {
+		if _, err = tx.Exec(`INSERT OR IGNORE INTO known_devices(mac) VALUES(?)`, m); err != nil {
+			return 0, err
 		}
 	}
-	if len(added) == 0 {
-		return len(unique), nil
-	}
-	if err := k.saveLocked(); err != nil {
-		for _, mac := range added {
-			delete(k.macs, mac)
-		}
+	if err = tx.Commit(); err != nil {
 		return 0, err
 	}
 	return len(unique), nil
 }
-
 func (k *KnownMACs) unmark(mac string) error {
 	mac = strings.ToUpper(strings.TrimSpace(mac))
 	if !macRE.MatchString(mac) {
@@ -119,25 +63,12 @@ func (k *KnownMACs) unmark(mac string) error {
 	}
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	wasKnown := k.macs[mac]
-	delete(k.macs, mac)
-	if err := k.saveLocked(); err != nil {
-		if wasKnown {
-			k.macs[mac] = true
-		}
-		return err
-	}
-	return nil
+	_, err := k.db.Exec(`DELETE FROM known_devices WHERE mac=? COLLATE NOCASE`, mac)
+	return err
 }
-
 func (k *KnownMACs) reset() error {
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	previous := k.macs
-	k.macs = map[string]bool{}
-	if err := k.saveLocked(); err != nil {
-		k.macs = previous
-		return err
-	}
-	return nil
+	_, err := k.db.Exec(`DELETE FROM known_devices`)
+	return err
 }

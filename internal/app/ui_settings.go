@@ -1,46 +1,41 @@
 package app
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sync"
+	"time"
 )
 
-// UISettings stores browser-independent preferences in the persistent data directory.
+// UISettings stores browser-independent preferences in SQLite.
 type UISettings struct {
 	Language string          `json:"language"`
 	Visible  map[string]bool `json:"visible"`
 }
-
 type uiSettingsStore struct {
-	path string
-	mu   sync.Mutex
+	db *sql.DB
+	mu sync.Mutex
 }
 
-func newUISettingsStore(path string) *uiSettingsStore { return &uiSettingsStore{path: path} }
-
+func newUISettingsStore(db *sql.DB) *uiSettingsStore { return &uiSettingsStore{db: db} }
 func (s *uiSettingsStore) read() UISettings {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	settings := UISettings{Language: "de", Visible: map[string]bool{}}
-	b, err := os.ReadFile(s.path)
+	out := UISettings{Language: "de", Visible: map[string]bool{}}
+	var lang, raw string
+	err := s.db.QueryRow(`SELECT language,visible_json FROM ui_settings WHERE id=1`).Scan(&lang, &raw)
 	if err != nil {
-		return settings
+		return out
 	}
-	if json.Unmarshal(b, &settings) != nil {
-		return UISettings{Language: "de", Visible: map[string]bool{}}
+	if lang == "de" || lang == "en" || lang == "es" {
+		out.Language = lang
 	}
-	if settings.Language != "de" && settings.Language != "en" && settings.Language != "es" {
-		settings.Language = "de"
+	if json.Unmarshal([]byte(raw), &out.Visible) != nil || out.Visible == nil {
+		out.Visible = map[string]bool{}
 	}
-	if settings.Visible == nil {
-		settings.Visible = map[string]bool{}
-	}
-	return settings
+	return out
 }
-
 func (s *uiSettingsStore) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -60,16 +55,14 @@ func (s *uiSettingsStore) handler() http.HandlerFunc {
 			if settings.Visible == nil {
 				settings.Visible = map[string]bool{}
 			}
-			s.mu.Lock()
-			defer s.mu.Unlock()
-			if err := os.MkdirAll(filepath.Dir(s.path), 0755); err != nil {
-				http.Error(w, "cannot create settings directory", http.StatusInternalServerError)
+			visible, err := json.Marshal(settings.Visible)
+			if err != nil {
+				http.Error(w, "invalid settings", http.StatusBadRequest)
 				return
 			}
-			b, err := json.MarshalIndent(settings, "", "  ")
-			if err == nil {
-				err = os.WriteFile(s.path, append(b, '\n'), 0644)
-			}
+			s.mu.Lock()
+			defer s.mu.Unlock()
+			_, err = s.db.Exec(`INSERT INTO ui_settings(id,language,visible_json,updated_at) VALUES(1,?,?,?) ON CONFLICT(id) DO UPDATE SET language=excluded.language,visible_json=excluded.visible_json,updated_at=excluded.updated_at`, settings.Language, string(visible), time.Now().Format(time.RFC3339))
 			if err != nil {
 				http.Error(w, "cannot save settings", http.StatusInternalServerError)
 				return

@@ -33,7 +33,12 @@ func Run(assets fs.FS, nativeBuild bool) {
 	}
 	SetLogLevel(logLevel)
 
-	known := newKnownMACs(cfg.KnownMACsPath)
+	db, err := openDatabase(cfg.DatabasePath, cfg.KnownMACsPath, cfg.UISettingsPath, cfg.DHCPEventsPath)
+	if err != nil {
+		LogFatalf("cannot initialize LeaseLens database: %v", err)
+	}
+	defer db.Close()
+	known := newKnownMACs(db)
 	tmpl, err := template.ParseFS(assets, "templates/index.html")
 	if err != nil {
 		LogFatalf("cannot parse embedded template templates/index.html: %v", err)
@@ -58,7 +63,7 @@ func Run(assets fs.FS, nativeBuild bool) {
 		}
 	}
 
-	handler := newHTTPHandler(cfg, known, tmpl, staticFS, dnsmasqVersion, nativeBuild)
+	handler := newHTTPHandler(cfg, db, known, tmpl, staticFS, dnsmasqVersion, nativeBuild)
 	address := net.JoinHostPort(cfg.Host, cfg.Port)
 	LogInfof("leaselens-dnsmasq starting version=%s listen=%s", cfg.AppVersion, address)
 	if err := http.ListenAndServe(address, handler); err != nil {

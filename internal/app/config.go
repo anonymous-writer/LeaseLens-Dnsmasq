@@ -48,6 +48,7 @@ func getenv(k, d string) string {
 // Config contains paths, server settings, and build metadata.
 type Config struct {
 	WorkingDir     string
+	DatabasePath   string
 	Host           string
 	Port           string
 	LeasePath      string
@@ -66,6 +67,7 @@ type Config struct {
 func loadConfig() Config {
 	return Config{
 		WorkingDir:     getenv("WORKING_DIR", ""),
+		DatabasePath:   getenv("DATABASE_PATH", "/data/leaselens.db"),
 		Host:           getenv("HOST", "0.0.0.0"),
 		Port:           getenv("PORT", "5000"),
 		LeasePath:      getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
@@ -128,6 +130,7 @@ func loadConfigFromArgs(args []string) (Config, string, error) {
 
 	flags.StringVar(&configPath, "config", configPath, "Path to YAML-style configuration file (environment: CONFIG_FILE)")
 	flags.StringVar(&cfg.WorkingDir, "working-dir", cfg.WorkingDir, "Directory for persistent LeaseLens data (environment: WORKING_DIR)")
+	flags.StringVar(&cfg.DatabasePath, "database-file", cfg.DatabasePath, "Path to SQLite database (environment: DATABASE_PATH)")
 	flags.StringVar(&cfg.Host, "host", cfg.Host, "Address to listen on (environment: HOST)")
 	flags.StringVar(&cfg.Port, "port", cfg.Port, "TCP port to listen on (environment: PORT)")
 	flags.StringVar(&cfg.LeasePath, "leases-file", cfg.LeasePath, "Path to dnsmasq lease file (environment: DNSMASQ_LEASES_FILE)")
@@ -161,7 +164,7 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 
 	scanner := bufio.NewScanner(file)
 	lineNo := 0
-	knownPathSet, uiPathSet, eventsPathSet := false, false, false
+	knownPathSet, uiPathSet, eventsPathSet, databasePathSet := false, false, false, false
 	for scanner.Scan() {
 		lineNo++
 		line := strings.TrimSpace(scanner.Text())
@@ -194,6 +197,9 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 		switch key {
 		case "working_dir", "working-dir", "data_dir", "data-dir":
 			cfg.WorkingDir = value
+		case "database_path", "database-path", "database_file", "database-file":
+			cfg.DatabasePath = value
+			databasePathSet = true
 		case "host":
 			cfg.Host = value
 		case "port":
@@ -233,6 +239,9 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 	// A working directory supplies defaults for persistent files. Explicit file
 	// paths in the config remain supported for backwards compatibility.
 	if strings.TrimSpace(cfg.WorkingDir) != "" {
+		if !databasePathSet && os.Getenv("DATABASE_PATH") == "" {
+			cfg.DatabasePath = filepath.Join(cfg.WorkingDir, "leaselens.db")
+		}
 		if !knownPathSet {
 			cfg.KnownMACsPath = filepath.Join(cfg.WorkingDir, "known-macs.json")
 		}
