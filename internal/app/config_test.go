@@ -132,3 +132,31 @@ func TestUISettingsEnvironmentOverridesConfig(t *testing.T) {
 		t.Fatalf("UISettingsPath = %q, want environment override /env/ui.json", cfg.UISettingsPath)
 	}
 }
+
+func TestWorkingDirSuppliesPersistentFileDefaults(t *testing.T) {
+	t.Setenv("CONFIG_FILE", "")
+	t.Setenv("UI_SETTINGS_FILE", "")
+	configPath := t.TempDir() + "/config.yaml"
+	content := `working_dir: "/srv/leaselens/data"
+leases_file: "/var/lib/dnsmasq/dnsmasq.leases"
+`
+	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	cfg, _, err := loadConfigFromArgs([]string{"--config", configPath})
+	if err != nil {
+		t.Fatalf("loadConfigFromArgs returned an error: %v", err)
+	}
+	if cfg.WorkingDir != "/srv/leaselens/data" {
+		t.Fatalf("WorkingDir = %q", cfg.WorkingDir)
+	}
+	if cfg.KnownMACsPath != "/srv/leaselens/data/known-macs.json" {
+		t.Fatalf("KnownMACsPath = %q", cfg.KnownMACsPath)
+	}
+	if cfg.UISettingsPath != "/srv/leaselens/data/ui-settings.json" {
+		t.Fatalf("UISettingsPath = %q", cfg.UISettingsPath)
+	}
+	if cfg.DHCPEventsPath != "/srv/leaselens/data/dhcp-events.log" {
+		t.Fatalf("DHCPEventsPath = %q", cfg.DHCPEventsPath)
+	}
+}

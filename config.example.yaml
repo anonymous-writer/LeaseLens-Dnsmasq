@@ -20,20 +20,22 @@ hosts_file: "/var/lib/misc/dnsmasq.dhcphosts"
 # to run dhcp_release for this interface. See the main README.
 # dhcp_interface: "eth0"
 
-# Persistent list of devices marked as known; parent directory must be writable.
-known_macs_file: "/home/pi/leaselens-dnsmasq/data/known-macs.json"
-
-# Persistent dashboard preferences (language and visible controls).
-ui_settings_file: "/home/pi/leaselens-dnsmasq/data/ui-settings.json"
+# Working directory for persistent LeaseLens data. The directory must be writable
+# by the account running LeaseLens. Unless explicitly overridden below, LeaseLens
+# stores known-macs.json, ui-settings.json, and dhcp-events.log here.
+working_dir: "/home/pi/leaselens-dnsmasq"
 
 # Logging: DEBUG, INFO, WARN, or ERROR
 log_level: "INFO"
 
-# Optional: dnsmasq DHCP event log (add/del/old).
-# Configure dnsmasq to write the events to this file and ensure the service
-# account can read it. When enabled and supported by this build, LeaseLens
-# can show last-login information in the table.
+# Optional override: DHCP event log path (add/del/old). If omitted, it is
+# resolved as <working_dir>/dhcp-events.log.
 # dhcp_events_file: "/var/log/dnsmasq/dhcp-events.log"
+
+# Optional overrides for backward compatibility. If omitted, these are also
+# resolved under working_dir.
+# known_macs_file: "/some/path/known-macs.json"
+# ui_settings_file: "/some/path/ui-settings.json"
 
 # Optional UI metadata.
 # Native builds detect the hardware model and hostname automatically when possible.
