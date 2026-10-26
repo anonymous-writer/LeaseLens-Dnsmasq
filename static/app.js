@@ -167,6 +167,7 @@ function displayVendor(lease) {
 function statusCell(lease) {
   const cell = document.createElement('td');
   cell.className = 'device-status';
+  cell.dataset.column = 'status';
   cell.title = statusDescription(lease.status);
   const dot = document.createElement('span');
   dot.className = `dot ${lease.status || 'unknown'}`;
@@ -251,10 +252,13 @@ function render() {
   groups.forEach(group => groupSelect.add(new Option(group, group)));
   groupFilter = groups.includes(selectedGroup) ? selectedGroup : 'all';
   groupSelect.value = groupFilter;
-  document.querySelector('#group-header').hidden = !hasGroups;
-  // The settings dialog can hide the whole group column independently of data availability.
+  document.body.dataset.hasGroups = String(hasGroups);
+  // Keep header and body columns in sync, including when groups are hidden.
   const groupColumnEnabled = document.body.dataset.showGroupColumn !== 'false';
-  document.querySelectorAll('#leases th#group-header, #leases tbody td:nth-child(6)').forEach(cell => {
+  const groupHeader = document.querySelector('#group-header');
+  groupHeader.hidden = !hasGroups;
+  groupHeader.style.display = groupColumnEnabled && hasGroups ? '' : 'none';
+  document.querySelectorAll('#leases tbody [data-column="group"]').forEach(cell => {
     cell.style.display = groupColumnEnabled && hasGroups ? '' : 'none';
   });
   const rows = sorted(leases.filter(lease => match(lease, filterQuery) && matchesFilters(lease)));
@@ -264,18 +268,24 @@ function render() {
     row.className = `device-row${lease.isNew ? ' new-device' : ''}`;
     row.tabIndex = 0;
     row.setAttribute('aria-label', t('detailsFor', { device: lease.name || lease.ipAddress }));
-    row.appendChild(statusCell(lease));
+    const hiddenColumns = new Set(JSON.parse(document.body.dataset.hiddenColumns || '[]'));
+    const statusCellElement = statusCell(lease);
+    if (hiddenColumns.has('status')) statusCellElement.style.display = 'none';
+    row.appendChild(statusCellElement);
     const displayMAC = validMac(lease.macAddress) ? lease.macAddress : '—';
     const values = [lease.ipAddress, displayMAC, displayVendor(lease) || '—', lease.name, lease.group || '—',
       lease.staticIP ? t('yes') : t('no'), formatLease(lease)];
+    const columnNames = ['ip', 'mac', 'vendor', 'name', 'group', 'reservation', 'lease-expiry'];
     if (document.body.dataset.dhcpEventsEnabled === 'true') {
       values.push(lease.dhcpEventStatus
         ? `${t(({ add: 'dhcpEventAdd', old: 'dhcpEventOld', del: 'dhcpEventDel' })[String(lease.dhcpEventStatus).toLowerCase()] || 'dhcpEventOld')}${lease.lastDhcpEventAge ? ` · ${t('lastDHCPEventAge', { age: lease.lastDhcpEventAge })}` : ''}`
         : '—');
+      columnNames.push('dhcp-event');
     }
     values.forEach((value, index) => {
         const cell = document.createElement('td');
-        if (index === 4 && !hasGroups) cell.hidden = true;
+        cell.dataset.column = columnNames[index];
+        if (hiddenColumns.has(columnNames[index]) || (columnNames[index] === 'group' && (!groupColumnEnabled || !hasGroups))) cell.style.display = 'none';
         if (index === 1 && lease.isNew && validMac(lease.macAddress)) {
           const badge = document.createElement('span');
           badge.className = 'new-badge';
@@ -747,8 +757,15 @@ window.setInterval(() => { if (leases.length) render(); }, COUNTDOWN_RENDER_INTE
     { id: 'reservation-filter', label: 'Lease-Filter', desc: 'Reservierungen oder dynamische Leases auswählen.', element: '#reservation-filter', supported: true },
     { id: 'status-filter', label: 'Status-Filter', desc: 'Nach Online-, Ping- oder Offline-Status filtern.', element: '#status-filter', supported: true },
     { id: 'group-filter', label: 'Gruppenfilter', desc: 'Geräte nach Gruppe filtern.', element: '#group-filter', supported: true },
-    { id: 'group-column', label: 'Gruppenspalte', desc: 'Die Gruppenspalte in der Lease-Tabelle anzeigen.', element: null, supported: true },
-    { id: 'refresh-button', label: 'Aktualisieren', desc: 'Lease-Daten manuell neu laden.', element: '#refresh-button', supported: true },
+    { id: 'status-column', label: 'Statusspalte', desc: 'Status und Erreichbarkeit der Geräte anzeigen.', element: null, column: 'status', supported: true },
+    { id: 'ip-column', label: 'IP-Adresse', desc: 'Die IP-Adresse anzeigen.', element: null, column: 'ip', supported: true },
+    { id: 'mac-column', label: 'MAC-Adresse', desc: 'Die MAC-Adresse anzeigen.', element: null, column: 'mac', supported: true },
+    { id: 'vendor-column', label: 'Hersteller', desc: 'Den ermittelten Gerätehersteller anzeigen.', element: null, column: 'vendor', supported: true },
+    { id: 'name-column', label: 'Name', desc: 'Den Gerätenamen anzeigen.', element: null, column: 'name', supported: true },
+    { id: 'group-column', label: 'Gruppenspalte', desc: 'Die Gruppenspalte in der Lease-Tabelle anzeigen.', element: null, column: 'group', supported: true },
+    { id: 'reservation-column', label: 'DHCP-Reservierung', desc: 'Anzeigen, ob eine DHCP-Reservierung besteht.', element: null, column: 'reservation', supported: true },
+    { id: 'lease-expiry-column', label: 'Lease läuft ab', desc: 'Die verbleibende Lease-Laufzeit anzeigen.', element: null, column: 'lease-expiry', supported: true },
+    { id: 'dhcp-event-column', label: 'Letztes DHCP-Ereignis', desc: 'Das letzte DHCP-Ereignis anzeigen.', element: null, column: 'dhcp-event', supported: !!document.querySelector('#leases th[data-column="dhcp-event"]') },
     { id: 'mark-reservations-button', label: 'Reservierungen merken', desc: 'Erkannte DHCP-Reservierungen als bekannt markieren.', element: '#mark-reservations-button', supported: true },
     { id: 'mark-all-ipv4-reservations-button', label: 'Alle IPv4-Reservierungen merken', desc: 'Reservierungen aus der DHCP-Hosts-Datei übernehmen.', element: '#mark-all-ipv4-reservations-button', supported: true },
     { id: 'reset-known-button', label: 'Merkliste zurücksetzen', desc: 'Alle gespeicherten bekannten Geräte vergessen.', element: '#reset-known-button', supported: true },
@@ -760,9 +777,9 @@ window.setInterval(() => { if (leases.length) render(); }, COUNTDOWN_RENDER_INTE
   const visible = {};
   let settings = { language: 'de', visible: {} };
   const settingsText = {
-    de: { title:'Ansicht & Einstellungen', description:'Wähle, welche Bedienelemente angezeigt werden. Grau markierte Funktionen werden von dieser Installation nicht unterstützt.', language:'Sprache', functions:'Buttons und Menüpunkte', save:'Speichern', saving:'Speichere…', saved:'Gespeichert', failed:'Speichern fehlgeschlagen – Schreibrechte für das Einstellungsverzeichnis prüfen.', unavailable:'In dieser Installation nicht verfügbar.', features:{'search':['Lease-Suche','Geräte anhand der Lease-Daten filtern.'],'ip-filter':['IP-Filter','Alle IPs, IPv4 oder IPv6 anzeigen.'],'reservation-filter':['Lease-Filter','Reservierungen oder dynamische Leases auswählen.'],'status-filter':['Status-Filter','Nach Online-, Ping- oder Offline-Status filtern.'],'group-filter':['Gruppenfilter','Geräte nach Gruppe filtern.'],'group-column':['Gruppenspalte','Die Gruppenspalte in der Lease-Tabelle anzeigen.'],'refresh-button':['Aktualisieren','Lease-Daten manuell neu laden.'],'mark-reservations-button':['Reservierungen merken','Erkannte DHCP-Reservierungen als bekannt markieren.'],'mark-all-ipv4-reservations-button':['Alle IPv4-Reservierungen merken','Reservierungen aus der DHCP-Hosts-Datei übernehmen.'],'reset-known-button':['Merkliste zurücksetzen','Alle gespeicherten bekannten Geräte vergessen.'],'theme-toggle':['Design umschalten','Zwischen hellem und dunklem Design wechseln.'],'release-lease':['IPv4-Lease freigeben','Native Funktion; benötigt Native-Build und konfigurierte DHCP-Schnittstelle.'],'dhcp-events':['DHCP-Ereignisprotokoll','Benötigt eine konfigurierte DHCP-Eventdatei.']} },
-    en: { title:'View & Settings', description:'Choose which controls are shown. Greyed-out features are not supported by this installation.', language:'Language', functions:'Buttons and menu items', save:'Save', saving:'Saving…', saved:'Saved', failed:'Could not save settings – check permissions on the settings directory.', unavailable:'Not available in this installation.', features:{'search':['Lease search','Filter devices using lease data.'],'ip-filter':['IP filter','Show all IPs, IPv4 or IPv6.'],'reservation-filter':['Lease filter','Choose reservations or dynamic leases.'],'status-filter':['Status filter','Filter by online, ping or offline status.'],'group-filter':['Group filter','Filter devices by group.'],'group-column':['Group column','Show the group column in the lease table.'],'refresh-button':['Refresh','Reload lease data manually.'],'mark-reservations-button':['Remember reservations','Mark detected DHCP reservations as known.'],'mark-all-ipv4-reservations-button':['Remember all IPv4 reservations','Import reservations from the DHCP hosts file.'],'reset-known-button':['Reset remembered list','Forget all remembered devices.'],'theme-toggle':['Toggle theme','Switch between light and dark themes.'],'release-lease':['Release IPv4 lease','Native feature; requires a native build and configured DHCP interface.'],'dhcp-events':['DHCP event log','Requires a configured DHCP event file.']} },
-    es: { title:'Vista y ajustes', description:'Elige qué controles se muestran. Las funciones en gris no son compatibles con esta instalación.', language:'Idioma', functions:'Botones y elementos de menú', save:'Guardar', saving:'Guardando…', saved:'Guardado', failed:'No se pudo guardar; comprueba los permisos del directorio de ajustes.', unavailable:'No disponible en esta instalación.', features:{'search':['Buscar leases','Filtrar dispositivos por datos de leases.'],'ip-filter':['Filtro IP','Mostrar todas las IP, IPv4 o IPv6.'],'reservation-filter':['Filtro de leases','Elegir reservas o leases dinámicos.'],'status-filter':['Filtro de estado','Filtrar por estado en línea, ping o sin conexión.'],'group-filter':['Filtro de grupos','Filtrar dispositivos por grupo.'],'group-column':['Columna de grupo','Mostrar la columna de grupo en la tabla.'],'refresh-button':['Actualizar','Recargar los datos de leases.'],'mark-reservations-button':['Recordar reservas','Marcar reservas DHCP detectadas como conocidas.'],'mark-all-ipv4-reservations-button':['Recordar todas las reservas IPv4','Importar reservas del archivo DHCP hosts.'],'reset-known-button':['Restablecer lista','Olvidar todos los dispositivos recordados.'],'theme-toggle':['Cambiar tema','Alternar entre tema claro y oscuro.'],'release-lease':['Liberar lease IPv4','Función nativa; requiere compilación nativa e interfaz DHCP configurada.'],'dhcp-events':['Registro de eventos DHCP','Requiere un archivo de eventos DHCP configurado.']} }
+    de: { title:'Ansicht & Einstellungen', description:'Wähle, welche Bedienelemente angezeigt werden. Grau markierte Funktionen werden von dieser Installation nicht unterstützt.', language:'Sprache', functions:'Buttons und Menüpunkte', save:'Speichern', saving:'Speichere…', saved:'Gespeichert', failed:'Speichern fehlgeschlagen – Schreibrechte für das Einstellungsverzeichnis prüfen.', unavailable:'In dieser Installation nicht verfügbar.', features:{'search':['Lease-Suche','Geräte anhand der Lease-Daten filtern.'],'ip-filter':['IP-Filter','Alle IPs, IPv4 oder IPv6 anzeigen.'],'reservation-filter':['Lease-Filter','Reservierungen oder dynamische Leases auswählen.'],'status-filter':['Status-Filter','Nach Online-, Ping- oder Offline-Status filtern.'],'group-filter':['Gruppenfilter','Geräte nach Gruppe filtern.'],'status-column':['Statusspalte','Status und Erreichbarkeit der Geräte anzeigen.'],'ip-column':['IP-Adresse','Die IP-Adresse anzeigen.'],'mac-column':['MAC-Adresse','Die MAC-Adresse anzeigen.'],'vendor-column':['Hersteller','Den ermittelten Gerätehersteller anzeigen.'],'name-column':['Name','Den Gerätenamen anzeigen.'],'group-column':['Gruppenspalte','Die Gruppenspalte in der Lease-Tabelle anzeigen.'],'reservation-column':['DHCP-Reservierung','Anzeigen, ob eine DHCP-Reservierung besteht.'],'lease-expiry-column':['Lease läuft ab','Die verbleibende Lease-Laufzeit anzeigen.'],'dhcp-event-column':['Letztes DHCP-Ereignis','Das letzte DHCP-Ereignis anzeigen.'],'mark-reservations-button':['Reservierungen merken','Erkannte DHCP-Reservierungen als bekannt markieren.'],'mark-all-ipv4-reservations-button':['Alle IPv4-Reservierungen merken','Reservierungen aus der DHCP-Hosts-Datei übernehmen.'],'reset-known-button':['Merkliste zurücksetzen','Alle gespeicherten bekannten Geräte vergessen.'],'theme-toggle':['Design umschalten','Zwischen hellem und dunklem Design wechseln.'],'release-lease':['IPv4-Lease freigeben','Native Funktion; benötigt Native-Build und konfigurierte DHCP-Schnittstelle.'],'dhcp-events':['DHCP-Ereignisprotokoll','Benötigt eine konfigurierte DHCP-Eventdatei.']} },
+    en: { title:'View & Settings', description:'Choose which controls are shown. Greyed-out features are not supported by this installation.', language:'Language', functions:'Buttons and menu items', save:'Save', saving:'Saving…', saved:'Saved', failed:'Could not save settings – check permissions on the settings directory.', unavailable:'Not available in this installation.', features:{'search':['Lease search','Filter devices using lease data.'],'ip-filter':['IP filter','Show all IPs, IPv4 or IPv6.'],'reservation-filter':['Lease filter','Choose reservations or dynamic leases.'],'status-filter':['Status filter','Filter by online, ping or offline status.'],'group-filter':['Group filter','Filter devices by group.'],'status-column':['Status column','Show device status and reachability.'],'ip-column':['IP address','Show the IP address.'],'mac-column':['MAC address','Show the MAC address.'],'vendor-column':['Manufacturer','Show the detected device manufacturer.'],'name-column':['Name','Show the device name.'],'group-column':['Group column','Show the group column in the lease table.'],'reservation-column':['DHCP reservation','Show whether a DHCP reservation exists.'],'lease-expiry-column':['Lease expiry','Show the remaining lease time.'],'dhcp-event-column':['Last DHCP event','Show the last DHCP event.'],'mark-reservations-button':['Remember reservations','Mark detected DHCP reservations as known.'],'mark-all-ipv4-reservations-button':['Remember all IPv4 reservations','Import reservations from the DHCP hosts file.'],'reset-known-button':['Reset remembered list','Forget all remembered devices.'],'theme-toggle':['Toggle theme','Switch between light and dark themes.'],'release-lease':['Release IPv4 lease','Native feature; requires a native build and configured DHCP interface.'],'dhcp-events':['DHCP event log','Requires a configured DHCP event file.']} },
+    es: { title:'Vista y ajustes', description:'Elige qué controles se muestran. Las funciones en gris no son compatibles con esta instalación.', language:'Idioma', functions:'Botones y elementos de menú', save:'Guardar', saving:'Guardando…', saved:'Guardado', failed:'No se pudo guardar; comprueba los permisos del directorio de ajustes.', unavailable:'No disponible en esta instalación.', features:{'search':['Buscar leases','Filtrar dispositivos por datos de leases.'],'ip-filter':['Filtro IP','Mostrar todas las IP, IPv4 o IPv6.'],'reservation-filter':['Filtro de leases','Elegir reservas o leases dinámicos.'],'status-filter':['Filtro de estado','Filtrar por estado en línea, ping o sin conexión.'],'group-filter':['Filtro de grupos','Filtrar dispositivos por grupo.'],'status-column':['Columna de estado','Mostrar estado y disponibilidad del dispositivo.'],'ip-column':['Dirección IP','Mostrar la dirección IP.'],'mac-column':['Dirección MAC','Mostrar la dirección MAC.'],'vendor-column':['Fabricante','Mostrar el fabricante detectado.'],'name-column':['Nombre','Mostrar el nombre del dispositivo.'],'group-column':['Columna de grupo','Mostrar la columna de grupo en la tabla.'],'reservation-column':['Reserva DHCP','Mostrar si existe una reserva DHCP.'],'lease-expiry-column':['Caducidad del lease','Mostrar el tiempo restante del lease.'],'dhcp-event-column':['Último evento DHCP','Mostrar el último evento DHCP.'],'mark-reservations-button':['Recordar reservas','Marcar reservas DHCP detectadas como conocidas.'],'mark-all-ipv4-reservations-button':['Recordar todas las reservas IPv4','Importar reservas del archivo DHCP hosts.'],'reset-known-button':['Restablecer lista','Olvidar todos los dispositivos recordados.'],'theme-toggle':['Cambiar tema','Alternar entre tema claro y oscuro.'],'release-lease':['Liberar lease IPv4','Función nativa; requiere compilación nativa e interfaz DHCP configurada.'],'dhcp-events':['Registro de eventos DHCP','Requiere un archivo de eventos DHCP configurado.']} }
   };
   function applySettingsLanguage() {
     const tx = settingsText[settings.language] || settingsText.de;
@@ -772,18 +789,26 @@ window.setInterval(() => { if (leases.length) render(); }, COUNTDOWN_RENDER_INTE
     document.querySelector('#settings-functions-heading').textContent = tx.functions;
     document.querySelector('#settings-save').textContent = tx.save;
   }
-  function applyGroupColumn() {
-    const enabled = settings.visible['group-column'] !== false;
-    document.body.dataset.showGroupColumn = String(enabled);
-    document.querySelectorAll('#leases th#group-header, #leases tbody td:nth-child(6)').forEach(cell => {
-      cell.style.display = enabled ? '' : 'none';
+  function applyColumnVisibility() {
+    const columnFeatures = features.filter(f => f.column);
+    const hiddenColumns = columnFeatures.filter(f => settings.visible[f.id] === false).map(f => f.column);
+    document.body.dataset.hiddenColumns = JSON.stringify(hiddenColumns);
+    document.body.dataset.showGroupColumn = String(settings.visible['group-column'] !== false);
+    const groupsExist = document.body.dataset.hasGroups === 'true';
+    columnFeatures.forEach(f => {
+      const enabled = settings.visible[f.id] !== false;
+      document.querySelectorAll(`#leases [data-column="${f.column}"]`).forEach(cell => {
+        const groupUnavailable = f.column === 'group' && !groupsExist;
+        cell.style.display = enabled && !groupUnavailable ? '' : 'none';
+        if (cell.tagName === 'TH' && f.column === 'group') cell.hidden = groupUnavailable;
+      });
     });
   }
 
   function applyVisibility() {
     features.forEach(f => {
+      if (f.column) return;
       const el = document.querySelector(f.element);
-      if (f.id === 'group-column') { applyGroupColumn(); return; }
       if (!el) return;
       const show = f.supported && settings.visible[f.id] !== false;
       // Respect the app's own hidden state (for example, the group filter is
@@ -792,6 +817,7 @@ window.setInterval(() => { if (leases.length) render(); }, COUNTDOWN_RENDER_INTE
       if (!show) el.style.display = 'none';
       else el.style.removeProperty('display');
     });
+    applyColumnVisibility();
   }
 
   function renderFeatures() {
@@ -825,7 +851,7 @@ window.setInterval(() => { if (leases.length) render(); }, COUNTDOWN_RENDER_INTE
       settings = { language: (window.DnsmasqI18n && window.DnsmasqI18n.language) || 'de', visible: {} };
     }
     document.querySelector('#settings-language').value = settings.language;
-    applySettingsLanguage(); renderFeatures(); applyVisibility();
+    applySettingsLanguage(); renderFeatures(); applyVisibility(); applyColumnVisibility();
   }
 
   document.querySelector('#settings-button').addEventListener('click', () => dialog.showModal());
@@ -840,7 +866,7 @@ window.setInterval(() => { if (leases.length) render(); }, COUNTDOWN_RENDER_INTE
       const response = await fetch(API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       if (window.DnsmasqI18n) window.DnsmasqI18n.setLanguage(settings.language);
-      applyVisibility(); applyGroupColumn(); state.textContent = tx.saved;
+      applyVisibility(); applyColumnVisibility(); state.textContent = tx.saved;
       window.setTimeout(() => { state.textContent = ''; dialog.close(); }, 500);
     } catch (_) { state.textContent = tx.failed; }
   });
