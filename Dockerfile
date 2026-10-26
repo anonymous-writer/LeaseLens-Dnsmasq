@@ -11,7 +11,10 @@ COPY internal/ ./internal/
 COPY templates/ ./templates/
 COPY static/ ./static/
 
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /leaselens-dnsmasq .
+# The repository may not yet contain go.sum. Resolve and record module checksums
+# inside the build stage before compiling, so Docker builds are reproducible.
+RUN go mod tidy && \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /leaselens-dnsmasq .
 
 FROM alpine:3.24
 RUN addgroup -S app && adduser -S -G app app
