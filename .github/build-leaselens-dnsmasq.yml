@@ -38,6 +38,22 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # Generate/update go.sum in GitHub Actions so builds work even when
+      # the dependency checksums have not yet been committed.
+      - name: Resolve Go dependencies
+        run: go mod tidy
+
+      - name: Upload Go dependency files
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: go-dependency-files-${{ github.run_id }}
+          path: |
+            go.mod
+            go.sum
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Run tests
         run: go test ./...
 
