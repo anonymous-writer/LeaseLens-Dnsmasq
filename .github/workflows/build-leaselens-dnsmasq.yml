@@ -37,6 +37,9 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+    
+      - name: Resolve Go dependencies
+        run: go mod tidy
 
       # Generate/update go.sum in GitHub Actions so builds work even when
       # the dependency checksums have not yet been committed.
