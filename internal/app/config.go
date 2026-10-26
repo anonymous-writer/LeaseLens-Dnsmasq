@@ -47,39 +47,51 @@ func getenv(k, d string) string {
 
 // Config contains paths, server settings, and build metadata.
 type Config struct {
-	WorkingDir     string
-	DatabasePath   string
-	Host           string
-	Port           string
-	LeasePath      string
-	HostsPath      string
-	KnownMACsPath  string
-	UISettingsPath string
-	DHCPEventsPath string
-	DHCPInterface  string
-	AppVersion     string
-	ReleaseDate    string
-	RepoURL        string
-	SystemName     string
+	WorkingDir       string
+	DatabasePath     string
+	DatabaseType     string
+	PostgresHost     string
+	PostgresPort     string
+	PostgresDatabase string
+	PostgresUser     string
+	PostgresSSLMode  string
+	Host             string
+	Port             string
+	LeasePath        string
+	HostsPath        string
+	KnownMACsPath    string
+	UISettingsPath   string
+	DHCPEventsPath   string
+	DHCPInterface    string
+	AppVersion       string
+	ReleaseDate      string
+	RepoURL          string
+	SystemName       string
 }
 
 // loadConfig reads runtime options from environment variables.
 func loadConfig() Config {
 	return Config{
-		WorkingDir:     getenv("WORKING_DIR", ""),
-		DatabasePath:   getenv("DATABASE_PATH", "/data/leaselens.db"),
-		Host:           getenv("HOST", "0.0.0.0"),
-		Port:           getenv("PORT", "5000"),
-		LeasePath:      getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
-		HostsPath:      getenv("DNSMASQ_HOSTS_FILE", "/var/lib/dnsmasq/dnsmasq.dhcphosts"),
-		KnownMACsPath:  getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
-		UISettingsPath: getenv("UI_SETTINGS_FILE", "/data/ui-settings.json"),
-		DHCPEventsPath: getenv("DNSMASQ_EVENTS_FILE", ""),
-		DHCPInterface:  getenv("DNSMASQ_INTERFACE", ""),
-		AppVersion:     getenv("APP_VERSION", buildVersion),
-		ReleaseDate:    getenv("APP_RELEASE_DATE", buildReleaseDate),
-		RepoURL:        getenv("REPO_URL", "https://github.com/anonymous-writer/leaselens-dnsmasq"),
-		SystemName:     getenv("SYSTEM_NAME", ""),
+		WorkingDir:       getenv("WORKING_DIR", ""),
+		DatabasePath:     getenv("DATABASE_PATH", "/data/leaselens.db"),
+		DatabaseType:     getenv("DATABASE_TYPE", "sqlite"),
+		PostgresHost:     getenv("POSTGRES_HOST", "127.0.0.1"),
+		PostgresPort:     getenv("POSTGRES_PORT", "5432"),
+		PostgresDatabase: getenv("POSTGRES_DATABASE", "leaselens"),
+		PostgresUser:     getenv("POSTGRES_USER", "leaselens"),
+		PostgresSSLMode:  getenv("POSTGRES_SSLMODE", "require"),
+		Host:             getenv("HOST", "0.0.0.0"),
+		Port:             getenv("PORT", "5000"),
+		LeasePath:        getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
+		HostsPath:        getenv("DNSMASQ_HOSTS_FILE", "/var/lib/dnsmasq/dnsmasq.dhcphosts"),
+		KnownMACsPath:    getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
+		UISettingsPath:   getenv("UI_SETTINGS_FILE", "/data/ui-settings.json"),
+		DHCPEventsPath:   getenv("DNSMASQ_EVENTS_FILE", ""),
+		DHCPInterface:    getenv("DNSMASQ_INTERFACE", ""),
+		AppVersion:       getenv("APP_VERSION", buildVersion),
+		ReleaseDate:      getenv("APP_RELEASE_DATE", buildReleaseDate),
+		RepoURL:          getenv("REPO_URL", "https://github.com/anonymous-writer/leaselens-dnsmasq"),
+		SystemName:       getenv("SYSTEM_NAME", ""),
 	}
 }
 
@@ -200,6 +212,18 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 		case "database_path", "database-path", "database_file", "database-file":
 			cfg.DatabasePath = value
 			databasePathSet = true
+		case "database_type", "database-type":
+			cfg.DatabaseType = strings.ToLower(value)
+		case "postgres_host", "postgres-host":
+			cfg.PostgresHost = value
+		case "postgres_port", "postgres-port":
+			cfg.PostgresPort = value
+		case "postgres_database", "postgres-database":
+			cfg.PostgresDatabase = value
+		case "postgres_user", "postgres-user":
+			cfg.PostgresUser = value
+		case "postgres_sslmode", "postgres-sslmode":
+			cfg.PostgresSSLMode = value
 		case "host":
 			cfg.Host = value
 		case "port":

@@ -24,7 +24,7 @@ func (s *uiSettingsStore) read() UISettings {
 	defer s.mu.Unlock()
 	out := UISettings{Language: "de", Visible: map[string]bool{}}
 	var lang, raw string
-	err := s.db.QueryRow(`SELECT language,visible_json FROM ui_settings WHERE id=1`).Scan(&lang, &raw)
+	err := s.db.QueryRow(adaptSQL(`SELECT language,visible_json FROM ui_settings WHERE id=1`)).Scan(&lang, &raw)
 	if err != nil {
 		return out
 	}
@@ -62,7 +62,7 @@ func (s *uiSettingsStore) handler() http.HandlerFunc {
 			}
 			s.mu.Lock()
 			defer s.mu.Unlock()
-			_, err = s.db.Exec(`INSERT INTO ui_settings(id,language,visible_json,updated_at) VALUES(1,?,?,?) ON CONFLICT(id) DO UPDATE SET language=excluded.language,visible_json=excluded.visible_json,updated_at=excluded.updated_at`, settings.Language, string(visible), time.Now().Format(time.RFC3339))
+			_, err = s.db.Exec(adaptSQL(`INSERT INTO ui_settings(id,language,visible_json,updated_at) VALUES(1,?,?,?) ON CONFLICT(id) DO UPDATE SET language=excluded.language,visible_json=excluded.visible_json,updated_at=excluded.updated_at`), settings.Language, string(visible), time.Now().Format(time.RFC3339))
 			if err != nil {
 				http.Error(w, "cannot save settings", http.StatusInternalServerError)
 				return

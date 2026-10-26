@@ -18,7 +18,7 @@ func (k *KnownMACs) has(mac string) bool {
 	k.mu.Lock()
 	defer k.mu.Unlock()
 	var found int
-	err := k.db.QueryRow(`SELECT 1 FROM known_devices WHERE mac=? COLLATE NOCASE`, strings.ToUpper(strings.TrimSpace(mac))).Scan(&found)
+	err := k.db.QueryRow(adaptSQL(`SELECT 1 FROM known_devices WHERE mac=? COLLATE NOCASE`), strings.ToUpper(strings.TrimSpace(mac))).Scan(&found)
 	return err == nil
 }
 func (k *KnownMACs) mark(mac string) error {
@@ -28,7 +28,7 @@ func (k *KnownMACs) mark(mac string) error {
 	}
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	_, err := k.db.Exec(`INSERT OR IGNORE INTO known_devices(mac) VALUES(?)`, mac)
+	_, err := k.db.Exec(adaptSQL(`INSERT OR IGNORE INTO known_devices(mac) VALUES(?)`), mac)
 	return err
 }
 func (k *KnownMACs) markMany(macs []string) (int, error) {
@@ -47,7 +47,7 @@ func (k *KnownMACs) markMany(macs []string) (int, error) {
 	}
 	defer tx.Rollback()
 	for m := range unique {
-		if _, err = tx.Exec(`INSERT OR IGNORE INTO known_devices(mac) VALUES(?)`, m); err != nil {
+		if _, err = tx.Exec(adaptSQL(`INSERT OR IGNORE INTO known_devices(mac) VALUES(?)`), m); err != nil {
 			return 0, err
 		}
 	}
@@ -63,7 +63,7 @@ func (k *KnownMACs) unmark(mac string) error {
 	}
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	_, err := k.db.Exec(`DELETE FROM known_devices WHERE mac=? COLLATE NOCASE`, mac)
+	_, err := k.db.Exec(adaptSQL(`DELETE FROM known_devices WHERE mac=? COLLATE NOCASE`), mac)
 	return err
 }
 func (k *KnownMACs) reset() error {

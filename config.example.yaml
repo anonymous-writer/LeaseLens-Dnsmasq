@@ -48,3 +48,18 @@ log_level: "INFO"
 # Central SQLite database for known devices and UI preferences
 # If omitted while working_dir is set, defaults to <working_dir>/leaselens.db
 # database_path: "/home/pi/leaselens-dnsmasq/leaselens.db"
+
+# Database backend: sqlite (default) or postgres.
+# PostgreSQL starts with a fresh LeaseLens schema; SQLite legacy JSON/log import
+# is only performed when using SQLite.
+database_type: "sqlite"
+database_path: "/data/leaselens.db"
+
+# PostgreSQL settings (used only when database_type is "postgres").
+# The target PostgreSQL database must already exist. LeaseLens creates its tables.
+# Set the password in the POSTGRES_PASSWORD environment variable.
+# postgres_host: "192.168.1.10"
+# postgres_port: "5432"
+# postgres_database: "leaselens"
+# postgres_user: "leaselens"
+# postgres_sslmode: "require"
