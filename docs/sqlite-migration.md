@@ -26,3 +26,8 @@ copying only the main file while WAL mode is active may omit recent changes.
 
 Do not delete the old JSON files or DHCP event log until the new version has
 started successfully and the imported records have been checked.
+
+
+## Clean shutdown and WAL sidecar files
+
+LeaseLens handles SIGINT and SIGTERM by stopping the HTTP server gracefully, waiting for active requests, running `PRAGMA wal_checkpoint(TRUNCATE)`, and closing the SQLite connection pool. When SQLite can complete the checkpoint and this is the last open connection, it normally removes `leaselens.db-wal` and `leaselens.db-shm`. The sidecar files may still exist while LeaseLens is running, if another process has the database open, or if the checkpoint cannot complete. Never delete `-wal` or `-shm` manually while the database is in use.

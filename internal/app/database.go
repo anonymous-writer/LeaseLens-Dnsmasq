@@ -66,6 +66,26 @@ func openDatabase(path, knownMACsPath, uiSettingsPath, dhcpEventsPath string) (*
 	return db, nil
 }
 
+// checkpointAndCloseDatabase flushes committed WAL pages into the main database
+// and closes the pool. On a clean shutdown SQLite can then remove the -wal and
+// -shm sidecar files. These files must never be deleted manually while running.
+func checkpointAndCloseDatabase(db *sql.DB) {
+	if db == nil {
+		return
+	}
+	var busy, logFrames, checkpointed int
+	if err := db.QueryRow(`PRAGMA wal_checkpoint(TRUNCATE)`).Scan(&busy, &logFrames, &checkpointed); err != nil {
+		LogWarnf("SQLite WAL checkpoint failed: %v", err)
+	} else if busy != 0 {
+		LogWarnf("SQLite WAL checkpoint was busy (log frames=%d, checkpointed=%d); sidecar files may remain", logFrames, checkpointed)
+	} else {
+		LogInfof("SQLite WAL checkpoint complete (frames=%d, checkpointed=%d)", logFrames, checkpointed)
+	}
+	if err := db.Close(); err != nil {
+		LogWarnf("close SQLite database: %v", err)
+	}
+}
+
 func alreadyImported(db *sql.DB, key string) (bool, error) {
 	var v string
 	err := db.QueryRow(`SELECT value FROM app_metadata WHERE key=?`, key).Scan(&v)

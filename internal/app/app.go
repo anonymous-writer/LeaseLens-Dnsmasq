@@ -4,6 +4,7 @@ package app
 // Web assets are supplied as an embedded filesystem by the executable.
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -12,6 +13,9 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 // Run loads configuration, wires application dependencies, and starts the HTTP server.
@@ -37,7 +41,6 @@ func Run(assets fs.FS, nativeBuild bool) {
 	if err != nil {
 		LogFatalf("cannot initialize LeaseLens database: %v", err)
 	}
-	defer db.Close()
 	known := newKnownMACs(db)
 	tmpl, err := template.ParseFS(assets, "templates/index.html")
 	if err != nil {
@@ -65,8 +68,44 @@ func Run(assets fs.FS, nativeBuild bool) {
 
 	handler := newHTTPHandler(cfg, db, known, tmpl, staticFS, dnsmasqVersion, nativeBuild)
 	address := net.JoinHostPort(cfg.Host, cfg.Port)
-	LogInfof("leaselens-dnsmasq starting version=%s listen=%s", cfg.AppVersion, address)
-	if err := http.ListenAndServe(address, handler); err != nil {
-		LogFatalf("HTTP server stopped: %v", err)
+	server := &http.Server{
+		Addr:              address,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
+	LogInfof("leaselens-dnsmasq starting version=%s listen=%s", cfg.AppVersion, address)
+
+	// Handle SIGINT/SIGTERM so the HTTP server can finish active requests before
+	// SQLite is checkpointed and closed. This allows SQLite to remove its WAL/SHM
+	// sidecar files when the database is cleanly shut down.
+	shutdownSignal, stopSignals := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stopSignals()
+
+	serverErr := make(chan error, 1)
+	go func() {
+		serverErr <- server.ListenAndServe()
+	}()
+
+	select {
+	case err := <-serverErr:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			LogErrorf("HTTP server stopped unexpectedly: %v", err)
+		}
+	case <-shutdownSignal.Done():
+		LogInfof("shutdown signal received; stopping HTTP server")
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		if err := server.Shutdown(ctx); err != nil {
+			LogWarnf("graceful HTTP shutdown failed: %v; forcing close", err)
+			if closeErr := server.Close(); closeErr != nil {
+				LogWarnf("force close HTTP server: %v", closeErr)
+			}
+		}
+		cancel()
+		if err := <-serverErr; err != nil && !errors.Is(err, http.ErrServerClosed) {
+			LogWarnf("HTTP server exit: %v", err)
+		}
+	}
+
+	checkpointAndCloseDatabase(db)
+	LogInfof("LeaseLens shutdown complete")
 }
