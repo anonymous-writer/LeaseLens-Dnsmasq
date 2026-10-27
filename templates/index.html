@@ -274,9 +274,11 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
 #dhcp-events-dialog[open] { display:flex; }
 #dhcp-events-dialog .settings-head { flex:0 0 auto; position:sticky; top:0; z-index:5; background:var(--surface); padding-bottom:.25rem; }
 #dhcp-events-status { flex:0 0 auto; margin:.1rem 0; }
-#dhcp-events-dialog .table-wrap { flex:1 1 auto; min-height:0; overflow:auto; }
+#dhcp-events-dialog .table-wrap { flex:1 1 auto; min-height:0; overflow:auto; position:relative; }
 #dhcp-events-dialog table { min-width:780px; }
-#dhcp-events-dialog thead th { position:sticky; top:0; z-index:4; background:var(--surface-raised); }
+#dhcp-events-dialog .table-wrap thead th { position:sticky !important; top:0 !important; z-index:10; background:var(--surface-raised); }
+#dhcp-events-dialog .table-wrap table { border-collapse:separate; border-spacing:0; }
+#dhcp-events-dialog #dhcp-events-status { flex:0 0 auto; margin:0; padding:.15rem 0 .25rem; line-height:1.35; }
 #language-select { display:none; }
 
 </style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}" data-dhcp-events-enabled="{{if .ShowDHCPEvents}}true{{else}}false{{end}}">
