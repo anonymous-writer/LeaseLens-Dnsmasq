@@ -68,6 +68,7 @@ func openConfiguredDatabase(dbType, path, pgHost, pgPort, pgName, pgUser, pgPass
 		dbType = "sqlite"
 	}
 	activeDatabaseType = dbType
+	LogDebugf("database initialization starting type=%q", dbType)
 	var db *sql.DB
 	var err error
 	if dbType == "sqlite" {
@@ -104,6 +105,7 @@ func openConfiguredDatabase(dbType, path, pgHost, pgPort, pgName, pgUser, pgPass
 	if err != nil {
 		return nil, fmt.Errorf("open %s database: %w", dbType, err)
 	}
+	LogDebugf("database driver initialized type=%q; checking connection", dbType)
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 	db.SetConnMaxLifetime(0)
@@ -111,6 +113,7 @@ func openConfiguredDatabase(dbType, path, pgHost, pgPort, pgName, pgUser, pgPass
 		db.Close()
 		return nil, fmt.Errorf("connect to %s database: %w", dbType, err)
 	}
+	LogDebugf("database connection successful type=%q", dbType)
 	schema := []string{}
 	if dbType == "sqlite" {
 		for _, q := range []string{"PRAGMA journal_mode=DELETE", "PRAGMA foreign_keys=ON", "PRAGMA busy_timeout=5000"} {
@@ -135,12 +138,13 @@ func openConfiguredDatabase(dbType, path, pgHost, pgPort, pgName, pgUser, pgPass
 			`CREATE TABLE IF NOT EXISTS app_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
 		}
 	}
-	for _, q := range schema {
+	for i, q := range schema {
 		if _, err = db.Exec(q); err != nil {
 			db.Close()
-			return nil, fmt.Errorf("create database schema: %w", err)
+			return nil, fmt.Errorf("create database schema statement %d: %w", i+1, err)
 		}
 	}
+	LogDebugf("database schema ready type=%q statements=%d", dbType, len(schema))
 	// SQLite keeps the existing one-time legacy-file import for backward compatibility.
 	// PostgreSQL starts with a fresh schema as explicitly requested; no data is migrated.
 	if dbType == "sqlite" {

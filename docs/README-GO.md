@@ -28,4 +28,4 @@ The web UI is embedded into the executable at build time; runtime copies of `tem
 
 ## ntfy push notifications
 
-The native binary supports optional ntfy notifications for unknown IPv4 DHCP `add` events. Configure `ntfy_enabled`, `ntfy_url`, and optionally `ntfy_token` in the flat YAML config. Use `scripts/dnsmasq-ntfy-dhcp-ipv4.sh` as dnsmasq's DHCP event bridge; set `LEASELENS_BINARY` and `LEASELENS_CONFIG` when the defaults do not match the installation. The Go process checks `known_devices` in the selected database and sends the push itself.
+The native binary supports optional ntfy notifications for unknown IPv4 DHCP `add` events. Configure `ntfy_enabled`, `ntfy_url`, and optionally `ntfy_token` in the flat YAML config. The Go process polls the configured dnsmasq lease file every three seconds, establishes a baseline on startup, and detects newly appearing MAC/IP leases. No `dhcp-script` entry or shell bridge is required. It checks `known_devices` in the selected database and sends the push itself. Set `log_level: "DEBUG"` to see lease watcher, database, and ntfy diagnostics.

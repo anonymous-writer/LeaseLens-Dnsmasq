@@ -466,11 +466,10 @@ ntfy_priority: "high"
 ntfy_timeout_seconds: 10
 ```
 
-Protect the config file if it contains a token (`chmod 600`). For dnsmasq, use
-`scripts/dnsmasq-ntfy-dhcp-ipv4.sh` as the DHCP event script. Set
-`LEASELENS_BINARY` and `LEASELENS_CONFIG` if the defaults
-(`/usr/bin/leaselens-dnsmasq` and `/home/pi/leaselens-dnsmasq/config.yaml`)
-differ on your system. The script is only a small bridge: the Go executable
-reads the configured database and sends the notification. Only the `add` event
-is treated as a new lease; `old` events are ignored to avoid alerts for restored
-leases. Notification failures are logged and do not block dnsmasq processing.
+Protect the config file if it contains a token (`chmod 600`). The Go
+process polls the configured dnsmasq lease file every three seconds and
+establishes a baseline at startup, so existing devices do not immediately
+trigger notifications. Newly appearing MAC/IP leases are checked against
+`known_devices` in the configured database. No dnsmasq `dhcp-script` entry or
+shell bridge is required. Set `log_level: "DEBUG"` to see lease watcher,
+database, and ntfy diagnostics.
