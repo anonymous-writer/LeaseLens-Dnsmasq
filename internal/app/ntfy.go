@@ -52,8 +52,13 @@ func runDHCPNotification(cfg Config) error {
 		return fmt.Errorf("database: persist DHCP event: %w", err)
 	}
 
-	if action != "add" {
-		LogDebugf("ntfy: skipped action=%q; only action=add triggers unknown-device alerts", action)
+	// A device marked as new is represented by the absence of its MAC in
+	// known_devices. dnsmasq can report its login/lease acquisition as either
+	// "add" or "old" (for an existing lease/renewal). Notify for both so a
+	// device marked new again is not silently missed when dnsmasq emits "old".
+	// Ignore "del" because lease removal is not a login.
+	if action != "add" && action != "old" {
+		LogDebugf("ntfy: skipped action=%q; only add/old DHCP login events trigger new-device alerts", action)
 		return nil
 	}
 	if ip == nil || ip.To4() == nil {
