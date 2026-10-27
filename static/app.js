@@ -775,7 +775,7 @@ window.setInterval(() => { if (leases.length) render(); }, COUNTDOWN_RENDER_INTE
     { id: 'mark-all-ipv4-reservations-button', label: 'Alle IPv4-Reservierungen merken', desc: 'Reservierungen aus der DHCP-Hosts-Datei übernehmen.', element: '#mark-all-ipv4-reservations-button', supported: true },
     { id: 'reset-known-button', label: 'Merkliste zurücksetzen', desc: 'Alle gespeicherten bekannten Geräte vergessen.', element: '#reset-known-button', supported: true },
     { id: 'theme-toggle', label: 'Design umschalten', desc: 'Zwischen hellem und dunklem Design wechseln.', element: '#theme-toggle', supported: true },
-    { id: 'release-lease', label: 'IPv4-Lease freigeben', desc: 'Native Funktion; benötigt Native-Build und konfigurierte DHCP-Schnittstelle.', element: '#release-lease-button', supported: !!document.querySelector('#release-lease-button') },
+    { id: 'release-lease', label: 'IPv4-Lease freigeben', desc: 'Native Funktion; benötigt Native-Build und konfigurierte DHCP-Schnittstelle.', element: null, supported: document.body.dataset.leaseReleaseEnabled === 'true' },
     { id: 'dhcp-events', label: 'DHCP-Ereignisprotokoll', desc: 'Zeigt die letzten DHCP-Ereignisse aus der Datenbank.', element: '#dhcp-events', supported: !!document.querySelector('#dhcp-events') }
   ];
   const list = document.querySelector('#settings-feature-list');
