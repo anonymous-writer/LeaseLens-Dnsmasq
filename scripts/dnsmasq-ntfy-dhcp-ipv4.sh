@@ -8,8 +8,8 @@ MAC=${2:-}
 IP=${3:-}
 HOSTNAME=${4:-}
 
-# Only a fresh lease is a new-device notification. "old" is a restored lease.
-[ "$ACTION" = "add" ] || exit 0
+# Pass all actions to Go so it can log and decide which events merit a notification.
+echo "leaselens-ntfy: DHCP event action=$ACTION mac=$MAC ip=$IP hostname=$HOSTNAME" >&2
 
 BINARY=${LEASELENS_BINARY:-/usr/bin/leaselens-dnsmasq}
 CONFIG=${LEASELENS_CONFIG:-/home/pi/leaselens-dnsmasq/config.yaml}
@@ -28,5 +28,7 @@ LEASELENS_DHCP_EVENT_MAC="$MAC" \
 LEASELENS_DHCP_EVENT_IP="$IP" \
 LEASELENS_DHCP_EVENT_HOSTNAME="$HOSTNAME" \
     "$BINARY" --config "$CONFIG"
+RC=$?
+echo "leaselens-ntfy: LeaseLens event handler returned status=$RC" >&2
 # DHCP processing must not be affected by notification failures.
 exit 0

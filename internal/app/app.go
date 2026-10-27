@@ -38,8 +38,10 @@ func Run(assets fs.FS, nativeBuild bool) {
 	}
 	SetLogLevel(logLevel)
 	if strings.TrimSpace(cfg.DHCPEventAction) != "" {
+		LogDebugf("DHCP event mode entered action=%q mac=%q ip=%q hostname=%q",
+			cfg.DHCPEventAction, cfg.DHCPEventMAC, cfg.DHCPEventIP, cfg.DHCPEventHostname)
 		if err := runDHCPNotification(cfg); err != nil {
-			LogWarnf("DHCP ntfy event: %v", err)
+			LogWarnf("DHCP ntfy event failed: %v", err)
 			os.Exit(0) // Notifications must never break dnsmasq lease processing.
 		}
 		return

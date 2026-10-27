@@ -74,6 +74,8 @@ type Config struct {
 	NTFYNotifyUnknownIPv4 bool
 	NTFYPriority          string
 	NTFYTimeoutSeconds    int
+	NTFYDebug             bool
+	DatabaseDebug         bool
 	DHCPEventAction       string
 	DHCPEventMAC          string
 	DHCPEventIP           string
@@ -110,6 +112,8 @@ func loadConfig() Config {
 		NTFYNotifyUnknownIPv4: strings.EqualFold(getenv("NTFY_NOTIFY_UNKNOWN_IPV4", "true"), "true"),
 		NTFYPriority:          getenv("NTFY_PRIORITY", "high"),
 		NTFYTimeoutSeconds:    envInt("NTFY_TIMEOUT_SECONDS", 10),
+		NTFYDebug:             strings.EqualFold(getenv("NTFY_DEBUG", "false"), "true"),
+		DatabaseDebug:         strings.EqualFold(getenv("DATABASE_DEBUG", "false"), "true"),
 		DHCPEventAction:       getenv("LEASELENS_DHCP_EVENT_ACTION", ""),
 		DHCPEventMAC:          getenv("LEASELENS_DHCP_EVENT_MAC", ""),
 		DHCPEventIP:           getenv("LEASELENS_DHCP_EVENT_IP", ""),
@@ -293,6 +297,10 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 				return fmt.Errorf("config file %q line %d: ntfy_timeout_seconds must be between 1 and 120", path, lineNo)
 			}
 			cfg.NTFYTimeoutSeconds = n
+		case "ntfy_debug", "ntfy-debug":
+			cfg.NTFYDebug = parseConfigBool(value)
+		case "database_debug", "database-debug":
+			cfg.DatabaseDebug = parseConfigBool(value)
 		default:
 			return fmt.Errorf("config file %q line %d: unknown key %q", path, lineNo, key)
 		}
@@ -317,4 +325,14 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 		}
 	}
 	return nil
+}
+
+// parseConfigBool accepts common YAML-style boolean spellings.
+func parseConfigBool(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "true", "yes", "1", "on":
+		return true
+	default:
+		return false
+	}
 }

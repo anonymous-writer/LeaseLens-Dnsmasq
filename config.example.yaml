@@ -73,3 +73,7 @@ ntfy_token: ""
 ntfy_notify_unknown_ipv4: true
 ntfy_priority: "high"
 ntfy_timeout_seconds: 10
+
+# ntfy diagnostics (also requires log_level: "DEBUG" for detailed logs)
+ntfy_debug: false
+database_debug: false
