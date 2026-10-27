@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -63,6 +64,7 @@ func Run(assets fs.FS, nativeBuild bool) {
 
 	dnsmasqVersion := ""
 	if nativeBuild {
+		checkNativeDHCPScript(cfg.DHCPScriptPath)
 		if validInterfaceName(cfg.DHCPInterface) {
 			LogInfof("native IPv4 lease release action enabled interface=%s", cfg.DHCPInterface)
 		} else {
@@ -118,4 +120,25 @@ func Run(assets fs.FS, nativeBuild bool) {
 
 	checkpointAndCloseDatabase(db)
 	LogInfof("LeaseLens shutdown complete")
+}
+
+
+// checkNativeDHCPScript reports whether the configured dnsmasq bridge is installed.
+// dnsmasq itself must still reference this same path via its dhcp-script directive.
+func checkNativeDHCPScript(path string) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		LogWarnf("native DHCP event script path is empty; configure dhcp_script and dnsmasq dhcp-script")
+		return
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		LogWarnf("native DHCP event script not found path=%s; ensure dnsmasq dhcp-script points to this file", path)
+		return
+	}
+	if info.IsDir() || info.Mode().Perm()&0111 == 0 {
+		LogWarnf("native DHCP event script is not executable path=%s", filepath.Clean(path))
+		return
+	}
+	LogInfof("native DHCP event script configured path=%s; verify dnsmasq uses dhcp-script=%s", filepath.Clean(path), filepath.Clean(path))
 }

@@ -467,7 +467,7 @@ ntfy_timeout_seconds: 10
 ```
 
 Protect the config file if it contains a token (`chmod 600`). For dnsmasq, use
-`scripts/dnsmasq-ntfy-dhcp-ipv4.sh` as the DHCP event script. Set
+`scripts/dnsmasq-ntfy-dhcp-ipv4.sh` as the DHCP event script. In the native `config.yaml`, set `dhcp_script: "/usr/local/sbin/dnsmasq-ntfy-dhcp-ipv4.sh"`; LeaseLens checks that the configured script exists and is executable. You must also configure dnsmasq separately with `dhcp-script=/usr/local/sbin/dnsmasq-ntfy-dhcp-ipv4.sh` (the YAML setting does not change dnsmasq configuration). Set
 `LEASELENS_BINARY` and `LEASELENS_CONFIG` if the defaults
 (`/usr/bin/leaselens-dnsmasq` and `/home/pi/leaselens-dnsmasq/config.yaml`)
 differ on your system. The script is only a small bridge: the Go executable

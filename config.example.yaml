@@ -14,27 +14,34 @@ leases_file: "/var/lib/misc/dnsmasq.leases"
 # Optional file containing configured DHCP reservations:
 hosts_file: "/var/lib/misc/dnsmasq.dhcphosts"
 
+# Native DHCP event bridge script. LeaseLens checks that this file exists and is executable.
+# dnsmasq must separately use the same path in its own configuration:
+#   dhcp-script=/usr/local/sbin/dnsmasq-ntfy-dhcp-ipv4.sh
+# This YAML option does not modify dnsmasq configuration automatically.
+dhcp_script: "/usr/local/sbin/dnsmasq-ntfy-dhcp-ipv4.sh"
+
 # Native-only: enable the "Remove IPv4 lease" action by setting your DHCP
 # interface. Leave commented out to disable the action.
 # The service account must have narrowly scoped passwordless sudo permission
 # to run dhcp_release for this interface. See the main README.
 # dhcp_interface: "eth0"
 
+# Working directory for persistent LeaseLens data. The directory must be writable
+# by the account running LeaseLens. Unless explicitly overridden below, LeaseLens
+# stores known-macs.json, ui-settings.json, and dhcp-events.log here.
+working_dir: "/home/pi/leaselens-dnsmasq"
+
 # Logging: DEBUG, INFO, WARN, or ERROR
 log_level: "INFO"
 
-# DHCP event script is configured in dnsmasq, not in this LeaseLens YAML file.
-# Example dnsmasq directive:
-# dhcp-script=/usr/local/sbin/dnsmasq-ntfy-dhcp-ipv4.sh
-# The script then starts the LeaseLens binary with this config file.
+# Optional override: DHCP event log path (add/del/old). If omitted, it is
+# resolved as <working_dir>/dhcp-events.log.
+# dhcp_events_file: "/var/log/dnsmasq/dhcp-events.log"
 
-# Optional legacy DHCP event log to import into the database.
-# Leave unset if you no longer need to import an existing log file.
-# dhcp_events_file: "/home/pi/leaselens-dnsmasq/dhcp-events.log"
-
-# Optional legacy JSON file paths (mainly for importing old SQLite-era data).
-# known_macs_file: "/home/pi/leaselens-dnsmasq/known-macs.json"
-# ui_settings_file: "/home/pi/leaselens-dnsmasq/ui-settings.json"
+# Optional overrides for backward compatibility. If omitted, these are also
+# resolved under working_dir.
+# known_macs_file: "/some/path/known-macs.json"
+# ui_settings_file: "/some/path/ui-settings.json"
 
 # Optional UI metadata.
 # Native builds detect the hardware model and hostname automatically when possible.
@@ -44,8 +51,8 @@ log_level: "INFO"
 # release_date: "2026-10-22"
 # repo_url: "https://github.com/anonymous-writer/leaselens-dnsmasq"
 
-# SQLite database file path (used only when database_type is "sqlite").
-# Set an explicit path instead of relying on working_dir defaults.
+# Central SQLite database for known devices and UI preferences
+# If omitted while working_dir is set, defaults to <working_dir>/leaselens.db
 # database_path: "/home/pi/leaselens-dnsmasq/leaselens.db"
 
 # Database backend: sqlite (default) or postgres.

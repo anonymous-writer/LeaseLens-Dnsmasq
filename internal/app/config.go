@@ -63,6 +63,7 @@ type Config struct {
 	KnownMACsPath         string
 	UISettingsPath        string
 	DHCPEventsPath        string
+	DHCPScriptPath        string
 	DHCPEventsMaxEntries  int
 	DHCPInterface         string
 	AppVersion            string
@@ -102,6 +103,7 @@ func loadConfig() Config {
 		KnownMACsPath:         getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
 		UISettingsPath:        getenv("UI_SETTINGS_FILE", "/data/ui-settings.json"),
 		DHCPEventsPath:        getenv("DNSMASQ_EVENTS_FILE", ""),
+		DHCPScriptPath:        getenv("DNSMASQ_DHCP_SCRIPT", "/usr/local/sbin/dnsmasq-ntfy-dhcp-ipv4.sh"),
 		DHCPEventsMaxEntries:  envInt("DHCP_EVENTS_MAX_ENTRIES", 100),
 		DHCPInterface:         getenv("DNSMASQ_INTERFACE", ""),
 		AppVersion:            getenv("APP_VERSION", buildVersion),
@@ -271,6 +273,8 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 		case "dhcp_events_file", "dhcp-events-file":
 			cfg.DHCPEventsPath = value
 			eventsPathSet = true
+		case "dhcp_script", "dhcp-script", "dhcp_script_path", "dhcp-script-path":
+			cfg.DHCPScriptPath = value
 		case "dhcp_events_max_entries", "dhcp-events-max-entries":
 			n, err := strconv.Atoi(value)
 			if err != nil || n < 1 || n > 100000 {
