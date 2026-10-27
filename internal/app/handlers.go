@@ -284,11 +284,11 @@ func dhcpEventsHandler(db *sql.DB) http.HandlerFunc {
 		}
 		defer rows.Close()
 		type event struct {
-			Time string ` + "`json:\"time\"`" + `
-			Action string ` + "`json:\"action\"`" + `
-			IP string ` + "`json:\"ip\"`" + `
-			MAC string ` + "`json:\"mac\"`" + `
-			Hostname string ` + "`json:\"hostname\"`" + `
+			Time string `json:"time"`
+			Action string `json:"action"`
+			IP string `json:"ip"`
+			MAC string `json:"mac"`
+			Hostname string `json:"hostname"`
 		}
 		result := make([]event, 0, 100)
 		for rows.Next() {
