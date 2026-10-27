@@ -776,7 +776,7 @@ window.setInterval(() => { if (leases.length) render(); }, COUNTDOWN_RENDER_INTE
     { id: 'reset-known-button', label: 'Merkliste zurücksetzen', desc: 'Alle gespeicherten bekannten Geräte vergessen.', element: '#reset-known-button', supported: true },
     { id: 'theme-toggle', label: 'Design umschalten', desc: 'Zwischen hellem und dunklem Design wechseln.', element: '#theme-toggle', supported: true },
     { id: 'release-lease', label: 'IPv4-Lease freigeben', desc: 'Native Funktion; benötigt Native-Build und konfigurierte DHCP-Schnittstelle.', element: '#release-lease-button', supported: !!document.querySelector('#release-lease-button') },
-    { id: 'dhcp-events', label: 'DHCP-Ereignisprotokoll', desc: 'Benötigt eine konfigurierte DHCP-Eventdatei.', element: '#dhcp-events', supported: !!document.querySelector('#dhcp-events') }
+    { id: 'dhcp-events', label: 'DHCP-Ereignisprotokoll', desc: 'Zeigt die letzten DHCP-Ereignisse aus der Datenbank.', element: '#dhcp-events', supported: !!document.querySelector('#dhcp-events') }
   ];
   const list = document.querySelector('#settings-feature-list');
   const visible = {};
@@ -886,4 +886,40 @@ window.setInterval(() => { if (leases.length) render(); }, COUNTDOWN_RENDER_INTE
     } catch (_) { state.textContent = tx.failed; }
   });
   loadSettings();
+})();
+
+
+// DHCP event history is stored in the database; no legacy log file is required.
+(() => {
+  const button = document.querySelector('#dhcp-events');
+  const dialog = document.querySelector('#dhcp-events-dialog');
+  const close = document.querySelector('#dhcp-events-close');
+  const status = document.querySelector('#dhcp-events-status');
+  const body = document.querySelector('#dhcp-events-rows');
+  if (!button || !dialog || !body) return;
+  const cell = (row, value) => {
+    const td = document.createElement('td');
+    td.textContent = value == null ? '' : String(value);
+    row.appendChild(td);
+  };
+  button.addEventListener('click', async () => {
+    dialog.showModal();
+    status.textContent = 'Lade Ereignisse …';
+    body.replaceChildren();
+    try {
+      const response = await fetch('/dhcp-events');
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const data = await response.json();
+      for (const event of (data.events || [])) {
+        const row = document.createElement('tr');
+        cell(row, event.time); cell(row, event.action); cell(row, event.ip);
+        cell(row, event.mac); cell(row, event.hostname);
+        body.appendChild(row);
+      }
+      status.textContent = (data.events || []).length + ' Ereignisse geladen.';
+    } catch (error) {
+      status.textContent = 'Ereignisse konnten nicht geladen werden: ' + error.message;
+    }
+  });
+  close?.addEventListener('click', () => dialog.close());
 })();

@@ -330,6 +330,7 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
       </svg>
     </button>
     <button id="settings-button" type="button" title="View & Settings" aria-label="View & Settings">⚙ Settings</button>
+    <button id="dhcp-events" type="button">DHCP-Ereignisprotokoll</button>
   </div>
 
   <dialog id="settings-dialog" aria-labelledby="settings-title">
@@ -341,6 +342,12 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
     </label>
     <h3 id="settings-functions-heading">Buttons und Menüpunkte</h3>
     <div id="settings-feature-list"></div>
+  </dialog>
+
+  <dialog id="dhcp-events-dialog">
+    <div class="settings-head"><h2>DHCP-Ereignisprotokoll (letzte 100)</h2><button type="button" id="dhcp-events-close" aria-label="Schließen">×</button></div>
+    <p id="dhcp-events-status" role="status"></p>
+    <div class="table-wrap"><table><thead><tr><th>Zeit</th><th>Aktion</th><th>IP</th><th>MAC</th><th>Hostname</th></tr></thead><tbody id="dhcp-events-rows"></tbody></table></div>
   </dialog>
 
   <section id="summary-cards" aria-label="Lease summary">

@@ -25,6 +25,7 @@ func newHTTPHandler(cfg Config, db *sql.DB, known *KnownMACs, tmpl *template.Tem
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 	mux.HandleFunc("/known-macs", knownMACsHandler(cfg, known))
 	mux.HandleFunc("/leases", leasesHandler(cfg, db, known))
+	mux.HandleFunc("/dhcp-events", dhcpEventsHandler(db))
 	mux.Handle("/ui-settings", newUISettingsStore(db).handler())
 	if enableLeaseRelease {
 		mux.HandleFunc("/release-lease", releaseLeaseHandler(cfg))
@@ -38,7 +39,7 @@ func homeHandler(cfg Config, tmpl *template.Template, dnsmasqVersion string, ena
 			http.NotFound(w, r)
 			return
 		}
-		data := PageData{Version: cfg.AppVersion, ReleaseDate: cfg.ReleaseDate, RepoURL: cfg.RepoURL, SystemName: cfg.SystemName, DnsmasqVersion: dnsmasqVersion, EnableLeaseRelease: enableLeaseRelease, ShowDHCPEvents: strings.TrimSpace(cfg.DHCPEventsPath) != ""}
+		data := PageData{Version: cfg.AppVersion, ReleaseDate: cfg.ReleaseDate, RepoURL: cfg.RepoURL, SystemName: cfg.SystemName, DnsmasqVersion: dnsmasqVersion, EnableLeaseRelease: enableLeaseRelease, ShowDHCPEvents: true}
 		if err := tmpl.Execute(w, data); err != nil {
 			LogErrorf("cannot render home page: %v", err)
 			http.Error(w, "template error", http.StatusInternalServerError)
@@ -265,4 +266,45 @@ func validInterfaceName(value string) bool {
 		}
 	}
 	return true
+}
+
+
+// dhcpEventsHandler serves the recent DHCP event history from the configured database.
+func dhcpEventsHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		rows, err := db.Query(`SELECT event_time, action, ip_address, mac, hostname FROM dhcp_events ORDER BY event_time DESC, id DESC LIMIT 100`)
+		if err != nil {
+			LogErrorf("cannot query DHCP event history: %v", err)
+			http.Error(w, "DHCP event history unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		defer rows.Close()
+		type event struct {
+			Time string ` + "`json:\"time\"`" + `
+			Action string ` + "`json:\"action\"`" + `
+			IP string ` + "`json:\"ip\"`" + `
+			MAC string ` + "`json:\"mac\"`" + `
+			Hostname string ` + "`json:\"hostname\"`" + `
+		}
+		result := make([]event, 0, 100)
+		for rows.Next() {
+			var e event
+			if err := rows.Scan(&e.Time, &e.Action, &e.IP, &e.MAC, &e.Hostname); err != nil {
+				LogErrorf("cannot scan DHCP event history: %v", err)
+				http.Error(w, "DHCP event history unavailable", http.StatusInternalServerError)
+				return
+			}
+			result = append(result, e)
+		}
+		if err := rows.Err(); err != nil {
+			http.Error(w, "DHCP event history unavailable", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"events": result})
+	}
 }
