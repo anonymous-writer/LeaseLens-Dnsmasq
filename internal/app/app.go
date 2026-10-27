@@ -89,9 +89,6 @@ func Run(assets fs.FS, nativeBuild bool) {
 	shutdownSignal, stopSignals := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stopSignals()
 
-	// Native in-process DHCP observation: no dnsmasq dhcp-script is required for ntfy.
-	startLeaseNotificationWatcher(shutdownSignal, cfg)
-
 	serverErr := make(chan error, 1)
 	go func() {
 		serverErr <- server.ListenAndServe()

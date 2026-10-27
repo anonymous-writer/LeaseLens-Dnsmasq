@@ -12,24 +12,15 @@ import (
 	"time"
 )
 
-// runDHCPNotification sends a notification for a newly observed lease.
-// DHCP changes are detected by the in-process lease watcher; no dnsmasq script is required.
+// runDHCPNotification is invoked by the same executable from dnsmasq's dhcp-script.
+// It reads known_devices from the configured database; no JSON device list is used.
 func runDHCPNotification(cfg Config) error {
-	LogDebugf("ntfy event received action=%q mac=%q ip=%q hostname=%q enabled=%t notify_unknown_ipv4=%t db_type=%q",
-		cfg.DHCPEventAction, cfg.DHCPEventMAC, cfg.DHCPEventIP, cfg.DHCPEventHostname,
-		cfg.NTFYEnabled, cfg.NTFYNotifyUnknownIPv4, cfg.DatabaseType)
-	if !cfg.NTFYEnabled {
-		LogDebugf("ntfy skipped: ntfy_enabled=false")
-		return nil
-	}
-	if !cfg.NTFYNotifyUnknownIPv4 {
-		LogDebugf("ntfy skipped: ntfy_notify_unknown_ipv4=false")
+	if !cfg.NTFYEnabled || !cfg.NTFYNotifyUnknownIPv4 {
 		return nil
 	}
 	action := strings.ToLower(strings.TrimSpace(cfg.DHCPEventAction))
 	// dnsmasq's "old" action restores an existing lease and is not a new device.
 	if action != "add" {
-		LogDebugf("ntfy skipped: DHCP action %q is not add", action)
 		return nil
 	}
 	mac := strings.ToUpper(strings.TrimSpace(cfg.DHCPEventMAC))
@@ -38,36 +29,29 @@ func runDHCPNotification(cfg Config) error {
 	}
 	ip := net.ParseIP(strings.TrimSpace(cfg.DHCPEventIP))
 	if ip == nil || ip.To4() == nil {
-		LogDebugf("ntfy skipped: invalid/non-IPv4 address %q", cfg.DHCPEventIP)
 		return nil
 	}
 	if err := validateNTFYURL(cfg.NTFYURL); err != nil {
-		return fmt.Errorf("validate ntfy_url: %w", err)
+		return err
 	}
-	LogDebugf("ntfy accepted event mac=%s ip=%s endpoint=%s", mac, ip.To4(), cfg.NTFYURL)
 	if cfg.NTFYTimeoutSeconds < 1 || cfg.NTFYTimeoutSeconds > 120 {
 		cfg.NTFYTimeoutSeconds = 10
 	}
 
 	db, err := openConfiguredDatabase(cfg.DatabaseType, cfg.DatabasePath, cfg.PostgresHost, cfg.PostgresPort, cfg.PostgresDatabase, cfg.PostgresUser, cfg.PostgresPassword, cfg.PostgresSSLMode, cfg.KnownMACsPath, cfg.UISettingsPath, cfg.DHCPEventsPath)
 	if err != nil {
-		return fmt.Errorf("open configured database type=%q: %w", cfg.DatabaseType, err)
+		return fmt.Errorf("open configured database: %w", err)
 	}
 	defer checkpointAndCloseDatabase(db)
-	LogDebugf("ntfy database connection established type=%q", cfg.DatabaseType)
 
 	var found int
-	query := adaptSQL(`SELECT 1 FROM known_devices WHERE mac=? COLLATE NOCASE`)
-	LogDebugf("ntfy database query: checking known_devices for mac=%s", mac)
-	err = db.QueryRow(query, mac).Scan(&found)
+	err = db.QueryRow(adaptSQL(`SELECT 1 FROM known_devices WHERE mac=? COLLATE NOCASE`), mac).Scan(&found)
 	if err == nil {
-		LogInfof("ntfy skipped: device already known mac=%s", mac)
-		return nil
+		return nil // explicitly known device
 	}
 	if err != sql.ErrNoRows {
-		return fmt.Errorf("query known_devices for mac %s: %w", mac, err)
+		return fmt.Errorf("check known_devices: %w", err)
 	}
-	LogInfof("ntfy device is unknown mac=%s ip=%s; sending push", mac, ip.To4())
 
 	hostname := strings.TrimSpace(cfg.DHCPEventHostname)
 	if hostname == "" || hostname == "*" {
@@ -90,14 +74,13 @@ func runDHCPNotification(cfg Config) error {
 	client := &http.Client{Timeout: time.Duration(cfg.NTFYTimeoutSeconds) * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("send ntfy notification to %s: %w", cfg.NTFYURL, err)
+		return fmt.Errorf("send ntfy notification: %w", err)
 	}
 	defer resp.Body.Close()
-	LogDebugf("ntfy HTTP response status=%d", resp.StatusCode)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("ntfy server returned HTTP %d", resp.StatusCode)
 	}
-	LogInfof("ntfy notification sent successfully mac=%s ip=%s http_status=%d", mac, ip.To4().String(), resp.StatusCode)
+	LogInfof("ntfy notification sent for unknown IPv4 device mac=%s ip=%s", mac, ip.To4().String())
 	return nil
 }
 
@@ -125,66 +108,4 @@ func validateNTFYURL(raw string) error {
 		return fmt.Errorf("ntfy_url must be an absolute HTTP(S) URL")
 	}
 	return nil
-}
-
-// startLeaseNotificationWatcher polls dnsmasq's lease file from inside the main Go process.
-// It establishes a baseline at startup, then processes only newly appearing MAC/IP leases.
-func startLeaseNotificationWatcher(ctx context.Context, cfg Config) {
-	if !cfg.NTFYEnabled {
-		LogInfof("ntfy watcher disabled (ntfy_enabled=false)")
-		return
-	}
-	LogInfof("ntfy lease watcher starting lease_file=%s interval=3s", cfg.LeasePath)
-	go func() {
-		known := map[string]bool{}
-		leases, err := readLeaseEntries(cfg.LeasePath, cfg.HostsPath)
-		if err != nil {
-			LogWarnf("ntfy watcher cannot read initial lease file %q: %v", cfg.LeasePath, err)
-		} else {
-			for _, lease := range leases {
-				if lease.MACAddress != "" && net.ParseIP(lease.IPAddress) != nil {
-					known[strings.ToUpper(lease.MACAddress)+"|"+lease.IPAddress] = true
-				}
-			}
-			LogInfof("ntfy watcher baseline loaded leases=%d tracked=%d", len(leases), len(known))
-		}
-		ticker := time.NewTicker(3 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				LogInfof("ntfy lease watcher stopped")
-				return
-			case <-ticker.C:
-				leases, err := readLeaseEntries(cfg.LeasePath, cfg.HostsPath)
-				if err != nil {
-					LogWarnf("ntfy watcher cannot read lease file %q: %v", cfg.LeasePath, err)
-					continue
-				}
-				for _, lease := range leases {
-					mac := strings.ToUpper(strings.TrimSpace(lease.MACAddress))
-					ip := strings.TrimSpace(lease.IPAddress)
-					parsedIP := net.ParseIP(ip)
-					if mac == "" || parsedIP == nil || parsedIP.To4() == nil {
-						continue
-					}
-					key := mac + "|" + ip
-					if known[key] {
-						continue
-					}
-					known[key] = true
-					// If the same MAC changes IP, treat that as a new lease observation too.
-					eventCfg := cfg
-					eventCfg.DHCPEventAction = "add"
-					eventCfg.DHCPEventMAC = mac
-					eventCfg.DHCPEventIP = ip
-					eventCfg.DHCPEventHostname = lease.Name
-					LogInfof("ntfy watcher detected newly observed DHCP lease mac=%s ip=%s hostname=%q", mac, ip, lease.Name)
-					if err := runDHCPNotification(eventCfg); err != nil {
-						LogErrorf("ntfy notification failed mac=%s ip=%s: %v", mac, ip, err)
-					}
-				}
-			}
-		}
-	}()
 }
