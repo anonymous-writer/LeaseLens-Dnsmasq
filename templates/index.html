@@ -253,6 +253,22 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
 .settings-actions { position:sticky; top:-1.2rem; z-index:5; margin:0 -1.2rem .8rem; padding:.65rem 1.2rem; background:var(--surface); border-bottom:1px solid var(--border); justify-content:flex-end; }
 #settings-save { background:var(--accent); color:white; font-weight:700; }
 #settings-button { white-space:nowrap; }
+/* UI polish: visible dialog close controls in both themes. */
+#settings-dialog #settings-close, #dhcp-events-dialog #dhcp-events-close {
+  display:inline-grid; place-items:center; flex:0 0 2rem; width:2rem; height:2rem;
+  padding:0; border:1px solid var(--border); border-radius:6px;
+  color:var(--fg)!important; background:var(--surface-raised, var(--bg))!important;
+  font-size:1.35rem; font-weight:800; line-height:1; opacity:1; cursor:pointer;
+}
+#settings-dialog #settings-close:hover, #dhcp-events-dialog #dhcp-events-close:hover {
+  color:#fff!important; background:#b91c1c!important; border-color:#ef4444!important;
+}
+/* In the second toolbar row, put Settings to the right of the DHCP event log. */
+#settings-button { grid-row:2; grid-column:4; }
+#dhcp-events { grid-row:2; grid-column:3; }
+@media(max-width:1000px) {
+  #settings-button, #dhcp-events { grid-row:auto; grid-column:auto; }
+}
 #language-select { display:none; }
 
 </style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}" data-dhcp-events-enabled="{{if .ShowDHCPEvents}}true{{else}}false{{end}}">
