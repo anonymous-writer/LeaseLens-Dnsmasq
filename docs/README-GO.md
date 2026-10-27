@@ -24,3 +24,8 @@ The Dockerfile copies the root `main.go` and the full `internal/` directory befo
 - `linux/arm64`
 
 The web UI is embedded into the executable at build time; runtime copies of `templates/` and `static/` are not required.
+
+
+## ntfy push notifications
+
+The native binary supports optional ntfy notifications for unknown IPv4 DHCP `add` events. Configure `ntfy_enabled`, `ntfy_url`, and optionally `ntfy_token` in the flat YAML config. Use `scripts/dnsmasq-ntfy-dhcp-ipv4.sh` as dnsmasq's DHCP event bridge; set `LEASELENS_BINARY` and `LEASELENS_CONFIG` when the defaults do not match the installation. The Go process checks `known_devices` in the selected database and sends the push itself.

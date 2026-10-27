@@ -47,53 +47,73 @@ func getenv(k, d string) string {
 
 // Config contains paths, server settings, and build metadata.
 type Config struct {
-	WorkingDir       string
-	DatabasePath     string
-	DatabaseType     string
-	PostgresHost     string
-	PostgresPort     string
-	PostgresDatabase string
-	PostgresUser     string
-	PostgresPassword string
-	PostgresSSLMode  string
-	Host             string
-	Port             string
-	LeasePath        string
-	HostsPath        string
-	KnownMACsPath    string
-	UISettingsPath   string
-	DHCPEventsPath   string
-	DHCPInterface    string
-	AppVersion       string
-	ReleaseDate      string
-	RepoURL          string
-	SystemName       string
+	WorkingDir            string
+	DatabasePath          string
+	DatabaseType          string
+	PostgresHost          string
+	PostgresPort          string
+	PostgresDatabase      string
+	PostgresUser          string
+	PostgresPassword      string
+	PostgresSSLMode       string
+	Host                  string
+	Port                  string
+	LeasePath             string
+	HostsPath             string
+	KnownMACsPath         string
+	UISettingsPath        string
+	DHCPEventsPath        string
+	DHCPInterface         string
+	AppVersion            string
+	ReleaseDate           string
+	RepoURL               string
+	SystemName            string
+	NTFYEnabled           bool
+	NTFYURL               string
+	NTFYToken             string
+	NTFYNotifyUnknownIPv4 bool
+	NTFYPriority          string
+	NTFYTimeoutSeconds    int
+	DHCPEventAction       string
+	DHCPEventMAC          string
+	DHCPEventIP           string
+	DHCPEventHostname     string
 }
 
 // loadConfig reads runtime options from environment variables.
 func loadConfig() Config {
 	return Config{
-		WorkingDir:       getenv("WORKING_DIR", ""),
-		DatabasePath:     getenv("DATABASE_PATH", "/data/leaselens.db"),
-		DatabaseType:     getenv("DATABASE_TYPE", "sqlite"),
-		PostgresHost:     getenv("POSTGRES_HOST", "127.0.0.1"),
-		PostgresPort:     getenv("POSTGRES_PORT", "5432"),
-		PostgresDatabase: getenv("POSTGRES_DATABASE", "leaselens"),
-		PostgresUser:     getenv("POSTGRES_USER", "leaselens"),
-		PostgresPassword: getenv("POSTGRES_PASSWORD", ""),
-		PostgresSSLMode:  getenv("POSTGRES_SSLMODE", "require"),
-		Host:             getenv("HOST", "0.0.0.0"),
-		Port:             getenv("PORT", "5000"),
-		LeasePath:        getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
-		HostsPath:        getenv("DNSMASQ_HOSTS_FILE", "/var/lib/dnsmasq/dnsmasq.dhcphosts"),
-		KnownMACsPath:    getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
-		UISettingsPath:   getenv("UI_SETTINGS_FILE", "/data/ui-settings.json"),
-		DHCPEventsPath:   getenv("DNSMASQ_EVENTS_FILE", ""),
-		DHCPInterface:    getenv("DNSMASQ_INTERFACE", ""),
-		AppVersion:       getenv("APP_VERSION", buildVersion),
-		ReleaseDate:      getenv("APP_RELEASE_DATE", buildReleaseDate),
-		RepoURL:          getenv("REPO_URL", "https://github.com/anonymous-writer/leaselens-dnsmasq"),
-		SystemName:       getenv("SYSTEM_NAME", ""),
+		WorkingDir:            getenv("WORKING_DIR", ""),
+		DatabasePath:          getenv("DATABASE_PATH", "/data/leaselens.db"),
+		DatabaseType:          getenv("DATABASE_TYPE", "sqlite"),
+		PostgresHost:          getenv("POSTGRES_HOST", "127.0.0.1"),
+		PostgresPort:          getenv("POSTGRES_PORT", "5432"),
+		PostgresDatabase:      getenv("POSTGRES_DATABASE", "leaselens"),
+		PostgresUser:          getenv("POSTGRES_USER", "leaselens"),
+		PostgresPassword:      getenv("POSTGRES_PASSWORD", ""),
+		PostgresSSLMode:       getenv("POSTGRES_SSLMODE", "require"),
+		Host:                  getenv("HOST", "0.0.0.0"),
+		Port:                  getenv("PORT", "5000"),
+		LeasePath:             getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
+		HostsPath:             getenv("DNSMASQ_HOSTS_FILE", "/var/lib/dnsmasq/dnsmasq.dhcphosts"),
+		KnownMACsPath:         getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
+		UISettingsPath:        getenv("UI_SETTINGS_FILE", "/data/ui-settings.json"),
+		DHCPEventsPath:        getenv("DNSMASQ_EVENTS_FILE", ""),
+		DHCPInterface:         getenv("DNSMASQ_INTERFACE", ""),
+		AppVersion:            getenv("APP_VERSION", buildVersion),
+		ReleaseDate:           getenv("APP_RELEASE_DATE", buildReleaseDate),
+		RepoURL:               getenv("REPO_URL", "https://github.com/anonymous-writer/leaselens-dnsmasq"),
+		SystemName:            getenv("SYSTEM_NAME", ""),
+		NTFYEnabled:           strings.EqualFold(getenv("NTFY_ENABLED", "false"), "true"),
+		NTFYURL:               getenv("NTFY_URL", ""),
+		NTFYToken:             getenv("NTFY_TOKEN", ""),
+		NTFYNotifyUnknownIPv4: strings.EqualFold(getenv("NTFY_NOTIFY_UNKNOWN_IPV4", "true"), "true"),
+		NTFYPriority:          getenv("NTFY_PRIORITY", "high"),
+		NTFYTimeoutSeconds:    envInt("NTFY_TIMEOUT_SECONDS", 10),
+		DHCPEventAction:       getenv("LEASELENS_DHCP_EVENT_ACTION", ""),
+		DHCPEventMAC:          getenv("LEASELENS_DHCP_EVENT_MAC", ""),
+		DHCPEventIP:           getenv("LEASELENS_DHCP_EVENT_IP", ""),
+		DHCPEventHostname:     getenv("LEASELENS_DHCP_EVENT_HOSTNAME", ""),
 	}
 }
 
@@ -257,6 +277,22 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 			cfg.RepoURL = value
 		case "system_name", "system-name":
 			cfg.SystemName = value
+		case "ntfy_enabled", "ntfy-enabled":
+			cfg.NTFYEnabled = strings.EqualFold(value, "true") || value == "1" || strings.EqualFold(value, "yes")
+		case "ntfy_url", "ntfy-url":
+			cfg.NTFYURL = value
+		case "ntfy_token", "ntfy-token":
+			cfg.NTFYToken = value
+		case "ntfy_notify_unknown_ipv4", "ntfy-notify-unknown-ipv4":
+			cfg.NTFYNotifyUnknownIPv4 = strings.EqualFold(value, "true") || value == "1" || strings.EqualFold(value, "yes")
+		case "ntfy_priority", "ntfy-priority":
+			cfg.NTFYPriority = value
+		case "ntfy_timeout_seconds", "ntfy-timeout-seconds":
+			n, err := strconv.Atoi(value)
+			if err != nil || n < 1 || n > 120 {
+				return fmt.Errorf("config file %q line %d: ntfy_timeout_seconds must be between 1 and 120", path, lineNo)
+			}
+			cfg.NTFYTimeoutSeconds = n
 		default:
 			return fmt.Errorf("config file %q line %d: unknown key %q", path, lineNo, key)
 		}

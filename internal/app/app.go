@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -36,6 +37,13 @@ func Run(assets fs.FS, nativeBuild bool) {
 		}
 	}
 	SetLogLevel(logLevel)
+	if strings.TrimSpace(cfg.DHCPEventAction) != "" {
+		if err := runDHCPNotification(cfg); err != nil {
+			LogWarnf("DHCP ntfy event: %v", err)
+			os.Exit(0) // Notifications must never break dnsmasq lease processing.
+		}
+		return
+	}
 
 	db, err := openConfiguredDatabase(cfg.DatabaseType, cfg.DatabasePath, cfg.PostgresHost, cfg.PostgresPort, cfg.PostgresDatabase, cfg.PostgresUser, cfg.PostgresPassword, cfg.PostgresSSLMode, cfg.KnownMACsPath, cfg.UISettingsPath, cfg.DHCPEventsPath)
 	if err != nil {

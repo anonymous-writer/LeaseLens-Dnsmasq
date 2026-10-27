@@ -449,3 +449,28 @@ The dashboard's **Ansicht & Einstellungen** dialog stores the selected language 
 ## Database backends
 
 LeaseLens supports SQLite by default and optional PostgreSQL. See [docs/postgresql.md](docs/postgresql.md) for configuration. PostgreSQL starts with a fresh schema; it does not import SQLite or legacy files.
+
+## Optional ntfy notifications for unknown IPv4 devices (native install)
+
+The native Go executable can send ntfy notifications directly. It checks the
+`known_devices` table in the configured SQLite or PostgreSQL database; it does
+not read `known-macs.json` for notification decisions. Add these flat keys to
+your existing `config.yaml`:
+
+```yaml
+ntfy_enabled: true
+ntfy_url: "https://ntfy.sh/your-private-topic"
+ntfy_token: ""
+ntfy_notify_unknown_ipv4: true
+ntfy_priority: "high"
+ntfy_timeout_seconds: 10
+```
+
+Protect the config file if it contains a token (`chmod 600`). For dnsmasq, use
+`scripts/dnsmasq-ntfy-dhcp-ipv4.sh` as the DHCP event script. Set
+`LEASELENS_BINARY` and `LEASELENS_CONFIG` if the defaults
+(`/usr/bin/leaselens-dnsmasq` and `/home/pi/leaselens-dnsmasq/config.yaml`)
+differ on your system. The script is only a small bridge: the Go executable
+reads the configured database and sends the notification. Only the `add` event
+is treated as a new lease; `old` events are ignored to avoid alerts for restored
+leases. Notification failures are logged and do not block dnsmasq processing.

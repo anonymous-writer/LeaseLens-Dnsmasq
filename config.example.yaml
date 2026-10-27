@@ -65,3 +65,11 @@ database_path: "/data/leaselens.db"
 # postgres_user: "leaselens"
 # postgres_password: "change-me"
 # postgres_sslmode: "require"
+
+# Optional ntfy push notifications for new, unknown IPv4 DHCP clients
+ntfy_enabled: false
+ntfy_url: "https://ntfy.sh/dein-topic"
+ntfy_token: ""
+ntfy_notify_unknown_ipv4: true
+ntfy_priority: "high"
+ntfy_timeout_seconds: 10
