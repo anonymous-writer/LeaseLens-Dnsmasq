@@ -269,6 +269,14 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
 @media(max-width:1000px) {
   #settings-button, #dhcp-events { grid-row:auto; grid-column:auto; }
 }
+/* DHCP history: keep title and table headings fixed; scroll only the event rows. */
+#dhcp-events-dialog { width:min(940px,calc(100% - 2rem)); max-height:88vh; height:min(780px,88vh); overflow:hidden; display:none; flex-direction:column; gap:.65rem; }
+#dhcp-events-dialog[open] { display:flex; }
+#dhcp-events-dialog .settings-head { flex:0 0 auto; position:sticky; top:0; z-index:5; background:var(--surface); padding-bottom:.25rem; }
+#dhcp-events-status { flex:0 0 auto; margin:.1rem 0; }
+#dhcp-events-dialog .table-wrap { flex:1 1 auto; min-height:0; overflow:auto; }
+#dhcp-events-dialog table { min-width:780px; }
+#dhcp-events-dialog thead th { position:sticky; top:0; z-index:4; background:var(--surface-raised); }
 #language-select { display:none; }
 
 </style></head><body data-lease-release-enabled="{{if .EnableLeaseRelease}}true{{else}}false{{end}}" data-dhcp-events-enabled="{{if .ShowDHCPEvents}}true{{else}}false{{end}}">
@@ -361,9 +369,9 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
   </dialog>
 
   <dialog id="dhcp-events-dialog">
-    <div class="settings-head"><h2>DHCP-Ereignisprotokoll (letzte 100)</h2><button type="button" id="dhcp-events-close" aria-label="Schließen">×</button></div>
+    <div class="settings-head"><h2 data-i18n="dhcpEventsTitle">DHCP-Ereignisprotokoll (letzte 100)</h2><button type="button" id="dhcp-events-close" aria-label="Schließen">×</button></div>
     <p id="dhcp-events-status" role="status"></p>
-    <div class="table-wrap"><table><thead><tr><th>Zeit</th><th>Aktion</th><th>IP</th><th>MAC</th><th>Hostname</th></tr></thead><tbody id="dhcp-events-rows"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th data-i18n="dhcpEventsTime">Zeit</th><th data-i18n="dhcpEventsAction">Aktion</th><th data-i18n="dhcpEventsIP">IP</th><th data-i18n="dhcpEventsMAC">MAC</th><th data-i18n="dhcpEventsHostname">Hostname</th></tr></thead><tbody id="dhcp-events-rows"></tbody></table></div>
   </dialog>
 
   <section id="summary-cards" aria-label="Lease summary">
