@@ -117,6 +117,11 @@ func knownMACsHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 			LogInfof("device marked as known")
 		case "unmark":
 			LogInfof("device marked as new again")
+			// Notify when the user explicitly changes a device back to NEW.
+			// Notification failures must not undo the status change.
+			if err := notifyDeviceMarkedNew(cfg, body.MAC); err != nil {
+				LogWarnf("ntfy notification for device marked new failed: %v", err)
+			}
 		case "reset":
 			LogInfof("remembered-device list reset")
 		case "mark-reservations":
@@ -268,7 +273,6 @@ func validInterfaceName(value string) bool {
 	return true
 }
 
-
 // dhcpEventsHandler serves the recent DHCP event history from the configured database.
 func dhcpEventsHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -284,10 +288,10 @@ func dhcpEventsHandler(db *sql.DB) http.HandlerFunc {
 		}
 		defer rows.Close()
 		type event struct {
-			Time string `json:"time"`
-			Action string `json:"action"`
-			IP string `json:"ip"`
-			MAC string `json:"mac"`
+			Time     string `json:"time"`
+			Action   string `json:"action"`
+			IP       string `json:"ip"`
+			MAC      string `json:"mac"`
 			Hostname string `json:"hostname"`
 		}
 		result := make([]event, 0, 100)
