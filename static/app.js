@@ -255,7 +255,13 @@ function render() {
   groupSelect.hidden = !hasGroups;
   groupSelect.replaceChildren(new Option(t('allGroups'), 'all'));
   groups.forEach(group => groupSelect.add(new Option(group, group)));
-  groupFilter = groups.includes(selectedGroup) ? selectedGroup : 'all';
+  // Keep the persisted group selection while lease/group data is still loading.
+  // Only fall back to "all" once groups are available and the saved group no longer exists.
+  if (groups.length > 0) {
+    groupFilter = selectedGroup === 'all' || groups.includes(selectedGroup) ? selectedGroup : 'all';
+  } else {
+    groupFilter = selectedGroup || 'all';
+  }
   groupSelect.value = groupFilter;
   document.body.dataset.hasGroups = String(hasGroups);
   // Keep header and body columns in sync, including when groups are hidden.
