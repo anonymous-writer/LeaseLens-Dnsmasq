@@ -126,65 +126,6 @@ func runDHCPNotification(cfg Config) error {
 	return nil
 }
 
-// notifyDeviceMarkedNew sends a push when a user explicitly changes a device
-// back to the NEW state in the UI. DHCP add events for unknown devices are
-// handled by runDHCPNotification; this covers the manual status transition.
-func notifyDeviceMarkedNew(cfg Config, rawMAC string) error {
-	if !cfg.NTFYEnabled || !cfg.NTFYNotifyUnknownIPv4 {
-		return nil
-	}
-	mac := strings.ToUpper(strings.TrimSpace(rawMAC))
-	if !macRE.MatchString(mac) {
-		return fmt.Errorf("invalid MAC address %q", rawMAC)
-	}
-	if err := validateNTFYURL(cfg.NTFYURL); err != nil {
-		return fmt.Errorf("invalid ntfy_url: %w", err)
-	}
-	timeout := cfg.NTFYTimeoutSeconds
-	if timeout < 1 || timeout > 120 {
-		timeout = 10
-	}
-	hostname, ipAddress := "(unbekannt)", "(nicht verfügbar)"
-	if leases, err := readLeaseEntries(cfg.LeasePath, cfg.HostsPath); err == nil {
-		for _, lease := range leases {
-			if strings.EqualFold(strings.TrimSpace(lease.MACAddress), mac) {
-				if name := strings.TrimSpace(lease.Name); name != "" && name != "*" {
-					hostname = name
-				}
-				if ip := net.ParseIP(strings.TrimSpace(lease.IPAddress)); ip != nil && ip.To4() != nil {
-					ipAddress = ip.To4().String()
-				}
-				break
-			}
-		}
-	}
-	body := fmt.Sprintf("Gerätestatus auf NEU gesetzt\nHostname: %s\nIPv4-Adresse: %s\nMAC-Adresse: %s\nEreignis: Status manuell auf NEU gesetzt", hostname, ipAddress, mac)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, cfg.NTFYURL, strings.NewReader(body))
-	if err != nil {
-		return fmt.Errorf("create request: %w", err)
-	}
-	req.Header.Set("Title", "LeaseLens: Gerät auf NEU gesetzt")
-	req.Header.Set("Priority", validNTFYPriority(cfg.NTFYPriority))
-	req.Header.Set("Tags", "computer,warning")
-	req.Header.Set("Content-Type", "text/plain; charset=utf-8")
-	if cfg.NTFYToken != "" {
-		req.Header.Set("Authorization", "Bearer "+cfg.NTFYToken)
-	}
-	client := &http.Client{Timeout: time.Duration(timeout) * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("send notification: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("ntfy returned HTTP %d", resp.StatusCode)
-	}
-	LogInfof("ntfy: notification sent for device manually marked NEW mac=%s http_status=%d", mac, resp.StatusCode)
-	return nil
-}
-
 func validNTFYPriority(priority string) string {
 	switch strings.ToLower(strings.TrimSpace(priority)) {
 	case "min", "1":

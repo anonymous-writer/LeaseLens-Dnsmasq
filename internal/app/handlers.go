@@ -116,12 +116,7 @@ func knownMACsHandler(cfg Config, known *KnownMACs) http.HandlerFunc {
 		case "mark":
 			LogInfof("device marked as known")
 		case "unmark":
-			LogInfof("device marked as new again")
-			// Notify when the user explicitly changes a device back to NEW.
-			// Notification failures must not undo the status change.
-			if err := notifyDeviceMarkedNew(cfg, body.MAC); err != nil {
-				LogWarnf("ntfy notification for device marked new failed: %v", err)
-			}
+			LogInfof("device marked as new again; ntfy notification will be sent only on the next DHCP add/login event")
 		case "reset":
 			LogInfof("remembered-device list reset")
 		case "mark-reservations":
