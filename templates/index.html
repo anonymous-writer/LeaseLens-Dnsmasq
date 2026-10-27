@@ -240,6 +240,16 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
 
 #settings-dialog { width:min(680px,calc(100% - 2rem)); max-height:85vh; overflow:auto; color:var(--fg); background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.2rem; box-shadow:0 18px 60px #0008; }
 #settings-dialog::backdrop { background:#020617bb; backdrop-filter:blur(3px); }
+/* Settings dialog: keep the top controls visible and scroll only the feature list. */
+#settings-dialog { display:none; flex-direction:column; overflow:hidden; }
+#settings-dialog[open] { display:flex; }
+#settings-dialog .settings-head,
+#settings-dialog .settings-actions,
+#settings-dialog #settings-description,
+#settings-dialog .settings-language,
+#settings-dialog #settings-functions-heading { flex:0 0 auto; }
+#settings-dialog #settings-feature-list { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding-right:.2rem; }
+
 .settings-head,.settings-actions { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
 .settings-head h2 { margin:0; font-size:1.25rem; }
 #settings-dialog h3 { margin:.9rem 0 .5rem; font-size:1rem; }
