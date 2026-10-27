@@ -156,10 +156,12 @@ func openConfiguredDatabase(dbType, path, pgHost, pgPort, pgName, pgUser, pgPass
 			db.Close()
 			return nil, err
 		}
-		if err := importLegacyDHCPEvents(db, dhcpEventsPath); err != nil {
-			db.Close()
-			return nil, err
-		}
+	}
+	// The legacy DHCP event log is imported into either backend. event_key is
+	// a content hash, so repeated checks do not create duplicate rows.
+	if err := importLegacyDHCPEvents(db, dhcpEventsPath); err != nil {
+		db.Close()
+		return nil, err
 	}
 	return db, nil
 }

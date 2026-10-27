@@ -63,6 +63,7 @@ type Config struct {
 	KnownMACsPath         string
 	UISettingsPath        string
 	DHCPEventsPath        string
+	DHCPEventsMaxEntries  int
 	DHCPInterface         string
 	AppVersion            string
 	ReleaseDate           string
@@ -101,6 +102,7 @@ func loadConfig() Config {
 		KnownMACsPath:         getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
 		UISettingsPath:        getenv("UI_SETTINGS_FILE", "/data/ui-settings.json"),
 		DHCPEventsPath:        getenv("DNSMASQ_EVENTS_FILE", ""),
+		DHCPEventsMaxEntries:  envInt("DHCP_EVENTS_MAX_ENTRIES", 100),
 		DHCPInterface:         getenv("DNSMASQ_INTERFACE", ""),
 		AppVersion:            getenv("APP_VERSION", buildVersion),
 		ReleaseDate:           getenv("APP_RELEASE_DATE", buildReleaseDate),
@@ -269,6 +271,12 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 		case "dhcp_events_file", "dhcp-events-file":
 			cfg.DHCPEventsPath = value
 			eventsPathSet = true
+		case "dhcp_events_max_entries", "dhcp-events-max-entries":
+			n, err := strconv.Atoi(value)
+			if err != nil || n < 1 || n > 100000 {
+				return fmt.Errorf("config file %q line %d: dhcp_events_max_entries must be between 1 and 100000", path, lineNo)
+			}
+			cfg.DHCPEventsMaxEntries = n
 		case "dhcp_interface", "dhcp-interface":
 			cfg.DHCPInterface = value
 		case "log_level", "log-level":

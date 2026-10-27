@@ -15,10 +15,50 @@ import (
 // runDHCPNotification is invoked by the same executable from dnsmasq's dhcp-script.
 // It reads known_devices from the configured database; no JSON device list is used.
 func runDHCPNotification(cfg Config) error {
-	if cfg.NTFYDebug {
-		LogDebugf("ntfy: DHCP event entered action=%q mac=%q ip=%q hostname=%q enabled=%t notify_unknown_ipv4=%t",
-			cfg.DHCPEventAction, cfg.DHCPEventMAC, cfg.DHCPEventIP, cfg.DHCPEventHostname,
-			cfg.NTFYEnabled, cfg.NTFYNotifyUnknownIPv4)
+	action := strings.ToLower(strings.TrimSpace(cfg.DHCPEventAction))
+	mac := strings.ToUpper(strings.TrimSpace(cfg.DHCPEventMAC))
+	ip := net.ParseIP(strings.TrimSpace(cfg.DHCPEventIP))
+	ipText := strings.TrimSpace(cfg.DHCPEventIP)
+	if ip != nil && ip.To4() != nil {
+		ipText = ip.To4().String()
+	}
+	if cfg.NTFYDebug || cfg.DatabaseDebug {
+		LogDebugf("DHCP event entered action=%q mac=%q ip=%q hostname=%q ntfy_enabled=%t",
+			action, mac, ipText, cfg.DHCPEventHostname, cfg.NTFYEnabled)
+	}
+	if !macRE.MatchString(mac) {
+		return fmt.Errorf("DHCP event: invalid or missing MAC address (received %q)", cfg.DHCPEventMAC)
+	}
+
+	// Always persist the DHCP event, even when ntfy is disabled. This makes
+	// the event history independent from push-notification preferences.
+	if cfg.DatabaseDebug {
+		LogDebugf("database: opening configured database type=%q for DHCP event", cfg.DatabaseType)
+	}
+	db, err := openConfiguredDatabase(cfg.DatabaseType, cfg.DatabasePath, cfg.PostgresHost, cfg.PostgresPort, cfg.PostgresDatabase, cfg.PostgresUser, cfg.PostgresPassword, cfg.PostgresSSLMode, cfg.KnownMACsPath, cfg.UISettingsPath, cfg.DHCPEventsPath)
+	if err != nil {
+		return fmt.Errorf("database: open configured database type=%q: %w", cfg.DatabaseType, err)
+	}
+	defer checkpointAndCloseDatabase(db)
+	if cfg.DatabaseDebug {
+		LogDebugf("database: connection ready type=%q", cfg.DatabaseType)
+	}
+	if strings.TrimSpace(cfg.DHCPEventsPath) != "" {
+		if err := importLegacyDHCPEvents(db, cfg.DHCPEventsPath); err != nil {
+			LogWarnf("database: legacy DHCP log import failed path=%s: %v", cfg.DHCPEventsPath, err)
+		}
+	}
+	if err := recordDHCPEvent(db, action, mac, ipText, cfg.DHCPEventHostname, cfg.DHCPEventsMaxEntries); err != nil {
+		return fmt.Errorf("database: persist DHCP event: %w", err)
+	}
+
+	if action != "add" {
+		LogDebugf("ntfy: skipped action=%q; only action=add triggers unknown-device alerts", action)
+		return nil
+	}
+	if ip == nil || ip.To4() == nil {
+		LogDebugf("ntfy: skipped invalid/non-IPv4 address %q", cfg.DHCPEventIP)
+		return nil
 	}
 	if !cfg.NTFYEnabled {
 		LogInfof("ntfy: skipped DHCP event because ntfy_enabled=false")
@@ -28,49 +68,21 @@ func runDHCPNotification(cfg Config) error {
 		LogInfof("ntfy: skipped DHCP event because ntfy_notify_unknown_ipv4=false")
 		return nil
 	}
-	action := strings.ToLower(strings.TrimSpace(cfg.DHCPEventAction))
-	// dnsmasq's "old" action restores an existing lease and is not a new device.
-	if action != "add" {
-		LogDebugf("ntfy: skipped DHCP action=%q; only action=add triggers unknown-device alerts", action)
-		return nil
-	}
-	mac := strings.ToUpper(strings.TrimSpace(cfg.DHCPEventMAC))
-	if !macRE.MatchString(mac) {
-		return fmt.Errorf("ntfy: invalid or missing MAC address (received %q)", cfg.DHCPEventMAC)
-	}
-	ip := net.ParseIP(strings.TrimSpace(cfg.DHCPEventIP))
-	if ip == nil || ip.To4() == nil {
-		LogDebugf("ntfy: skipped invalid/non-IPv4 address %q", cfg.DHCPEventIP)
-		return nil
-	}
 	if err := validateNTFYURL(cfg.NTFYURL); err != nil {
 		return fmt.Errorf("ntfy: invalid ntfy_url: %w", err)
-	}
-	if cfg.NTFYDebug {
-		LogDebugf("ntfy: event accepted action=add mac=%s ip=%s url=%s", mac, ip.To4().String(), cfg.NTFYURL)
 	}
 	if cfg.NTFYTimeoutSeconds < 1 || cfg.NTFYTimeoutSeconds > 120 {
 		cfg.NTFYTimeoutSeconds = 10
 	}
 
 	if cfg.DatabaseDebug {
-		LogDebugf("database: opening configured database type=%q for ntfy event", cfg.DatabaseType)
-	}
-	db, err := openConfiguredDatabase(cfg.DatabaseType, cfg.DatabasePath, cfg.PostgresHost, cfg.PostgresPort, cfg.PostgresDatabase, cfg.PostgresUser, cfg.PostgresPassword, cfg.PostgresSSLMode, cfg.KnownMACsPath, cfg.UISettingsPath, cfg.DHCPEventsPath)
-	if err != nil {
-		return fmt.Errorf("database: open configured database type=%q: %w", cfg.DatabaseType, err)
-	}
-	defer checkpointAndCloseDatabase(db)
-	if cfg.DatabaseDebug {
-		LogDebugf("database: connection ready type=%q", cfg.DatabaseType)
 		LogDebugf("database: querying known_devices for mac=%s", mac)
 	}
-
 	var found int
 	err = db.QueryRow(adaptSQL(`SELECT 1 FROM known_devices WHERE mac=? COLLATE NOCASE`), mac).Scan(&found)
 	if err == nil {
 		LogInfof("ntfy: skipped known device mac=%s", mac)
-		return nil // explicitly known device
+		return nil
 	}
 	if err != sql.ErrNoRows {
 		return fmt.Errorf("database: query known_devices for mac=%s: %w", mac, err)
@@ -86,7 +98,7 @@ func runDHCPNotification(cfg Config) error {
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, cfg.NTFYURL, bytes.NewBufferString(body))
 	if err != nil {
-		return fmt.Errorf("create ntfy request: %w", err)
+		return fmt.Errorf("ntfy: create request: %w", err)
 	}
 	req.Header.Set("Title", "LeaseLens: neues IPv4-Gerät")
 	req.Header.Set("Priority", validNTFYPriority(cfg.NTFYPriority))

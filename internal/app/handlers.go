@@ -165,10 +165,17 @@ func leasesHandler(cfg Config, db *sql.DB, known *KnownMACs) http.HandlerFunc {
 		}
 		if strings.TrimSpace(cfg.DHCPEventsPath) != "" {
 			if err := importLegacyDHCPEvents(db, cfg.DHCPEventsPath); err != nil {
-				LogWarnf("cannot sync DHCP events into SQLite: %v", err)
+				LogWarnf("cannot import legacy DHCP events from %s: %v", cfg.DHCPEventsPath, err)
+			} else {
+				LogDebugf("database: legacy DHCP event log import checked path=%s", cfg.DHCPEventsPath)
 			}
 		}
-		applyDHCPEventState(leases, cfg.DHCPEventsPath, time.Now())
+		if err := pruneDHCPEvents(db, cfg.DHCPEventsMaxEntries); err != nil {
+			LogWarnf("database: cannot enforce DHCP event retention limit: %v", err)
+		}
+		if err := applyDHCPEventStateFromDB(leases, db, time.Now()); err != nil {
+			LogWarnf("database: cannot load DHCP event state: %v", err)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		LogDebugf("served lease list count=%d", len(leases))
 		if err := json.NewEncoder(w).Encode(map[string]any{"leases": leases}); err != nil {

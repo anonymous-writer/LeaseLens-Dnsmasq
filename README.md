@@ -474,3 +474,18 @@ differ on your system. The script is only a small bridge: the Go executable
 reads the configured database and sends the notification. Only the `add` event
 is treated as a new lease; `old` events are ignored to avoid alerts for restored
 leases. Notification failures are logged and do not block dnsmasq processing.
+
+
+### DHCP-Ereignishistorie in der Datenbank
+
+DHCP-Ereignisse werden in `dhcp_events` gespeichert. Eine vorhandene `dhcp-events.log`
+wird beim Öffnen der Datenbank importiert; wiederholte Importe erzeugen aufgrund des
+Event-Hashes keine Duplikate. Die Datenbankhistorie ist standardmäßig auf 100 Einträge
+begrenzt. Der Grenzwert kann in `config.yaml` angepasst werden:
+
+```yaml
+dhcp_events_max_entries: 100
+```
+
+Erlaubt sind Werte von 1 bis 100000. Die ältesten Datenbankeinträge werden entfernt,
+wenn der Grenzwert überschritten ist. Die ursprüngliche Logdatei wird nicht gelöscht.

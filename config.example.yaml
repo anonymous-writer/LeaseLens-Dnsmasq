@@ -77,3 +77,6 @@ ntfy_timeout_seconds: 10
 # ntfy diagnostics (also requires log_level: "DEBUG" for detailed logs)
 ntfy_debug: false
 database_debug: false
+
+# Maximal number of DHCP events retained in the database (oldest entries are removed)
+dhcp_events_max_entries: 100
