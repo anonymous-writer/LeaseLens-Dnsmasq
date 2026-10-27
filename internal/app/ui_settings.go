@@ -10,8 +10,9 @@ import (
 
 // UISettings stores browser-independent preferences in SQLite.
 type UISettings struct {
-	Language string          `json:"language"`
-	Visible  map[string]bool `json:"visible"`
+	Language    string                     `json:"language"`
+	Visible     map[string]bool            `json:"visible"`
+	Preferences map[string]json.RawMessage `json:"preferences"`
 }
 type uiSettingsStore struct {
 	db *sql.DB
@@ -22,9 +23,9 @@ func newUISettingsStore(db *sql.DB) *uiSettingsStore { return &uiSettingsStore{d
 func (s *uiSettingsStore) read() UISettings {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	out := UISettings{Language: "de", Visible: map[string]bool{}}
-	var lang, raw string
-	err := s.db.QueryRow(adaptSQL(`SELECT language,visible_json FROM ui_settings WHERE id=1`)).Scan(&lang, &raw)
+	out := UISettings{Language: "de", Visible: map[string]bool{}, Preferences: map[string]json.RawMessage{}}
+	var lang, raw, prefs string
+	err := s.db.QueryRow(adaptSQL(`SELECT language,visible_json,preferences_json FROM ui_settings WHERE id=1`)).Scan(&lang, &raw, &prefs)
 	if err != nil {
 		return out
 	}
@@ -33,6 +34,9 @@ func (s *uiSettingsStore) read() UISettings {
 	}
 	if json.Unmarshal([]byte(raw), &out.Visible) != nil || out.Visible == nil {
 		out.Visible = map[string]bool{}
+	}
+	if json.Unmarshal([]byte(prefs), &out.Preferences) != nil || out.Preferences == nil {
+		out.Preferences = map[string]json.RawMessage{}
 	}
 	return out
 }
@@ -55,14 +59,22 @@ func (s *uiSettingsStore) handler() http.HandlerFunc {
 			if settings.Visible == nil {
 				settings.Visible = map[string]bool{}
 			}
+			if settings.Preferences == nil {
+				settings.Preferences = map[string]json.RawMessage{}
+			}
 			visible, err := json.Marshal(settings.Visible)
 			if err != nil {
 				http.Error(w, "invalid settings", http.StatusBadRequest)
 				return
 			}
+			preferences, err := json.Marshal(settings.Preferences)
+			if err != nil {
+				http.Error(w, "invalid preferences", http.StatusBadRequest)
+				return
+			}
 			s.mu.Lock()
 			defer s.mu.Unlock()
-			_, err = s.db.Exec(adaptSQL(`INSERT INTO ui_settings(id,language,visible_json,updated_at) VALUES(1,?,?,?) ON CONFLICT(id) DO UPDATE SET language=excluded.language,visible_json=excluded.visible_json,updated_at=excluded.updated_at`), settings.Language, string(visible), time.Now().Format(time.RFC3339))
+			_, err = s.db.Exec(adaptSQL(`INSERT INTO ui_settings(id,language,visible_json,preferences_json,updated_at) VALUES(1,?,?,?,?) ON CONFLICT(id) DO UPDATE SET language=excluded.language,visible_json=excluded.visible_json,preferences_json=excluded.preferences_json,updated_at=excluded.updated_at`), settings.Language, string(visible), string(preferences), time.Now().Format(time.RFC3339))
 			if err != nil {
 				http.Error(w, "cannot save settings", http.StatusInternalServerError)
 				return

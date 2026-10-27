@@ -243,6 +243,7 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
 /* Settings dialog: keep the top controls visible and scroll only the feature list. */
 #settings-dialog { display:none; flex-direction:column; overflow:hidden; }
 #settings-dialog[open] { display:flex; }
+#settings-dialog .settings-reset-bar,
 #settings-dialog .settings-head,
 #settings-dialog .settings-actions,
 #settings-dialog #settings-description,
@@ -250,6 +251,8 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
 #settings-dialog #settings-functions-heading { flex:0 0 auto; }
 #settings-dialog #settings-feature-list { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding-right:.2rem; }
 
+.settings-reset-bar { flex:0 0 auto; display:flex; justify-content:flex-start; margin-bottom:.7rem; }
+#settings-reset { color:var(--red)!important; border-color:color-mix(in srgb,var(--red) 55%,var(--border))!important; }
 .settings-head,.settings-actions { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
 .settings-head h2 { margin:0; font-size:1.25rem; }
 #settings-dialog h3 { margin:.9rem 0 .5rem; font-size:1rem; }
@@ -370,6 +373,7 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
   </div>
 
   <dialog id="settings-dialog" aria-labelledby="settings-title">
+    <div class="settings-reset-bar"><button type="button" id="settings-reset">Alle Ansichtseinstellungen zurücksetzen</button></div>
     <div class="settings-head"><h2 id="settings-title">Ansicht & Einstellungen</h2><button type="button" id="settings-close" aria-label="Schließen">×</button></div>
     <div class="settings-actions"><span id="settings-save-state" aria-live="polite"></span><button id="settings-save" type="button">Speichern</button></div>
     <p id="settings-description">Wähle, welche Bedienelemente angezeigt werden. Grau markierte Funktionen werden von dieser Installation nicht unterstützt.</p>

@@ -124,7 +124,7 @@ func openConfiguredDatabase(dbType, path, pgHost, pgPort, pgName, pgUser, pgPass
 		}
 		schema = []string{
 			`CREATE TABLE IF NOT EXISTS known_devices (mac TEXT PRIMARY KEY COLLATE NOCASE, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
-			`CREATE TABLE IF NOT EXISTS ui_settings (id INTEGER PRIMARY KEY CHECK(id=1), language TEXT NOT NULL DEFAULT 'de', visible_json TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+			`CREATE TABLE IF NOT EXISTS ui_settings (id INTEGER PRIMARY KEY CHECK(id=1), language TEXT NOT NULL DEFAULT 'de', visible_json TEXT NOT NULL DEFAULT '{}', preferences_json TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
 			`CREATE TABLE IF NOT EXISTS dhcp_events (id INTEGER PRIMARY KEY AUTOINCREMENT, event_key TEXT NOT NULL UNIQUE, event_time TEXT NOT NULL, action TEXT NOT NULL, ip_address TEXT NOT NULL DEFAULT '', mac TEXT NOT NULL COLLATE NOCASE, hostname TEXT NOT NULL DEFAULT '', imported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
 			`CREATE INDEX IF NOT EXISTS idx_dhcp_events_mac_time ON dhcp_events(mac, event_time)`,
 			`CREATE TABLE IF NOT EXISTS app_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
@@ -132,7 +132,7 @@ func openConfiguredDatabase(dbType, path, pgHost, pgPort, pgName, pgUser, pgPass
 	} else {
 		schema = []string{
 			`CREATE TABLE IF NOT EXISTS known_devices (mac TEXT PRIMARY KEY, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
-			`CREATE TABLE IF NOT EXISTS ui_settings (id INTEGER PRIMARY KEY CHECK(id=1), language TEXT NOT NULL DEFAULT 'de', visible_json TEXT NOT NULL DEFAULT '{}', updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+			`CREATE TABLE IF NOT EXISTS ui_settings (id INTEGER PRIMARY KEY CHECK(id=1), language TEXT NOT NULL DEFAULT 'de', visible_json TEXT NOT NULL DEFAULT '{}', preferences_json TEXT NOT NULL DEFAULT '{}', updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
 			`CREATE TABLE IF NOT EXISTS dhcp_events (id BIGSERIAL PRIMARY KEY, event_key TEXT NOT NULL UNIQUE, event_time TIMESTAMPTZ NOT NULL, action TEXT NOT NULL, ip_address TEXT NOT NULL DEFAULT '', mac TEXT NOT NULL, hostname TEXT NOT NULL DEFAULT '', imported_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
 			`CREATE INDEX IF NOT EXISTS idx_dhcp_events_mac_time ON dhcp_events(mac, event_time)`,
 			`CREATE TABLE IF NOT EXISTS app_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
@@ -142,6 +142,15 @@ func openConfiguredDatabase(dbType, path, pgHost, pgPort, pgName, pgUser, pgPass
 		if _, err = db.Exec(q); err != nil {
 			db.Close()
 			return nil, fmt.Errorf("create database schema statement %d: %w", i+1, err)
+		}
+	}
+	// Add preferences_json to databases created by older versions without dropping user data.
+	if _, migrateErr := db.Exec(`ALTER TABLE ui_settings ADD COLUMN preferences_json TEXT NOT NULL DEFAULT '{}'`); migrateErr != nil {
+		// Existing installations already have the column; SQLite and PostgreSQL report that as an error.
+		msg := strings.ToLower(migrateErr.Error())
+		if !strings.Contains(msg, "already exists") && !strings.Contains(msg, "duplicate column") {
+			db.Close()
+			return nil, fmt.Errorf("migrate ui settings preferences: %w", migrateErr)
 		}
 	}
 	LogDebugf("database: schema ready type=%q statements=%d", dbType, len(schema))
