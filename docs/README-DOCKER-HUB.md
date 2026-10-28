@@ -8,6 +8,8 @@ LeaseLens-Dnsmasq is a lightweight web dashboard for viewing and monitoring DHCP
 
 ![LeaseLens device details](https://raw.githubusercontent.com/anonymous-writer/leaselens-dnsmasq/main/docs/screenshot2.png)
 
+![LeaseLens device details](https://raw.githubusercontent.com/anonymous-writer/leaselens-dnsmasq/main/docs/screenshot3.png)
+
 ## Features in the Docker image
 
 - Searchable and sortable DHCP lease table for IPv4 and IPv6
@@ -25,11 +27,12 @@ LeaseLens-Dnsmasq is a lightweight web dashboard for viewing and monitoring DHCP
 - Infinite leases displayed as `Never`; expired leases displayed as `Expired`
 - Manual refresh; lease countdowns update locally between refreshes
 - Dark/light theme and responsive desktop/mobile interface
+- UI preferences such as theme, filters, sorting, and grouping where supported by the published image
 - JSON endpoint for leases and API actions for remembered MAC addresses
 - Multi-architecture image (`linux/amd64` and `linux/arm64`)
 - Runs as a non-root user inside the container
 
-**Native-only features are not included in the Docker image.** The native Linux build can display the installed dnsmasq version and optionally provide an IPv4 lease-release action. See the main repository README for native installation and setup.
+**Native-only features are not included in the Docker image.** The native Linux build can display the installed dnsmasq version and optionally provide an IPv4 lease-release action and native DHCP-hook integrations. These features depend on the host's dnsmasq installation and are not enabled by this container image. See the main repository README for native installation and setup.
 
 ## Quick start
 
@@ -117,6 +120,12 @@ docker compose up -d
 
 Remembered devices persist across container restarts only when `/data` is mounted to a persistent host directory. IPv6 leases without a valid MAC address remain visible but cannot be reliably identified in the MAC-based remembered-device list.
 
+### UI preferences
+
+Theme, filters, sorting, and grouping preferences may be available depending on the image version. After changing preferences, verify that they remain after a page reload and container restart. Persistent application data should be kept in a host-mounted directory as shown above. The remembered-device list is stored separately in `/data/known-macs.json`; resetting that list does not delete DHCP leases or reservation files.
+
+The exact preference-storage mechanism can vary by application version. This Docker image documentation does not assume that UI preferences are stored in PostgreSQL or in a particular JSON file.
+
 ## Configuration
 
 | Environment variable | Default | Description |
@@ -174,7 +183,7 @@ docker pull 1968michael1968/leaselens-dnsmasq:latest
 docker pull ghcr.io/anonymous-writer/leaselens-dnsmasq:go-beta
 ```
 
-The `go-beta` tag tracks the latest published pre-release. Stable GHCR releases use version tags and `latest`; pre-releases do not update the GHCR `latest` tag. Publishing a GitHub Release does not publish a Docker Hub image unless a separate Docker Hub publishing workflow is configured. Use a version-specific tag when you need a fixed version.
+The `go-beta` tag tracks the latest published pre-release. Stable GHCR releases use version tags and `latest`; pre-releases do not update the GHCR `latest` tag. Publishing a GitHub Release does not publish a Docker Hub image unless a separate Docker Hub publishing workflow is configured. Use a version-specific tag when you need a fixed version, and check the Docker Hub tags page to confirm which versions have actually been published there.
 
 ## Security
 
