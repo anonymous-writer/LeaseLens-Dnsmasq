@@ -37,6 +37,9 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+    
+      - name: Resolve Go dependencies
+        run: go mod tidy
 
       - name: Run tests
         run: go test ./...
@@ -63,6 +66,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      # Each job has a fresh runner/checkout, so resolve dependencies here too.
+      - name: Resolve Go dependencies
+        run: go mod tidy
 
       - name: Set build metadata
         id: metadata

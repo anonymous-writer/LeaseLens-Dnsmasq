@@ -10,13 +10,13 @@
 
   const dictionaries = {
     en: {
-      language: 'Language', selectLanguage: 'Select language',
+      group: 'Group', dhcpEventsTitle: 'DHCP event log (last 100)', dhcpEventsTime: 'Time', dhcpEventsAction: 'Action', dhcpEventsIP: 'IP', dhcpEventsMAC: 'MAC', dhcpEventsHostname: 'Hostname', dhcpEventsLoading: 'Loading events…', dhcpEventsLoaded: '{count} events loaded.', dhcpEventsFailed: 'Could not load events: {error}', language: 'Language', selectLanguage: 'Select language',
       brandSubtitle: 'Dnsmasq Network Dashboard', brandDescription: 'DHCP leases · Device discovery · Manufacturers · Network status', systemTime: 'System time', systemLabel: 'System', systemDescription: 'Go · Web Dashboard', dnsmasqRunning: '● Running', dnsmasqVersion: 'Version {version}', dnsmasqMonitoring: 'Status monitored',
       summaryTotal: 'Total leases', summaryOnline: 'Online · web reachable', summaryPing: 'Ping reachable', summaryExpiring: 'Expires within 24 hours', summaryOffline: 'No response',
       searchPlaceholder: 'Filter leases…', ipFilterTitle: 'Filter IPv4/IPv6',
       allIPs: 'All IPs', ipv4: 'IPv4', ipv6: 'IPv6',
       reservationFilterTitle: 'Filter DHCP reservations', allLeases: 'All leases',
-      statusFilterTitle: 'Filter by device status', allStatuses: 'All statuses',
+      allGroups: 'All groups', statusFilterTitle: 'Filter by device status', allStatuses: 'All statuses',
       webOnlineFilter: 'HTTP/HTTPS responds', pingOnlyFilter: 'Ping responds, no web UI', noResponseFilter: 'No ping or web response',
       reservations: 'Reservations', dynamicOnly: 'Dynamic only',
       refresh: 'Refresh', refreshing: 'Refreshing…', loadingLeases: 'Checking DHCP leases…',
@@ -71,13 +71,13 @@
       sortAscending: 'ascending', sortDescending: 'descending'
     },
     de: {
-      language: 'Sprache', selectLanguage: 'Sprache auswählen',
+      group: 'Gruppe', dhcpEventsTitle: 'DHCP-Ereignisprotokoll (letzte 100)', dhcpEventsTime: 'Zeit', dhcpEventsAction: 'Aktion', dhcpEventsIP: 'IP', dhcpEventsMAC: 'MAC', dhcpEventsHostname: 'Hostname', dhcpEventsLoading: 'Lade Ereignisse …', dhcpEventsLoaded: '{count} Ereignisse geladen.', dhcpEventsFailed: 'Ereignisse konnten nicht geladen werden: {error}', language: 'Sprache', selectLanguage: 'Sprache auswählen',
       brandSubtitle: 'Dnsmasq Network Dashboard', brandDescription: 'DHCP-Leases · Geräteerkennung · Hersteller · Netzwerkstatus', systemTime: 'Systemzeit', systemLabel: 'System', systemDescription: 'Go · Web-Dashboard', dnsmasqRunning: '● Läuft', dnsmasqVersion: 'Version {version}', dnsmasqMonitoring: 'Status wird überwacht',
       summaryTotal: 'Leases gesamt', summaryOnline: 'Online · Web erreichbar', summaryPing: 'Ping erreichbar', summaryExpiring: 'Läuft in 24 Stunden ab', summaryOffline: 'Keine Antwort',
       searchPlaceholder: 'Leases filtern…', ipFilterTitle: 'IPv4/IPv6 filtern',
       allIPs: 'Alle IPs', ipv4: 'IPv4', ipv6: 'IPv6',
       reservationFilterTitle: 'DHCP-Reservierungen filtern', allLeases: 'Alle Leases',
-      statusFilterTitle: 'Nach Gerätestatus filtern', allStatuses: 'Alle Status',
+      allGroups: 'Alle Gruppen', statusFilterTitle: 'Nach Gerätestatus filtern', allStatuses: 'Alle Status',
       webOnlineFilter: 'HTTP/HTTPS antwortet', pingOnlyFilter: 'Ping antwortet, keine Weboberfläche', noResponseFilter: 'Keine Antwort auf Ping oder Web',
       reservations: 'Reservierungen', dynamicOnly: 'Nur dynamische Leases',
       refresh: 'Aktualisieren', refreshing: 'Wird aktualisiert…', loadingLeases: 'DHCP-Leases werden geprüft…',
@@ -131,7 +131,7 @@
       httpError: 'HTTP {status}',
       sortAscending: 'ascending', sortDescending: 'descending'    },
     es: {
-      language: 'Idioma', selectLanguage: 'Seleccionar idioma',
+      allGroups: 'Todos los grupos', group: 'Grupo', dhcpEventsTitle: 'Registro de eventos DHCP (últimos 100)', dhcpEventsTime: 'Hora', dhcpEventsAction: 'Acción', dhcpEventsIP: 'IP', dhcpEventsMAC: 'MAC', dhcpEventsHostname: 'Nombre del host', dhcpEventsLoading: 'Cargando eventos…', dhcpEventsLoaded: '{count} eventos cargados.', dhcpEventsFailed: 'No se pudieron cargar los eventos: {error}', language: 'Idioma', selectLanguage: 'Seleccionar idioma',
       brandSubtitle: 'Panel de red Dnsmasq', brandDescription: 'Concesiones DHCP · Dispositivos · Fabricantes · Estado de red', systemTime: 'Hora del sistema', systemLabel: 'Sistema', systemDescription: 'Go · Panel web', dnsmasqRunning: '● En ejecución', dnsmasqVersion: 'Versión {version}', dnsmasqMonitoring: 'Estado supervisado',
       summaryTotal: 'Concesiones totales', summaryOnline: 'En línea · web accesible', summaryPing: 'Ping accesible', summaryExpiring: 'Caduca en 24 horas', summaryOffline: 'Sin respuesta',
       searchPlaceholder: 'Filtrar concesiones DHCP…', ipFilterTitle: 'Filtrar IPv4/IPv6',

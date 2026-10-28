@@ -14,23 +14,34 @@ leases_file: "/var/lib/misc/dnsmasq.leases"
 # Optional file containing configured DHCP reservations:
 hosts_file: "/var/lib/misc/dnsmasq.dhcphosts"
 
+# Native DHCP event bridge script. LeaseLens checks that this file exists and is executable.
+# dnsmasq must separately use the same path in its own configuration:
+#   dhcp-script=/usr/local/sbin/dnsmasq-ntfy-dhcp-ipv4.sh
+# This YAML option does not modify dnsmasq configuration automatically.
+dhcp_script: "/usr/local/sbin/dnsmasq-ntfy-dhcp-ipv4.sh"
+
 # Native-only: enable the "Remove IPv4 lease" action by setting your DHCP
 # interface. Leave commented out to disable the action.
 # The service account must have narrowly scoped passwordless sudo permission
 # to run dhcp_release for this interface. See the main README.
 # dhcp_interface: "eth0"
 
-# Persistent list of devices marked as known; parent directory must be writable.
-known_macs_file: "/home/pi/leaselens-dnsmasq/data/known-macs.json"
+# Working directory for persistent LeaseLens data. The directory must be writable
+# by the account running LeaseLens. Unless explicitly overridden below, LeaseLens
+# stores known-macs.json, ui-settings.json, and dhcp-events.log here.
+working_dir: "/home/pi/leaselens-dnsmasq"
 
 # Logging: DEBUG, INFO, WARN, or ERROR
 log_level: "INFO"
 
-# Optional: dnsmasq DHCP event log (add/del/old).
-# Configure dnsmasq to write the events to this file and ensure the service
-# account can read it. When enabled and supported by this build, LeaseLens
-# can show last-login information in the table.
+# Optional override: DHCP event log path (add/del/old). If omitted, it is
+# resolved as <working_dir>/dhcp-events.log.
 # dhcp_events_file: "/var/log/dnsmasq/dhcp-events.log"
+
+# Optional overrides for backward compatibility. If omitted, these are also
+# resolved under working_dir.
+# known_macs_file: "/some/path/known-macs.json"
+# ui_settings_file: "/some/path/ui-settings.json"
 
 # Optional UI metadata.
 # Native builds detect the hardware model and hostname automatically when possible.
@@ -39,3 +50,39 @@ log_level: "INFO"
 # app_version: "2.2.0"
 # release_date: "2026-10-22"
 # repo_url: "https://github.com/anonymous-writer/leaselens-dnsmasq"
+
+# Central SQLite database for known devices and UI preferences
+# If omitted while working_dir is set, defaults to <working_dir>/leaselens.db
+# database_path: "/home/pi/leaselens-dnsmasq/leaselens.db"
+
+# Database backend: sqlite (default) or postgres.
+# PostgreSQL starts with a fresh LeaseLens schema; SQLite legacy JSON/log import
+# is only performed when using SQLite.
+database_type: "sqlite"
+database_path: "/data/leaselens.db"
+
+# PostgreSQL settings (used only when database_type is "postgres").
+# The target PostgreSQL database must already exist. LeaseLens creates its tables.
+# Password can be set here or via POSTGRES_PASSWORD environment variable.
+# Prefer a protected config file (chmod 600) if storing a password here.
+# postgres_host: "192.168.1.10"
+# postgres_port: "5432"
+# postgres_database: "leaselens"
+# postgres_user: "leaselens"
+# postgres_password: "change-me"
+# postgres_sslmode: "require"
+
+# Optional ntfy push notifications for new, unknown IPv4 DHCP clients
+ntfy_enabled: false
+ntfy_url: "https://ntfy.sh/dein-topic"
+ntfy_token: ""
+ntfy_notify_unknown_ipv4: true
+ntfy_priority: "high"
+ntfy_timeout_seconds: 10
+
+# ntfy diagnostics (also requires log_level: "DEBUG" for detailed logs)
+ntfy_debug: false
+database_debug: false
+
+# Maximal number of DHCP events retained in the database (oldest entries are removed)
+dhcp_events_max_entries: 100

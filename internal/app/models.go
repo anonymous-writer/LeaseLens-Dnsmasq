@@ -19,6 +19,7 @@ type LeaseEntry struct {
 	DUID             string `json:"duid,omitempty"` // DHCPv6 Client Identifier
 	IPAddress        string `json:"ipAddress"`
 	Name             string `json:"name"`
+	Group            string `json:"group,omitempty"`
 	WebURL           string `json:"webUrl"`
 	WebHostURL       string `json:"webHostUrl"`
 	Status           string `json:"status"`

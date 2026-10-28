@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -46,33 +47,81 @@ func getenv(k, d string) string {
 
 // Config contains paths, server settings, and build metadata.
 type Config struct {
-	Host           string
-	Port           string
-	LeasePath      string
-	HostsPath      string
-	KnownMACsPath  string
-	DHCPEventsPath string
-	DHCPInterface  string
-	AppVersion     string
-	ReleaseDate    string
-	RepoURL        string
-	SystemName     string
+	WorkingDir            string
+	DatabasePath          string
+	DatabaseType          string
+	PostgresHost          string
+	PostgresPort          string
+	PostgresDatabase      string
+	PostgresUser          string
+	PostgresPassword      string
+	PostgresSSLMode       string
+	Host                  string
+	Port                  string
+	LeasePath             string
+	HostsPath             string
+	KnownMACsPath         string
+	UISettingsPath        string
+	DHCPEventsPath        string
+	DHCPScriptPath        string
+	DHCPEventsMaxEntries  int
+	DHCPInterface         string
+	AppVersion            string
+	ReleaseDate           string
+	RepoURL               string
+	SystemName            string
+	NTFYEnabled           bool
+	NTFYURL               string
+	NTFYToken             string
+	NTFYNotifyUnknownIPv4 bool
+	NTFYPriority          string
+	NTFYTimeoutSeconds    int
+	NTFYDebug             bool
+	DatabaseDebug         bool
+	DHCPEventAction       string
+	DHCPEventMAC          string
+	DHCPEventIP           string
+	DHCPEventHostname     string
 }
 
 // loadConfig reads runtime options from environment variables.
 func loadConfig() Config {
 	return Config{
-		Host:           getenv("HOST", "0.0.0.0"),
-		Port:           getenv("PORT", "5000"),
-		LeasePath:      getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
-		HostsPath:      getenv("DNSMASQ_HOSTS_FILE", "/var/lib/dnsmasq/dnsmasq.dhcphosts"),
-		KnownMACsPath:  getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
-		DHCPEventsPath: getenv("DNSMASQ_EVENTS_FILE", ""),
-		DHCPInterface:  getenv("DNSMASQ_INTERFACE", ""),
-		AppVersion:     getenv("APP_VERSION", buildVersion),
-		ReleaseDate:    getenv("APP_RELEASE_DATE", buildReleaseDate),
-		RepoURL:        getenv("REPO_URL", "https://github.com/anonymous-writer/leaselens-dnsmasq"),
-		SystemName:     getenv("SYSTEM_NAME", ""),
+		WorkingDir:            getenv("WORKING_DIR", ""),
+		DatabasePath:          getenv("DATABASE_PATH", "/data/leaselens.db"),
+		DatabaseType:          getenv("DATABASE_TYPE", "sqlite"),
+		PostgresHost:          getenv("POSTGRES_HOST", "127.0.0.1"),
+		PostgresPort:          getenv("POSTGRES_PORT", "5432"),
+		PostgresDatabase:      getenv("POSTGRES_DATABASE", "leaselens"),
+		PostgresUser:          getenv("POSTGRES_USER", "leaselens"),
+		PostgresPassword:      getenv("POSTGRES_PASSWORD", ""),
+		PostgresSSLMode:       getenv("POSTGRES_SSLMODE", "require"),
+		Host:                  getenv("HOST", "0.0.0.0"),
+		Port:                  getenv("PORT", "5000"),
+		LeasePath:             getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
+		HostsPath:             getenv("DNSMASQ_HOSTS_FILE", "/var/lib/dnsmasq/dnsmasq.dhcphosts"),
+		KnownMACsPath:         getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
+		UISettingsPath:        getenv("UI_SETTINGS_FILE", "/data/ui-settings.json"),
+		DHCPEventsPath:        getenv("DNSMASQ_EVENTS_FILE", ""),
+		DHCPScriptPath:        getenv("DNSMASQ_DHCP_SCRIPT", "/usr/local/sbin/dnsmasq-ntfy-dhcp-ipv4.sh"),
+		DHCPEventsMaxEntries:  envInt("DHCP_EVENTS_MAX_ENTRIES", 100),
+		DHCPInterface:         getenv("DNSMASQ_INTERFACE", ""),
+		AppVersion:            getenv("APP_VERSION", buildVersion),
+		ReleaseDate:           getenv("APP_RELEASE_DATE", buildReleaseDate),
+		RepoURL:               getenv("REPO_URL", "https://github.com/anonymous-writer/leaselens-dnsmasq"),
+		SystemName:            getenv("SYSTEM_NAME", ""),
+		NTFYEnabled:           strings.EqualFold(getenv("NTFY_ENABLED", "false"), "true"),
+		NTFYURL:               getenv("NTFY_URL", ""),
+		NTFYToken:             getenv("NTFY_TOKEN", ""),
+		NTFYNotifyUnknownIPv4: strings.EqualFold(getenv("NTFY_NOTIFY_UNKNOWN_IPV4", "true"), "true"),
+		NTFYPriority:          getenv("NTFY_PRIORITY", "high"),
+		NTFYTimeoutSeconds:    envInt("NTFY_TIMEOUT_SECONDS", 10),
+		NTFYDebug:             strings.EqualFold(getenv("NTFY_DEBUG", "false"), "true"),
+		DatabaseDebug:         strings.EqualFold(getenv("DATABASE_DEBUG", "false"), "true"),
+		DHCPEventAction:       getenv("LEASELENS_DHCP_EVENT_ACTION", ""),
+		DHCPEventMAC:          getenv("LEASELENS_DHCP_EVENT_MAC", ""),
+		DHCPEventIP:           getenv("LEASELENS_DHCP_EVENT_IP", ""),
+		DHCPEventHostname:     getenv("LEASELENS_DHCP_EVENT_HOSTNAME", ""),
 	}
 }
 
@@ -105,6 +154,11 @@ func loadConfigFromArgs(args []string) (Config, string, error) {
 			return Config{}, "", err
 		}
 	}
+	// Keep UI_SETTINGS_FILE as an optional environment override for containers.
+	// Explicit command-line flags still take precedence over environment values.
+	if v := os.Getenv("UI_SETTINGS_FILE"); v != "" {
+		cfg.UISettingsPath = v
+	}
 
 	flags := flag.NewFlagSet("leaselens-dnsmasq", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
@@ -117,11 +171,14 @@ func loadConfigFromArgs(args []string) (Config, string, error) {
 	}
 
 	flags.StringVar(&configPath, "config", configPath, "Path to YAML-style configuration file (environment: CONFIG_FILE)")
+	flags.StringVar(&cfg.WorkingDir, "working-dir", cfg.WorkingDir, "Directory for persistent LeaseLens data (environment: WORKING_DIR)")
+	flags.StringVar(&cfg.DatabasePath, "database-file", cfg.DatabasePath, "Path to SQLite database (environment: DATABASE_PATH)")
 	flags.StringVar(&cfg.Host, "host", cfg.Host, "Address to listen on (environment: HOST)")
 	flags.StringVar(&cfg.Port, "port", cfg.Port, "TCP port to listen on (environment: PORT)")
 	flags.StringVar(&cfg.LeasePath, "leases-file", cfg.LeasePath, "Path to dnsmasq lease file (environment: DNSMASQ_LEASES_FILE)")
 	flags.StringVar(&cfg.HostsPath, "hosts-file", cfg.HostsPath, "Path to optional dnsmasq DHCP hosts file (environment: DNSMASQ_HOSTS_FILE)")
 	flags.StringVar(&cfg.KnownMACsPath, "known-macs-file", cfg.KnownMACsPath, "Path to persistent remembered-MAC JSON file (environment: KNOWN_MACS_FILE)")
+	flags.StringVar(&cfg.UISettingsPath, "ui-settings-file", cfg.UISettingsPath, "Path to persistent UI settings JSON file (environment: UI_SETTINGS_FILE)")
 	flags.StringVar(&cfg.DHCPInterface, "dhcp-interface", cfg.DHCPInterface, "Interface used by dhcp_release for native IPv4 lease release (environment: DNSMASQ_INTERFACE)")
 	flags.StringVar(&logLevel, "log-level", logLevel, "Log level: DEBUG, INFO, WARN, or ERROR (environment: LOG_LEVEL)")
 	flags.StringVar(&cfg.AppVersion, "app-version", cfg.AppVersion, "Application version (environment: APP_VERSION)")
@@ -149,6 +206,7 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 
 	scanner := bufio.NewScanner(file)
 	lineNo := 0
+	knownPathSet, uiPathSet, eventsPathSet, databasePathSet := false, false, false, false
 	for scanner.Scan() {
 		lineNo++
 		line := strings.TrimSpace(scanner.Text())
@@ -179,6 +237,25 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 		}
 
 		switch key {
+		case "working_dir", "working-dir", "data_dir", "data-dir":
+			cfg.WorkingDir = value
+		case "database_path", "database-path", "database_file", "database-file":
+			cfg.DatabasePath = value
+			databasePathSet = true
+		case "database_type", "database-type":
+			cfg.DatabaseType = strings.ToLower(value)
+		case "postgres_host", "postgres-host":
+			cfg.PostgresHost = value
+		case "postgres_port", "postgres-port":
+			cfg.PostgresPort = value
+		case "postgres_database", "postgres-database":
+			cfg.PostgresDatabase = value
+		case "postgres_user", "postgres-user":
+			cfg.PostgresUser = value
+		case "postgres_password", "postgres-password":
+			cfg.PostgresPassword = value
+		case "postgres_sslmode", "postgres-sslmode":
+			cfg.PostgresSSLMode = value
 		case "host":
 			cfg.Host = value
 		case "port":
@@ -189,8 +266,21 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 			cfg.HostsPath = value
 		case "known_macs_file", "known-macs-file":
 			cfg.KnownMACsPath = value
+			knownPathSet = true
+		case "ui_settings_file", "ui-settings-file":
+			cfg.UISettingsPath = value
+			uiPathSet = true
 		case "dhcp_events_file", "dhcp-events-file":
 			cfg.DHCPEventsPath = value
+			eventsPathSet = true
+		case "dhcp_script", "dhcp-script", "dhcp_script_path", "dhcp-script-path":
+			cfg.DHCPScriptPath = value
+		case "dhcp_events_max_entries", "dhcp-events-max-entries":
+			n, err := strconv.Atoi(value)
+			if err != nil || n < 1 || n > 100000 {
+				return fmt.Errorf("config file %q line %d: dhcp_events_max_entries must be between 1 and 100000", path, lineNo)
+			}
+			cfg.DHCPEventsMaxEntries = n
 		case "dhcp_interface", "dhcp-interface":
 			cfg.DHCPInterface = value
 		case "log_level", "log-level":
@@ -203,6 +293,26 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 			cfg.RepoURL = value
 		case "system_name", "system-name":
 			cfg.SystemName = value
+		case "ntfy_enabled", "ntfy-enabled":
+			cfg.NTFYEnabled = strings.EqualFold(value, "true") || value == "1" || strings.EqualFold(value, "yes")
+		case "ntfy_url", "ntfy-url":
+			cfg.NTFYURL = value
+		case "ntfy_token", "ntfy-token":
+			cfg.NTFYToken = value
+		case "ntfy_notify_unknown_ipv4", "ntfy-notify-unknown-ipv4":
+			cfg.NTFYNotifyUnknownIPv4 = strings.EqualFold(value, "true") || value == "1" || strings.EqualFold(value, "yes")
+		case "ntfy_priority", "ntfy-priority":
+			cfg.NTFYPriority = value
+		case "ntfy_timeout_seconds", "ntfy-timeout-seconds":
+			n, err := strconv.Atoi(value)
+			if err != nil || n < 1 || n > 120 {
+				return fmt.Errorf("config file %q line %d: ntfy_timeout_seconds must be between 1 and 120", path, lineNo)
+			}
+			cfg.NTFYTimeoutSeconds = n
+		case "ntfy_debug", "ntfy-debug":
+			cfg.NTFYDebug = parseConfigBool(value)
+		case "database_debug", "database-debug":
+			cfg.DatabaseDebug = parseConfigBool(value)
 		default:
 			return fmt.Errorf("config file %q line %d: unknown key %q", path, lineNo, key)
 		}
@@ -210,5 +320,31 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("read config file %q: %w", path, err)
 	}
+	// A working directory supplies defaults for persistent files. Explicit file
+	// paths in the config remain supported for backwards compatibility.
+	if strings.TrimSpace(cfg.WorkingDir) != "" {
+		if !databasePathSet && os.Getenv("DATABASE_PATH") == "" {
+			cfg.DatabasePath = filepath.Join(cfg.WorkingDir, "leaselens.db")
+		}
+		if !knownPathSet {
+			cfg.KnownMACsPath = filepath.Join(cfg.WorkingDir, "known-macs.json")
+		}
+		if !uiPathSet {
+			cfg.UISettingsPath = filepath.Join(cfg.WorkingDir, "ui-settings.json")
+		}
+		if !eventsPathSet {
+			cfg.DHCPEventsPath = filepath.Join(cfg.WorkingDir, "dhcp-events.log")
+		}
+	}
 	return nil
+}
+
+// parseConfigBool accepts common YAML-style boolean spellings.
+func parseConfigBool(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "true", "yes", "1", "on":
+		return true
+	default:
+		return false
+	}
 }
