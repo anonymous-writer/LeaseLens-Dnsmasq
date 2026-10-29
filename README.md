@@ -837,3 +837,23 @@ dhcp_events_max_entries: 100
 Erlaubt sind Werte von 1 bis 100000. Die ältesten Datenbankeinträge
 werden entfernt, wenn der Grenzwert überschritten ist. Die ursprüngliche
 Logdatei wird nicht gelöscht.
+
+
+## HTTPS-secure mode behind a reverse proxy
+
+LeaseLens can optionally reject requests unless they arrive from a local reverse
+proxy that marks the original request as HTTPS and supplies a shared secret.
+
+Set `https_secure: true` and `https_secure_proxy_token` in the config file, or
+set `HTTPS_SECURE=true` and `HTTPS_SECURE_PROXY_TOKEN` as environment variables.
+Configure the same secret in NGINX inside the protected `location`:
+
+```nginx
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-LeaseLens-Proxy-Token "YOUR_LONG_RANDOM_SECRET";
+```
+
+Use a long random secret, protect both configuration files, and do not expose the
+LeaseLens listener directly. In this mode, requests must have a loopback source
+address, `X-Forwarded-Proto: https`, and the matching secret. This is not a
+replacement for Authelia: keep Authelia configured on the reverse proxy.

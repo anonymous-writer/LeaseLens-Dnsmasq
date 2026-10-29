@@ -58,6 +58,8 @@ type Config struct {
 	PostgresSSLMode       string
 	Host                  string
 	Port                  string
+	HTTPSecure            bool
+	HTTPSecureProxyToken  string
 	LeasePath             string
 	HostsPath             string
 	KnownMACsPath         string
@@ -98,6 +100,8 @@ func loadConfig() Config {
 		PostgresSSLMode:       getenv("POSTGRES_SSLMODE", "require"),
 		Host:                  getenv("HOST", "0.0.0.0"),
 		Port:                  getenv("PORT", "5000"),
+		HTTPSecure:            strings.EqualFold(getenv("HTTPS_SECURE", "false"), "true"),
+		HTTPSecureProxyToken:  getenv("HTTPS_SECURE_PROXY_TOKEN", ""),
 		LeasePath:             getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
 		HostsPath:             getenv("DNSMASQ_HOSTS_FILE", "/var/lib/dnsmasq/dnsmasq.dhcphosts"),
 		KnownMACsPath:         getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
@@ -260,6 +264,10 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 			cfg.Host = value
 		case "port":
 			cfg.Port = value
+		case "https_secure", "https-secure":
+			cfg.HTTPSecure = parseConfigBool(value)
+		case "https_secure_proxy_token", "https-secure-proxy-token":
+			cfg.HTTPSecureProxyToken = value
 		case "leases_file", "leases-file":
 			cfg.LeasePath = value
 		case "hosts_file", "hosts-file":
