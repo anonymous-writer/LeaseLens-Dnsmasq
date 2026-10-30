@@ -97,6 +97,6 @@ database_debug: false
 dhcp_events_max_entries: 100
 
 # Rotating reverse-proxy token (generated automatically when HTTPS secure mode is enabled)
-https_secure_token_file: "/run/secrets/leaselens-proxy-token.json"
+https_secure_token_file: "/etc/nginx/secrets/leaselens-proxy-token.json"
 https_secure_token_validity: "720h"
 https_secure_token_grace: "5m"

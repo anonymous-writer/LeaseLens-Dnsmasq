@@ -1,6 +1,7 @@
 package proxytoken
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
@@ -37,7 +38,7 @@ func New(path string, validity, grace time.Duration) (*Manager, error) {
 	}
 	m := &Manager{path: path, validity: validity, grace: grace}
 	b, err := os.ReadFile(path)
-	if err == nil {
+	if err == nil && len(bytes.TrimSpace(b)) > 0 {
 		if err = json.Unmarshal(b, &m.state); err != nil {
 			return nil, fmt.Errorf("decode proxy token file: %w", err)
 		}
@@ -46,9 +47,11 @@ func New(path string, validity, grace time.Duration) (*Manager, error) {
 		}
 		return m, nil
 	}
-	if !errors.Is(err, os.ErrNotExist) {
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
+	// A missing OR zero-byte/whitespace-only file is an uninitialized state.
+	// Initialize it automatically. Non-empty malformed JSON above still fails closed.
 	token, err := newToken()
 	if err != nil {
 		return nil, err
@@ -67,43 +70,47 @@ func newToken() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 func (m *Manager) writeLocked() error {
-	if err := os.MkdirAll(filepath.Dir(m.path), 0750); err != nil {
+	dir := filepath.Dir(m.path)
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return err
 	}
 	b, err := json.MarshalIndent(m.state, "", "  ")
 	if err != nil {
 		return err
 	}
-	tmp := m.path + ".tmp"
-	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0640)
+	// Create the temporary file in the destination directory so rename is atomic
+	// and the directory's setgid bit gives it the shared www-data group.
+	f, err := os.CreateTemp(dir, ".proxy-token-*.tmp")
 	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	defer os.Remove(tmp)
+	if err = f.Chmod(0640); err != nil {
+		f.Close()
 		return err
 	}
 	if _, err = f.Write(append(b, '\n')); err != nil {
 		f.Close()
-		os.Remove(tmp)
 		return err
 	}
 	if err = f.Sync(); err != nil {
 		f.Close()
-		os.Remove(tmp)
 		return err
 	}
 	if err = f.Close(); err != nil {
 		return err
 	}
-	if err = os.Chmod(tmp, 0640); err != nil {
-		return err
-	}
 	if err = os.Rename(tmp, m.path); err != nil {
 		return err
 	}
-	if d, e := os.Open(filepath.Dir(m.path)); e == nil {
+	if d, e := os.Open(dir); e == nil {
 		_ = d.Sync()
 		_ = d.Close()
 	}
 	return nil
 }
+
 func (m *Manager) RotateIfDue(now time.Time) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()

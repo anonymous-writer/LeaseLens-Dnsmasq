@@ -846,3 +846,21 @@ proxy that marks the original request as HTTPS and supplies a shared secret.
 
 Set `https_secure: true` and configure `https_secure_token_file`, `https_secure_token_validity` and `https_secure_token_grace` in the config file, or use `HTTPS_SECURE=true`, `HTTPS_SECURE_TOKEN_FILE`, `HTTPS_SECURE_TOKEN_VALIDITY` and `HTTPS_SECURE_TOKEN_GRACE`. The app generates and rotates its own 100-character token. Include `nginx/proxy-token.lua.conf` in the OpenResty proxied location to read the current token on every request; no NGINX reload is needed. Ensure NGINX can read the file (mode `0640`, shared group) and LeaseLens can write it. The previous token remains accepted during the grace period. In proxy-secure mode, bind LeaseLens to loopback (`HOST=127.0.0.1`) unless the application port is otherwise firewalled.
 The Lua snippet sets `X-LeaseLens-Proxy-Token` dynamically. Keep `proxy_set_header X-Forwarded-Proto $scheme;` in the protected location. Ensure the token directory has a shared group (for example setgid) so the app-created `0640` file is readable by the NGINX worker. Requests still require a loopback peer and `X-Forwarded-Proto: https`. This is not a replacement for Authelia: keep Authelia configured on the reverse proxy.
+
+### Shared token directory on a native Linux installation
+
+For a native LeaseLens service running as `pi` and an NGINX worker running as
+`www-data`, use a setgid directory so atomically replaced token files inherit
+the `www-data` group. For example:
+
+```sh
+sudo install -d -o pi -g www-data -m 2750 /etc/nginx/secrets
+```
+
+Configure `https_secure_token_file` as
+`/etc/nginx/secrets/leaselens-proxy-token.json`. The application creates the
+file as mode `0640`; the directory's setgid bit makes its group `www-data`.
+NGINX can read it, and the `pi` owner can atomically replace it during rotation.
+Do not pre-create an empty file as root. If an empty file already exists, the
+application initializes it automatically at startup. Non-empty invalid JSON
+continues to fail closed and must be investigated rather than silently replaced.
