@@ -95,3 +95,8 @@ database_debug: false
 
 # Maximal number of DHCP events retained in the database (oldest entries are removed)
 dhcp_events_max_entries: 100
+
+# Rotating reverse-proxy token (generated automatically when HTTPS secure mode is enabled)
+https_secure_token_file: "/run/secrets/leaselens-proxy-token.json"
+https_secure_token_validity: "720h"
+https_secure_token_grace: "5m"

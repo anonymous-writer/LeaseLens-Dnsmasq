@@ -4,7 +4,6 @@ package app
 
 import (
 	"context"
-	"crypto/subtle"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -41,6 +40,7 @@ func newHTTPHandler(cfg Config, db *sql.DB, known *KnownMACs, tmpl *template.Tem
 // reverse proxy over HTTPS when HTTPS-secure mode is enabled. The shared token
 // must be configured in both LeaseLens and the reverse proxy.
 func httpsSecureProxyMiddleware(cfg Config, next http.Handler) http.Handler {
+	manager := cfg.ProxyTokenManager
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		remoteHost, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
 		if err != nil {
@@ -49,9 +49,7 @@ func httpsSecureProxyMiddleware(cfg Config, next http.Handler) http.Handler {
 		remoteIP := net.ParseIP(strings.Trim(remoteHost, "[]"))
 		trustedLocal := remoteIP != nil && remoteIP.IsLoopback()
 		providedToken := r.Header.Get("X-LeaseLens-Proxy-Token")
-		tokenOK := cfg.HTTPSecureProxyToken != "" &&
-			len(providedToken) == len(cfg.HTTPSecureProxyToken) &&
-			subtle.ConstantTimeCompare([]byte(providedToken), []byte(cfg.HTTPSecureProxyToken)) == 1
+		tokenOK := manager != nil && manager.Valid(providedToken, time.Now())
 		protoOK := strings.EqualFold(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")), "https")
 		if !trustedLocal || !tokenOK || !protoOK {
 			http.Error(w, "HTTPS access through the trusted reverse proxy is required", http.StatusForbidden)

@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/anonymous-writer/leaselens-dnsmasq/internal/proxytoken"
 )
 
 // Linker-overridable defaults for native builds. Runtime configuration can override these.
@@ -47,85 +49,92 @@ func getenv(k, d string) string {
 
 // Config contains paths, server settings, and build metadata.
 type Config struct {
-	WorkingDir            string
-	DatabasePath          string
-	DatabaseType          string
-	PostgresHost          string
-	PostgresPort          string
-	PostgresDatabase      string
-	PostgresUser          string
-	PostgresPassword      string
-	PostgresSSLMode       string
-	Host                  string
-	Port                  string
-	HTTPSecure            bool
-	HTTPSecureProxyToken  string
-	LeasePath             string
-	HostsPath             string
-	KnownMACsPath         string
-	UISettingsPath        string
-	DHCPEventsPath        string
-	DHCPScriptPath        string
-	DHCPEventsMaxEntries  int
-	DHCPInterface         string
-	AppVersion            string
-	ReleaseDate           string
-	RepoURL               string
-	SystemName            string
-	NTFYEnabled           bool
-	NTFYURL               string
-	NTFYToken             string
-	NTFYNotifyUnknownIPv4 bool
-	NTFYPriority          string
-	NTFYTimeoutSeconds    int
-	NTFYDebug             bool
-	DatabaseDebug         bool
-	DHCPEventAction       string
-	DHCPEventMAC          string
-	DHCPEventIP           string
-	DHCPEventHostname     string
+	WorkingDir              string
+	DatabasePath            string
+	DatabaseType            string
+	PostgresHost            string
+	PostgresPort            string
+	PostgresDatabase        string
+	PostgresUser            string
+	PostgresPassword        string
+	PostgresSSLMode         string
+	Host                    string
+	Port                    string
+	HTTPSecure              bool
+	HTTPSecureProxyToken    string
+	HTTPSecureTokenFile     string
+	HTTPSecureTokenValidity time.Duration
+	HTTPSecureTokenGrace    time.Duration
+	ProxyTokenManager       *proxytoken.Manager
+	LeasePath               string
+	HostsPath               string
+	KnownMACsPath           string
+	UISettingsPath          string
+	DHCPEventsPath          string
+	DHCPScriptPath          string
+	DHCPEventsMaxEntries    int
+	DHCPInterface           string
+	AppVersion              string
+	ReleaseDate             string
+	RepoURL                 string
+	SystemName              string
+	NTFYEnabled             bool
+	NTFYURL                 string
+	NTFYToken               string
+	NTFYNotifyUnknownIPv4   bool
+	NTFYPriority            string
+	NTFYTimeoutSeconds      int
+	NTFYDebug               bool
+	DatabaseDebug           bool
+	DHCPEventAction         string
+	DHCPEventMAC            string
+	DHCPEventIP             string
+	DHCPEventHostname       string
 }
 
 // loadConfig reads runtime options from environment variables.
 func loadConfig() Config {
 	return Config{
-		WorkingDir:            getenv("WORKING_DIR", ""),
-		DatabasePath:          getenv("DATABASE_PATH", "/data/leaselens.db"),
-		DatabaseType:          getenv("DATABASE_TYPE", "sqlite"),
-		PostgresHost:          getenv("POSTGRES_HOST", "127.0.0.1"),
-		PostgresPort:          getenv("POSTGRES_PORT", "5432"),
-		PostgresDatabase:      getenv("POSTGRES_DATABASE", "leaselens"),
-		PostgresUser:          getenv("POSTGRES_USER", "leaselens"),
-		PostgresPassword:      getenv("POSTGRES_PASSWORD", ""),
-		PostgresSSLMode:       getenv("POSTGRES_SSLMODE", "require"),
-		Host:                  getenv("HOST", "0.0.0.0"),
-		Port:                  getenv("PORT", "5000"),
-		HTTPSecure:            strings.EqualFold(getenv("HTTPS_SECURE", "false"), "true"),
-		HTTPSecureProxyToken:  getenv("HTTPS_SECURE_PROXY_TOKEN", ""),
-		LeasePath:             getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
-		HostsPath:             getenv("DNSMASQ_HOSTS_FILE", "/var/lib/dnsmasq/dnsmasq.dhcphosts"),
-		KnownMACsPath:         getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
-		UISettingsPath:        getenv("UI_SETTINGS_FILE", "/data/ui-settings.json"),
-		DHCPEventsPath:        getenv("DNSMASQ_EVENTS_FILE", ""),
-		DHCPScriptPath:        getenv("DNSMASQ_DHCP_SCRIPT", "/usr/local/sbin/dnsmasq-ntfy-dhcp-ipv4.sh"),
-		DHCPEventsMaxEntries:  envInt("DHCP_EVENTS_MAX_ENTRIES", 100),
-		DHCPInterface:         getenv("DNSMASQ_INTERFACE", ""),
-		AppVersion:            getenv("APP_VERSION", buildVersion),
-		ReleaseDate:           getenv("APP_RELEASE_DATE", buildReleaseDate),
-		RepoURL:               getenv("REPO_URL", "https://github.com/anonymous-writer/leaselens-dnsmasq"),
-		SystemName:            getenv("SYSTEM_NAME", ""),
-		NTFYEnabled:           strings.EqualFold(getenv("NTFY_ENABLED", "false"), "true"),
-		NTFYURL:               getenv("NTFY_URL", ""),
-		NTFYToken:             getenv("NTFY_TOKEN", ""),
-		NTFYNotifyUnknownIPv4: strings.EqualFold(getenv("NTFY_NOTIFY_UNKNOWN_IPV4", "true"), "true"),
-		NTFYPriority:          getenv("NTFY_PRIORITY", "high"),
-		NTFYTimeoutSeconds:    envInt("NTFY_TIMEOUT_SECONDS", 10),
-		NTFYDebug:             strings.EqualFold(getenv("NTFY_DEBUG", "false"), "true"),
-		DatabaseDebug:         strings.EqualFold(getenv("DATABASE_DEBUG", "false"), "true"),
-		DHCPEventAction:       getenv("LEASELENS_DHCP_EVENT_ACTION", ""),
-		DHCPEventMAC:          getenv("LEASELENS_DHCP_EVENT_MAC", ""),
-		DHCPEventIP:           getenv("LEASELENS_DHCP_EVENT_IP", ""),
-		DHCPEventHostname:     getenv("LEASELENS_DHCP_EVENT_HOSTNAME", ""),
+		WorkingDir:              getenv("WORKING_DIR", ""),
+		DatabasePath:            getenv("DATABASE_PATH", "/data/leaselens.db"),
+		DatabaseType:            getenv("DATABASE_TYPE", "sqlite"),
+		PostgresHost:            getenv("POSTGRES_HOST", "127.0.0.1"),
+		PostgresPort:            getenv("POSTGRES_PORT", "5432"),
+		PostgresDatabase:        getenv("POSTGRES_DATABASE", "leaselens"),
+		PostgresUser:            getenv("POSTGRES_USER", "leaselens"),
+		PostgresPassword:        getenv("POSTGRES_PASSWORD", ""),
+		PostgresSSLMode:         getenv("POSTGRES_SSLMODE", "require"),
+		Host:                    getenv("HOST", "0.0.0.0"),
+		Port:                    getenv("PORT", "5000"),
+		HTTPSecure:              strings.EqualFold(getenv("HTTPS_SECURE", "false"), "true"),
+		HTTPSecureProxyToken:    getenv("HTTPS_SECURE_PROXY_TOKEN", ""),
+		HTTPSecureTokenFile:     getenv("HTTPS_SECURE_TOKEN_FILE", "/run/secrets/leaselens-proxy-token.json"),
+		HTTPSecureTokenValidity: envDuration("HTTPS_SECURE_TOKEN_VALIDITY", 30*24*time.Hour),
+		HTTPSecureTokenGrace:    envDuration("HTTPS_SECURE_TOKEN_GRACE", 5*time.Minute),
+		LeasePath:               getenv("DNSMASQ_LEASES_FILE", "/var/lib/dnsmasq/dnsmasq.leases"),
+		HostsPath:               getenv("DNSMASQ_HOSTS_FILE", "/var/lib/dnsmasq/dnsmasq.dhcphosts"),
+		KnownMACsPath:           getenv("KNOWN_MACS_FILE", "/data/known-macs.json"),
+		UISettingsPath:          getenv("UI_SETTINGS_FILE", "/data/ui-settings.json"),
+		DHCPEventsPath:          getenv("DNSMASQ_EVENTS_FILE", ""),
+		DHCPScriptPath:          getenv("DNSMASQ_DHCP_SCRIPT", "/usr/local/sbin/dnsmasq-ntfy-dhcp-ipv4.sh"),
+		DHCPEventsMaxEntries:    envInt("DHCP_EVENTS_MAX_ENTRIES", 100),
+		DHCPInterface:           getenv("DNSMASQ_INTERFACE", ""),
+		AppVersion:              getenv("APP_VERSION", buildVersion),
+		ReleaseDate:             getenv("APP_RELEASE_DATE", buildReleaseDate),
+		RepoURL:                 getenv("REPO_URL", "https://github.com/anonymous-writer/leaselens-dnsmasq"),
+		SystemName:              getenv("SYSTEM_NAME", ""),
+		NTFYEnabled:             strings.EqualFold(getenv("NTFY_ENABLED", "false"), "true"),
+		NTFYURL:                 getenv("NTFY_URL", ""),
+		NTFYToken:               getenv("NTFY_TOKEN", ""),
+		NTFYNotifyUnknownIPv4:   strings.EqualFold(getenv("NTFY_NOTIFY_UNKNOWN_IPV4", "true"), "true"),
+		NTFYPriority:            getenv("NTFY_PRIORITY", "high"),
+		NTFYTimeoutSeconds:      envInt("NTFY_TIMEOUT_SECONDS", 10),
+		NTFYDebug:               strings.EqualFold(getenv("NTFY_DEBUG", "false"), "true"),
+		DatabaseDebug:           strings.EqualFold(getenv("DATABASE_DEBUG", "false"), "true"),
+		DHCPEventAction:         getenv("LEASELENS_DHCP_EVENT_ACTION", ""),
+		DHCPEventMAC:            getenv("LEASELENS_DHCP_EVENT_MAC", ""),
+		DHCPEventIP:             getenv("LEASELENS_DHCP_EVENT_IP", ""),
+		DHCPEventHostname:       getenv("LEASELENS_DHCP_EVENT_HOSTNAME", ""),
 	}
 }
 
@@ -268,6 +277,20 @@ func applyConfigFile(path string, cfg *Config, logLevel *string) error {
 			cfg.HTTPSecure = parseConfigBool(value)
 		case "https_secure_proxy_token", "https-secure-proxy-token":
 			cfg.HTTPSecureProxyToken = value
+		case "https_secure_token_file", "https-secure-token-file":
+			cfg.HTTPSecureTokenFile = value
+		case "https_secure_token_validity", "https-secure-token-validity":
+			d, e := time.ParseDuration(value)
+			if e != nil || d <= 0 {
+				return fmt.Errorf("config file %q line %d: invalid token validity", path, lineNo)
+			}
+			cfg.HTTPSecureTokenValidity = d
+		case "https_secure_token_grace", "https-secure-token-grace":
+			d, e := time.ParseDuration(value)
+			if e != nil || d < 0 {
+				return fmt.Errorf("config file %q line %d: invalid token grace", path, lineNo)
+			}
+			cfg.HTTPSecureTokenGrace = d
 		case "leases_file", "leases-file":
 			cfg.LeasePath = value
 		case "hosts_file", "hosts-file":
