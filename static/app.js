@@ -307,6 +307,13 @@ function render() {
           cell.appendChild(link(lease.ipAddress, lease.webUrl));
         } else if (index === 3 && lease.webHostUrl) {
           cell.appendChild(link(lease.name, lease.webHostUrl));
+        } else if (columnNames[index] === 'lease-expiry') {
+          const countdown = document.createElement('span');
+          countdown.className = 'lease-countdown';
+          countdown.dataset.leaseExpiry = String(lease.leaseExpiry ?? '');
+          countdown.dataset.leaseText = String(lease.leasetime ?? '');
+          countdown.textContent = value ?? '';
+          cell.appendChild(countdown);
         } else {
           cell.append(document.createTextNode(value ?? ''));
         }
@@ -759,8 +766,23 @@ window.addEventListener('app-language-change', () => {
   if (dialog.open) refreshOpenDetails(dialog.dataset.mac || '');
 });
 
+function updateLeaseCountdowns() {
+  // Update only the lease-expiry text. Rebuilding the complete table every
+  // second resets :hover and makes the row appear to flicker under the pointer.
+  document.querySelectorAll('#leases .lease-countdown').forEach(element => {
+    const rawExpiry = element.dataset.leaseExpiry;
+    if (rawExpiry === '' || !Number.isFinite(Number(rawExpiry))) {
+      return;
+    }
+    element.textContent = formatLease({
+      leaseExpiry: Number(rawExpiry),
+      leasetime: element.dataset.leaseText || ''
+    });
+  });
+}
+
 load();
-window.setInterval(() => { if (leases.length) render(); }, COUNTDOWN_RENDER_INTERVAL_MS);
+window.setInterval(updateLeaseCountdowns, COUNTDOWN_RENDER_INTERVAL_MS);
 
 // Persistent view preferences and capability-aware feature catalog.
 (() => {
