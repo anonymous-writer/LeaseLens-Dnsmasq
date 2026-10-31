@@ -1,0 +1,28 @@
+LeaseLens-Dnsmasq 2.1.7 Beta – Prüfbericht
+==============================================
+
+Anpassungen im Paket
+--------------------
+1. Dockerfile: Der Runtime-Container läuft wie vom Projekt vorgesehen weiterhin
+   als root (USER root). Es wurde keine Umstellung auf USER app vorgenommen.
+2. Go-Version: Go 1.27 bleibt erhalten. Dockerfile verwendet golang:1.27-alpine;
+   die Go-Badge in README.md ist auf 1.27 gesetzt.
+
+Prüfungen / Einschränkungen
+---------------------------
+- Go-Formatierung: gofmt -d über alle Go-Dateien ohne Änderungen/Beanstandungen.
+- Go-Tests, go vet und Build konnten in dieser Umgebung NICHT ausgeführt werden:
+  go.mod verlangt Go 1.27; lokal vorhanden ist Go 1.23.2 und das automatische
+  Herunterladen der Go-1.27-Toolchain scheiterte an fehlendem Netzwerkzugriff.
+- GitHub-Repository wurde öffentlich geprüft. Änderungen an GitHub wurden nicht
+  vorgenommen; dieses ZIP ist eine lokale Paketfassung.
+- Die GitHub-CI-Definition sieht go test ./..., go vet ./... und einen Docker-
+  Smoke-Test vor. Ein erfolgreicher aktueller CI-Lauf wurde hier nicht verifiziert.
+- Das Webinterface und die API besitzen laut Projektdokumentation keine
+  eingebaute Authentifizierung. Nur in vertrauenswürdigen Netzen bzw. hinter
+  einem korrekt konfigurierten Reverse Proxy betreiben.
+
+Wichtig
+-------
+Dies ist eine statische Quellcode-/Konfigurationsprüfung, kein vollständiger
+Laufzeittest auf echter dnsmasq-/Docker-/PostgreSQL-Infrastruktur.

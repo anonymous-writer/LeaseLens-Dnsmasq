@@ -17,7 +17,7 @@ dnsmasq-DHCP-Leases.
 # leaselens-dnsmasq
 
 [![GHCR](https://img.shields.io/badge/GHCR-docker%20image-blue?logo=github)](https://github.com/anonymous-writer/leaselens-dnsmasq/pkgs/container/leaselens-dnsmasq)
-[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)](https://go.dev/)
+[![Go](https://img.shields.io/badge/Go-1.27-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/github/license/anonymous-writer/leaselens-dnsmasq)](LICENSE)
 
 A lightweight web interface for the
