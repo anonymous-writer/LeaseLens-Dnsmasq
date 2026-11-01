@@ -18,6 +18,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/anonymous-writer/leaselens-dnsmasq/internal/proxytoken"
 )
 
 // Run loads configuration, wires application dependencies, and starts the HTTP server.
@@ -78,6 +80,16 @@ func Run(assets fs.FS, nativeBuild bool) {
 		}
 	}
 
+	if cfg.HTTPSecure {
+		manager, tokenErr := proxytoken.New(cfg.HTTPSecureTokenFile, cfg.HTTPSecureTokenValidity, cfg.HTTPSecureTokenGrace)
+		if tokenErr != nil {
+			LogFatalf("proxy token manager: %v", tokenErr)
+		}
+		cfg.ProxyTokenManager = manager
+		stopTokenRotation := make(chan struct{})
+		defer close(stopTokenRotation)
+		go manager.Run(stopTokenRotation)
+	}
 	handler := newHTTPHandler(cfg, db, known, tmpl, staticFS, dnsmasqVersion, nativeBuild)
 	address := net.JoinHostPort(cfg.Host, cfg.Port)
 	server := &http.Server{
@@ -121,7 +133,6 @@ func Run(assets fs.FS, nativeBuild bool) {
 	checkpointAndCloseDatabase(db)
 	LogInfof("LeaseLens shutdown complete")
 }
-
 
 // checkNativeDHCPScript reports whether the configured dnsmasq bridge is installed.
 // dnsmasq itself must still reference this same path via its dhcp-script directive.

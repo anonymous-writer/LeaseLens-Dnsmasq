@@ -13,6 +13,10 @@ services:
       XDG_RUNTIME_DIR: /tmp
       HOST: "0.0.0.0"
       PORT: "3008"
+      # Optional: require trusted local reverse-proxy HTTPS when enabled.
+      HTTPS_SECURE: "false"
+      # Set this and the matching NGINX header to the same long random secret.
+      # HTTPS_SECURE_PROXY_TOKEN: "replace-with-a-long-random-secret"
       LOG_LEVEL: "INFO"
       # Optional label shown in the UI; omit to use the Docker default.
       SYSTEM_NAME: "Raspberry Pi 5"

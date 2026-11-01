@@ -5,6 +5,15 @@
 # Then point the service at it with --config or CONFIG_FILE.
 
 # Web server
+# Optional reverse-proxy HTTPS enforcement.
+# When enabled, all requests must arrive from a local reverse proxy with
+# X-Forwarded-Proto: https and the matching shared secret header.
+# Configure the same secret in NGINX as:
+#   proxy_set_header X-LeaseLens-Proxy-Token "YOUR_LONG_RANDOM_SECRET";
+# Keep the LeaseLens port private; do not expose it directly to the LAN/Internet.
+https_secure: false
+# https_secure_proxy_token: "replace-with-a-long-random-secret"
+
 host: "0.0.0.0"
 port: "3008"
 
@@ -86,3 +95,8 @@ database_debug: false
 
 # Maximal number of DHCP events retained in the database (oldest entries are removed)
 dhcp_events_max_entries: 100
+
+# Rotating reverse-proxy token (generated automatically when HTTPS secure mode is enabled)
+https_secure_token_file: "/etc/nginx/secrets/leaselens-proxy-token.json"
+https_secure_token_validity: "720h"
+https_secure_token_grace: "5m"
