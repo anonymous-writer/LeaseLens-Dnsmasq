@@ -4,7 +4,7 @@
 
 # LeaseLens -- Dnsmasq Network Dashboard
 
-![Beschreibung](docs/LeaseLens-Statusicons/LeaseLens-Dnsmasq%20Network%20Dashboard.png)
+![LeaseLens-Dnsmasq Network Dashboard](https://raw.githubusercontent.com/anonymous-writer/LeaseLens-Dnsmasq/main/docs/LeaseLens-Statusicons/LeaseLens-Dnsmasq%20Network%20Dashboard.png)
 
 LeaseLens ist die Weboberfläche zur Verwaltung und Anzeige von
 dnsmasq-DHCP-Leases.
