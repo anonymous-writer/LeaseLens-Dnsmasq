@@ -4,6 +4,8 @@
 
 LeaseLens is a lightweight web dashboard for viewing and monitoring DHCP leases from [dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html). It is written in Go and provides a searchable, sortable view of network devices, manufacturer information, reservation status, lease expiry, and reachability.
 
+![LeaseLens-Dnsmasq Network Dashboard](https://raw.githubusercontent.com/anonymous-writer/LeaseLens-Dnsmasq/main/docs/LeaseLens-Statusicons/LeaseLens-Dnsmasq%20Network%20Dashboard.png)
+
 [![Docker Hub](https://img.shields.io/docker/v/1968michael1968/leaselens-dnsmasq?label=Docker%20Hub)](https://hub.docker.com/r/1968michael1968/leaselens-dnsmasq)
 [![Go](https://img.shields.io/badge/Go-1.27-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/github/license/anonymous-writer/leaselens-dnsmasq)](https://github.com/anonymous-writer/leaselens-dnsmasq/blob/main/LICENSE)
