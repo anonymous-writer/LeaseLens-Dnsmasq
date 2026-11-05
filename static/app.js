@@ -1010,3 +1010,8 @@ window.setInterval(updateLeaseCountdowns, COUNTDOWN_RENDER_INTERVAL_MS);
   });
   close?.addEventListener('click', () => dialog.close());
 })();
+
+
+// GitHub release and CI status, refreshed every ten minutes like Veltrio.
+async function loadVersionStatus(){const el=document.getElementById('version-status');if(!el)return;try{const r=await fetch('/api/version',{cache:'no-store'});if(!r.ok)throw new Error('status');const v=await r.json();const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const latest=v.latestVersion?` · Aktuell: <a href="${esc(v.releaseUrl||v.repository+'/releases')}" target="_blank" rel="noopener">${esc(v.latestVersion)}</a>`:'';const ci=v.updatedAt?` · Letzter erfolgreicher CI-Lauf: <a href="${esc(v.runUrl||v.repository+'/actions')}" target="_blank" rel="noopener">${new Date(v.updatedAt).toLocaleString('de-DE',{timeZone:'UTC'})} UTC</a>`:'';el.innerHTML=`<a href="${esc(v.repository)}" target="_blank" rel="noopener">GitHub</a> · Installiert: ${esc(v.version||'dev')}${latest}${ci}`;}catch(_){}}
+loadVersionStatus();setInterval(loadVersionStatus,600000);
