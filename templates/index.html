@@ -104,6 +104,8 @@ footer { margin-top:1.2rem; color:var(--muted); font-size:.8rem; }
 #status-panel #status { margin:0; flex:1 1 18rem; font-size:inherit; }
 #status-panel #refresh-meta { margin:0; gap:.25rem .8rem; }
 #status-panel footer { margin:0 0 0 auto; font-size:inherit; }
+#version-status a { color:var(--accent, #8ebfe9); text-decoration:none; }
+#version-status a:hover { text-decoration:underline; }
 @media(max-width:800px) { #brand-header { flex-wrap:wrap; } #brand-meta { width:100%; margin-left:0; justify-content:flex-start; flex-wrap:wrap; } }
 @media(max-width:520px) { #brand-meta { gap:.55rem 1rem; font-size:.75rem; } .brand-meta-item svg { width:1.15rem; height:1.15rem; } #status-panel footer { margin-left:0; flex-basis:100%; } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important; } }
@@ -426,7 +428,7 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
   <section id="status-panel" aria-label="Anwendungsstatus">
     <div id="status" role="status" aria-live="polite" data-i18n="loading">Loading…</div>
     <div id="refresh-meta" aria-live="polite"><span id="last-updated"></span><span id="refresh-state"></span></div>
-    <footer><a href="{{.RepoURL}}" target="_blank" rel="noopener noreferrer">LeaseLens</a> v{{.Version}}{{if .ReleaseDate}} · <span data-i18n="released">released</span> {{.ReleaseDate}}{{end}}</footer>
+    <footer><span id="version-status"><a href="{{.RepoURL}}" target="_blank" rel="noopener noreferrer">GitHub</a> · Installiert: v{{.Version}} · Status wird geladen …</span></footer>
   </section>
 
   <!-- Modal: app.js befüllt #detail-content mit den gewählten Gerätedetails. -->

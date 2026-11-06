@@ -125,7 +125,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: leaselens-dnsmasq-linux-${{ matrix.arch }}
-          path: dist/leaselens-dnsmasq-linux-${{ matrix.arch }}.tar.gz
+          path: |
+            dist/leaselens-dnsmasq-linux-${{ matrix.arch }}
+            dist/leaselens-dnsmasq-linux-${{ matrix.arch }}.tar.gz
           if-no-files-found: error
           retention-days: 30
 
@@ -146,7 +148,18 @@ jobs:
 
       - name: Generate SHA256 checksums
         working-directory: dist
-        run: sha256sum leaselens-dnsmasq-linux-*.tar.gz > SHA256SUMS
+        run: sha256sum leaselens-dnsmasq-linux-amd64 leaselens-dnsmasq-linux-arm64 leaselens-dnsmasq-linux-amd64.tar.gz leaselens-dnsmasq-linux-arm64.tar.gz > SHA256SUMS
+
+      - name: Generate GitHub release notes (What's Changed and New Contributors)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh api --method POST "repos/${GH_REPO}/releases/generate-notes" \
+            -f tag_name="$RELEASE_TAG" \
+            --jq '.body' > release-notes.md
+          gh release edit "$RELEASE_TAG" --notes-file release-notes.md
 
       - name: Attach archives and checksums to the release
         env:
@@ -155,7 +168,9 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           gh release upload "$RELEASE_TAG" \
-            dist/leaselens-dnsmasq-linux-arm64.tar.gz \
+            dist/leaselens-dnsmasq-linux-amd64 \
             dist/leaselens-dnsmasq-linux-amd64.tar.gz \
+            dist/leaselens-dnsmasq-linux-arm64 \
+            dist/leaselens-dnsmasq-linux-arm64.tar.gz \
             dist/SHA256SUMS \
             --clobber

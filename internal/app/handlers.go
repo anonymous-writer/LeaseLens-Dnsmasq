@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
 	"net"
 	"net/http"
@@ -21,6 +22,7 @@ import (
 func newHTTPHandler(cfg Config, db *sql.DB, known *KnownMACs, tmpl *template.Template, staticFS fs.FS, dnsmasqVersion string, nativeBuild bool) http.Handler {
 	mux := http.NewServeMux()
 	enableLeaseRelease := nativeBuild && validInterfaceName(cfg.DHCPInterface)
+	mux.HandleFunc("/api/version", versionStatusHandler(cfg))
 	mux.HandleFunc("/", homeHandler(cfg, tmpl, dnsmasqVersion, enableLeaseRelease))
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 	mux.HandleFunc("/known-macs", knownMACsHandler(cfg, known))
@@ -57,6 +59,64 @@ func httpsSecureProxyMiddleware(cfg Config, next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func versionStatusHandler(cfg Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type result struct {
+			Version       string `json:"version"`
+			LatestVersion string `json:"latestVersion,omitempty"`
+			Repository    string `json:"repository"`
+			ReleaseURL    string `json:"releaseUrl,omitempty"`
+			UpdatedAt     string `json:"updatedAt,omitempty"`
+			RunURL        string `json:"runUrl,omitempty"`
+		}
+		out := result{Version: cfg.AppVersion, Repository: strings.TrimRight(cfg.RepoURL, "/")}
+		client := &http.Client{Timeout: 5 * time.Second}
+		fetch := func(url string, dst any) error {
+			req, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, url, nil)
+			req.Header.Set("Accept", "application/vnd.github+json")
+			req.Header.Set("User-Agent", "LeaseLens")
+			resp, err := client.Do(req)
+			if err != nil {
+				return err
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				return fmt.Errorf("GitHub HTTP %s", resp.Status)
+			}
+			return json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(dst)
+		}
+		// Derive owner/repository from the configured GitHub repository URL.
+		repoPath := strings.TrimPrefix(out.Repository, "https://github.com/")
+		var release struct {
+			TagName string `json:"tag_name"`
+			HTMLURL string `json:"html_url"`
+		}
+		if repoPath != "" && fetch("https://api.github.com/repos/"+repoPath+"/releases/latest", &release) == nil {
+			out.LatestVersion = release.TagName
+			out.ReleaseURL = release.HTMLURL
+		}
+		var runs struct {
+			WorkflowRuns []struct {
+				HTMLURL    string `json:"html_url"`
+				UpdatedAt  string `json:"updated_at"`
+				Conclusion string `json:"conclusion"`
+			} `json:"workflow_runs"`
+		}
+		if repoPath != "" && fetch("https://api.github.com/repos/"+repoPath+"/actions/runs?per_page=20", &runs) == nil {
+			for _, run := range runs.WorkflowRuns {
+				if run.Conclusion == "success" {
+					out.UpdatedAt = run.UpdatedAt
+					out.RunURL = run.HTMLURL
+					break
+				}
+			}
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_ = json.NewEncoder(w).Encode(out)
+	}
 }
 
 func homeHandler(cfg Config, tmpl *template.Template, dnsmasqVersion string, enableLeaseRelease bool) http.HandlerFunc {
