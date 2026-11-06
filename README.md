@@ -26,9 +26,23 @@ dnsmasq-DHCP-Leases.
 
 # leaselens-dnsmasq
 
-[![GHCR](https://img.shields.io/badge/GHCR-docker%20image-blue?logo=github)](https://github.com/anonymous-writer/leaselens-dnsmasq/pkgs/container/leaselens-dnsmasq)
-[![Go](https://img.shields.io/badge/Go-1.27-00ADD8?logo=go)](https://go.dev/)
-[![License](https://img.shields.io/github/license/anonymous-writer/leaselens-dnsmasq)](LICENSE)
+<p align="center">
+  <a href="https://github.com/anonymous-writer/LeaseLens-Dnsmasq">
+    <img src="https://img.shields.io/badge/GitHub-Repository-181717?logo=github" alt="GitHub Repository">
+  </a>
+  <a href="https://hub.docker.com/r/1968michael1968/leaselens-dnsmasq">
+    <img src="https://img.shields.io/badge/Docker%20Hub-Image-2496ED?logo=docker&logoColor=white" alt="Docker Hub">
+  </a>
+  <a href="https://github.com/anonymous-writer/leaselens-dnsmasq/pkgs/container/leaselens-dnsmasq">
+    <img src="https://img.shields.io/badge/GHCR-Docker%20Image-2088FF?logo=github" alt="GitHub Container Registry">
+  </a>
+  <a href="https://go.dev/">
+    <img src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go" alt="Go 1.27">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/anonymous-writer/LeaseLens-Dnsmasq?label=license" alt="MIT License">
+  </a>
+</p>
 
 A lightweight web interface for the
 [dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html) DHCP lease file,
