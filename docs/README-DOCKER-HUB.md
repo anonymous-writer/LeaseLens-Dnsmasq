@@ -1,266 +1,890 @@
 # LeaseLens-Dnsmasq
 
-**LeaseLens — Dnsmasq Network Dashboard**
+**LeaseLens** --- Dnsmasq Network Dashboard.
 
-LeaseLens is a lightweight web dashboard for viewing and monitoring DHCP leases from [dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html). It is written in Go and provides a searchable, sortable view of network devices, manufacturer information, reservation status, lease expiry, and reachability.
+### LeaseLens -- Dnsmasq Network Dashboard
 
-![LeaseLens-Dnsmasq Network Dashboard](https://raw.githubusercontent.com/anonymous-writer/LeaseLens-Dnsmasq/main/docs/LeaseLens-Statusicons/LeaseLens-Dnsmasq%20Network%20Dashboard.png)
 
-[![Docker Hub](https://img.shields.io/docker/v/1968michael1968/leaselens-dnsmasq?label=Docker%20Hub)](https://hub.docker.com/r/1968michael1968/leaselens-dnsmasq)
-[![Go](https://img.shields.io/badge/Go-1.27-00ADD8?logo=go)](https://go.dev/)
-[![License](https://img.shields.io/github/license/anonymous-writer/leaselens-dnsmasq)](https://github.com/anonymous-writer/leaselens-dnsmasq/blob/main/LICENSE)
+<p align="center">
+  <img
+    src="https://raw.githubusercontent.com/anonymous-writer/LeaseLens-Dnsmasq/main/docs/LeaseLens-Statusicons/LeaseLens-Dnsmasq%20Network%20Dashboard.png"
+    alt="LeaseLens-Dnsmasq Network Dashboard"
+    width="50%"
+  >
+</p>
 
-- [GitHub repository and full documentation](https://github.com/anonymous-writer/leaselens-dnsmasq)
-- [Docker Hub — LeaseLens-Dnsmasq](https://hub.docker.com/r/1968michael1968/leaselens-dnsmasq)
-- [GitHub Container Registry (GHCR)](https://github.com/anonymous-writer/leaselens-dnsmasq/pkgs/container/leaselens-dnsmasq)
 
-![LeaseLens dashboard](https://raw.githubusercontent.com/anonymous-writer/leaselens-dnsmasq/main/docs/screenshot1.png)
+LeaseLens ist die Weboberfläche zur Verwaltung und Anzeige von
+dnsmasq-DHCP-Leases.
 
-![LeaseLens device details](https://raw.githubusercontent.com/anonymous-writer/leaselens-dnsmasq/main/docs/screenshot2.png)
+## Projekt-Links
 
-![LeaseLens device details](https://raw.githubusercontent.com/anonymous-writer/leaselens-dnsmasq/main/docs/screenshot3.png)
+-   [GitHub-Repository und
+    Dokumentation](https://github.com/anonymous-writer/LeaseLens-Dnsmasq)
+-   [Docker Hub --
+    LeaseLens-Dnsmasq](https://hub.docker.com/r/1968michael1968/leaselens-dnsmasq)
+
+# leaselens-dnsmasq
+
+<p align="center">
+  <a href="https://github.com/anonymous-writer/LeaseLens-Dnsmasq">
+    <img src="https://img.shields.io/badge/GitHub-Repository-181717?logo=github" alt="GitHub Repository">
+  </a>
+  <a href="https://hub.docker.com/r/1968michael1968/leaselens-dnsmasq">
+    <img src="https://img.shields.io/badge/Docker%20Hub-Image-2496ED?logo=docker&logoColor=white" alt="Docker Hub">
+  </a>
+  <a href="https://github.com/anonymous-writer/leaselens-dnsmasq/pkgs/container/leaselens-dnsmasq">
+    <img src="https://img.shields.io/badge/GHCR-Docker%20Image-2088FF?logo=github" alt="GitHub Container Registry">
+  </a>
+  <a href="https://go.dev/">
+    <img src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go" alt="Go 1.27">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/anonymous-writer/LeaseLens-Dnsmasq?label=license" alt="MIT License">
+  </a>
+</p>
+
+A lightweight web interface for the
+[dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html) DHCP lease file,
+written in Go. It provides a searchable, sortable view of DHCP leases,
+detects reachable HTTP/HTTPS interfaces on client devices, and lets you
+manage which devices have already been acknowledged.
+
+![Screenshot](https://raw.githubusercontent.com/anonymous-writer/leaselens-dnsmasq/main/docs/screenshot1.png)
+
+![Screenshot](https://raw.githubusercontent.com/anonymous-writer/leaselens-dnsmasq/main/docs/screenshot2.png)
+
+![Screenshot](https://raw.githubusercontent.com/anonymous-writer/leaselens-dnsmasq/main/docs/screenshot3.png)
 
 ## Features
 
-- Searchable and sortable DHCP lease table for IPv4 and IPv6
-- Filters for IP version, DHCP reservations, and device reachability
-- HTTP/HTTPS checks and ping-based status indication
-- Clickable IP addresses and hostnames when the hostname resolves to the lease IP
-- Device details including hostname, IP, MAC, manufacturer, reservation status, lease expiry, and detected web URLs
-- Local IEEE OUI database lookup for MAC manufacturers; locally administered/randomized MAC addresses are identified separately
-- `NEW` indicator for MAC addresses not in the remembered-device list
-- Per-device actions to mark a device as known or mark it as new again
-- Bulk action to mark currently detected DHCP reservations as known
-- Bulk action to mark all configured IPv4 reservations as known, including offline devices
-- Bulk action to reset the remembered-device list (confirmation required)
-- Persistent remembered-device data in `/data/known-macs.json`
-- Infinite leases displayed as `Never`; expired leases displayed as `Expired`
-- Manual refresh; lease countdowns update locally between refreshes
-- Dark/light theme and responsive desktop/mobile interface
-- Dashboard preferences, including language, theme, filters, sorting, grouping, and visible controls where supported by the deployed version
-- Database-backed persistence for supported dashboard preferences
-- JSON API at `/leases` and POST actions at `/known-macs`
-- Bounded concurrent checks for device web interfaces
-- Multi-architecture image (`linux/amd64` and `linux/arm64`)
-- Container runs as `root`
-
-**Native-only features are not included in the Docker image.** Native Linux builds can detect the installed dnsmasq version and can optionally provide an IPv4 lease-release action and native DHCP-hook integrations. These features depend on the host's dnsmasq installation and are not enabled by this container image. See the [main repository README](https://github.com/anonymous-writer/leaselens-dnsmasq) for native installation and setup.
+-   Searchable and sortable DHCP lease table
+-   IPv4 and IPv6 support, with filters for IP version and DHCP
+    reservations
+-   Manual refresh of the lease list; lease countdowns update locally in
+    the browser
+-   Device details dialog with hostname, IP, MAC, manufacturer,
+    reservation status, lease end, and detected web URLs
+-   Local MAC manufacturer lookup using the IEEE OUI database; locally
+    administered/randomized MAC addresses are identified separately
+-   Status indicator: green when HTTP/HTTPS responds, yellow when ping
+    responds but no web interface is detected, red when neither check
+    responds
+-   Automatically detects reachable HTTP/HTTPS interfaces and makes
+    device IP addresses clickable
+-   Shows a clickable hostname when it resolves to the corresponding
+    lease IP
+-   Detects DHCP reservations from the optional `dnsmasq.dhcphosts` file
+-   Displays infinite leases as `Never` and expired leases as `Expired`
+-   Detects newly seen devices by MAC address and marks them with a
+    `NEW` indicator
+-   Persistently remembers acknowledged devices in
+    `/data/known-macs.json`
+-   Per-device actions to mark a device as known or mark it as new again
+-   Bulk actions to mark currently detected DHCP reservations as known,
+    mark all configured IPv4 reservations (including offline devices) as
+    known, or reset the remembered-device list
+-   IPv6 leases without a valid MAC address remain visible but are not
+    marked as new
+-   Dark/light theme and responsive web interface
+-   Dashboard preferences, including database-backed persistence in
+    supported versions and a reset-to-defaults action
+-   JSON API at `/leases` and POST actions at `/known-macs`
+-   Bounded concurrent checks for device web interfaces
+-   Multi-architecture Docker image: `linux/amd64` and `linux/arm64`
+-   Runs as a non-root user in the provided Docker image
 
 ## Quick start
 
-Create a directory for persistent application data:
+The current development image is published to GitHub Container Registry
+with the `latest` tag. Pull it with:
 
-```bash
-mkdir -p data
+``` bash
+docker pull ghcr.io/anonymous-writer/leaselens-dnsmasq:latest
 ```
 
-Start the latest stable Docker Hub image:
+The `go-beta` tag follows the most recently published pre-release.
+Stable releases publish version tags plus `latest`; pre-releases never
+update `latest`. Publishing either kind of GitHub Release also attaches
+native ARM64 and AMD64 binaries to that release.
 
-```bash
+The container reads these files by default:
+
+``` text
+/var/lib/dnsmasq/dnsmasq.leases
+/var/lib/dnsmasq/dnsmasq.dhcphosts
+```
+
+The hosts file is optional. Mount the containing directory rather than
+individual files so the container continues to see the current lease
+file if `dnsmasq` replaces it.
+
+### Docker
+
+``` bash
 docker run -d \
   --name leaselens-dnsmasq \
   --restart unless-stopped \
   --network host \
   -e PORT=3008 \
-  -e LOG_LEVEL=INFO \
   -v /var/lib/dnsmasq:/var/lib/dnsmasq:ro \
   -v "$(pwd)/data:/data" \
-  1968michael1968/leaselens-dnsmasq:latest
+  ghcr.io/anonymous-writer/leaselens-dnsmasq:latest
 ```
 
-Open **http://YOUR_HOST:3008** in your browser, replacing `YOUR_HOST` with the IP address or hostname of the machine running the container.
+Create the persistent data directory before starting the container:
 
-Host networking lets LeaseLens reach devices on your LAN, including IPv6 devices, when the host has the necessary routes. With `--network host`, do not use `-p` or `--publish`; the application listens directly on the host network.
-
-The container runs as `root`. This is intentional for this image's current deployment model and is not changed by the Docker instructions in this README.
-
-The application and its API do not provide built-in user authentication. Keep the service on a trusted network or protect it with a properly configured reverse proxy. Do not expose it directly to the public internet.
-
-## Required dnsmasq files
-
-By default, LeaseLens reads:
-
-- `/var/lib/dnsmasq/dnsmasq.leases` — DHCP lease file
-- `/var/lib/dnsmasq/dnsmasq.dhcphosts` — optional DHCP reservation file
-
-Example dnsmasq configuration:
-
-```ini
-dhcp-leasefile=/var/lib/dnsmasq/dnsmasq.leases
-dhcp-hostsfile=/var/lib/dnsmasq/dnsmasq.dhcphosts
+``` bash
+mkdir -p data
 ```
 
-Mount the containing directory read-only into the container. Mounting the directory rather than individual files helps ensure the application sees the current lease file if dnsmasq replaces it. The hosts file is optional; reservations defined only in that file cannot be identified when it is absent or unreadable.
+Open `http://<host>:3008`.
 
-## Docker Compose
+For the stable image, replace `:go-beta` with `:latest`.
+
+Host networking lets the app reach devices on the LAN, including IPv6
+devices, when the host itself has the required routes. With host
+networking, do not use `-p`/`--publish`; the application listens
+directly on the host network.
+
+### Docker Compose / Podman Compose
 
 Example `compose.yaml`:
 
-```yaml
+``` yaml
 services:
   leaselens-dnsmasq:
-    image: 1968michael1968/leaselens-dnsmasq:latest
+    image: ghcr.io/anonymous-writer/leaselens-dnsmasq:latest
     container_name: leaselens-dnsmasq
     restart: unless-stopped
     environment:
       PORT: "3008"
-      LOG_LEVEL: "INFO"
       HOME: /tmp
       XDG_RUNTIME_DIR: /tmp
     network_mode: host
     volumes:
       - /var/lib/dnsmasq:/var/lib/dnsmasq:ro
-      - ./data:/data
+      - ./data:/data:Z
 ```
 
 Create the data directory before the first start:
 
-```bash
+``` bash
 mkdir -p data
-docker compose up -d
 ```
 
-For Podman on SELinux-enabled systems, use `./data:/data:Z` if relabeling is required. With Docker, use `./data:/data` unless SELinux relabeling is required by the host.
+Start the service with `docker compose up -d` or `podman compose up -d`.
 
-## Using the dashboard
+The `:Z` suffix is useful with Podman on SELinux-enabled systems. For
+Docker, `./data:/data` can be used if SELinux relabeling is not
+required.
 
-- Search by hostname, IP address, MAC address, lease time, status, or reservation state.
-- Use the IP-version filter to show all leases, IPv4 only, or IPv6 only.
-- Use the reservation filter to show all leases, reservations only, or dynamic leases only.
-- Select a column heading to change the sort order.
-- Select a row to open device details. Copy individual hostname, IP, or MAC values, or copy all device details from the dialog.
-- Click **Refresh** to reload leases and repeat reachability checks. Countdown values update locally between refreshes; network checks do not run every second.
-- Status colors indicate HTTP/HTTPS response, ping response without a detected web interface, or no response to either check. Hover over a status indicator for an explanation.
-- The page shows the last successful refresh time and a separate loading/error status. If a refresh fails, the previously loaded lease list remains visible.
-- `NEW` means the device's MAC address is not in the remembered list. Use **Mark as known** to remember it or **Mark as new** to remove it from that list.
-- **Mark reservations known** remembers currently detected reservations with valid MAC addresses.
-- **Mark all IPv4 reservations** reads the configured hosts file and can remember configured IPv4 reservations even when the devices are offline. Entries need both a valid MAC and an IPv4 address; IPv6-only entries are skipped.
-- **Reset remembered** clears the remembered MAC list after confirmation. This does not delete the lease or DHCP hosts files.
+#### Rootless Podman: permissions for remembered devices
 
-Remembered devices persist across container restarts only when `/data` is mounted to a persistent host directory. IPv6 leases without a valid MAC address remain visible but cannot be reliably identified in the MAC-based remembered-device list.
+The application runs as a non-root user inside the container. The
+`/data` directory must be writable so the app can save
+`known-macs.json`. With the supplied image, the application user is
+normally UID `100` and GID `101`.
 
-### UI preferences
+For rootless Podman, set ownership from inside Podman's user namespace:
 
-The **View & Settings** dialog stores supported dashboard preferences centrally in the configured database in versions with database-backed UI settings. This is intended to keep preferences such as language, theme, visible controls, filters, sorting, and group selection consistent across browsers and devices. Persistence of each preference depends on the deployed application version; verify the behavior after upgrading.
+``` bash
+cd /path/to/project
+mkdir -p data
+podman unshare chown -R 100:101 ./data
+```
 
-Use **Reset all view settings** to restore default dashboard preferences. The reset is intended to affect presentation settings only. It must not delete DHCP leases, reservations, remembered devices, DHCP event history, or ntfy configuration.
+Then start or restart the service. This is a one-time ownership fix for
+the data directory; do not remove the directory to fix permissions,
+because it contains the remembered-device list.
 
-Older builds may store some UI preferences in `/data/ui-settings.json`. For those builds, keep `/data` mounted persistently and set `UI_SETTINGS_FILE` if you use a non-default path. UI preferences are separate from `KNOWN_MACS_FILE`, which stores remembered-device state.
+You can test write access with:
 
-## API
+``` bash
+podman exec leaselens-dnsmasq sh -c \
+  'id; ls -ldn /data; touch /data/testfile && rm /data/testfile'
+```
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/` | Web dashboard |
-| `GET` | `/leases` | JSON response containing the leases array |
-| `POST` | `/known-macs` | Mark/unmark MAC addresses or perform supported bulk actions |
+If you use a different image or change its configured user, verify the
+UID/GID with `podman exec leaselens-dnsmasq id` and adapt the ownership
+command accordingly.
+
+### Configure dnsmasq
+
+Configure dnsmasq to write its lease file to the mounted directory:
+
+``` ini
+dhcp-leasefile=/var/lib/dnsmasq/dnsmasq.leases
+```
+
+If you use a separate DHCP hosts file, configure that too:
+
+``` ini
+dhcp-hostsfile=/var/lib/dnsmasq/dnsmasq.dhcphosts
+```
+
+Create the directory before restarting dnsmasq:
+
+``` bash
+sudo mkdir -p /var/lib/dnsmasq
+```
+
+After changing the configuration, restart dnsmasq and verify that the
+files exist and contain the expected data.
+
+## Using the interface
+
+-   Use the search box to filter by hostname, IP, MAC address, lease
+    time, status, or reservation state.
+-   Use the IP-version selector to show all leases, IPv4 only, or IPv6
+    only.
+-   Use the reservation selector to show all leases, reservations only,
+    or dynamic leases only.
+-   Select a table heading to change the sort order.
+-   Click a row to open device details. Copy buttons are available for
+    hostname, IP, and MAC values.
+-   Click **Refresh** to reload leases and redo device reachability
+    checks. The countdown is updated locally between refreshes;
+    reachability checks are not run every second.
+-   Filter by device status: HTTP/HTTPS responds, ping responds without
+    a web interface, or no ping/web response.
+-   Hover over a status indicator for an explanation of the result.
+-   The page shows the last successful refresh time and a separate
+    loading/error status. If a refresh fails, the previously loaded
+    lease list remains visible.
+-   Copy all device details at once from the details dialog.
+-   A `NEW` label means the MAC address is not currently in the
+    remembered-device list.
+-   In device details, choose **Mark as known** to remember a device or
+    **Mark as new** to remove its MAC from the remembered list.
+-   Choose **Mark reservations known** to remember all currently
+    detected DHCP reservations that have valid MAC addresses.
+-   Choose **Reset remembered** to clear all remembered MAC addresses.
+    The UI asks for confirmation first; devices with valid MAC addresses
+    can be marked as new again.
+
+The remembered list is stored in `known-macs.json` and persists across
+container restarts when `/data` is mounted to a persistent host
+directory. IPv6 leases without a valid MAC address are not marked as new
+because they cannot be reliably identified by the MAC-based list.
+
+### Remembering configured IPv4 reservations
+
+The **Mark reservations known** action processes DHCP reservations
+currently detected in the lease list. The separate **Mark all IPv4
+reservations** action reads the configured DHCP hosts file directly, so
+configured IPv4 reservations are included even when their devices are
+offline. Only entries containing both a valid MAC address and an IPv4
+address are remembered; IPv6-only and ignored entries are skipped. Both
+actions use the same persistent `known-macs.json` list as the per-device
+actions. This bulk action is available in the web interface; its
+availability through the JSON API depends on the actions implemented by
+the running version.
+
+## Endpoints
+
+  -----------------------------------------------------------------------
+  Method                  Path                    Description
+  ----------------------- ----------------------- -----------------------
+  `GET`                   `/`                     Web interface
+
+  `GET`                   `/leases`               JSON response
+                                                  containing the leases
+                                                  array
+
+  `POST`                  `/known-macs`           Mark/unmark MAC
+                                                  addresses or perform
+                                                  bulk actions
+  -----------------------------------------------------------------------
 
 Example:
 
-```bash
+``` bash
 curl http://localhost:3008/leases
 ```
 
-Each object in the `leases` array can include `staticIP`, `leasetime`, `leaseExpiry`, `macAddress`, `ipAddress`, `name`, `webUrl`, `webHostUrl`, `status`, and `isNew`. `leaseExpiry` is the lease-expiry Unix timestamp in seconds; `0` indicates an infinite lease.
+Each object in the `leases` array can include `staticIP`, `leasetime`,
+`leaseExpiry`, `macAddress`, `ipAddress`, `name`, `webUrl`,
+`webHostUrl`, `status`, and `isNew`. `leaseExpiry` is the lease-expiry
+Unix timestamp in seconds; `0` indicates an infinite lease.
 
-`POST /known-macs` accepts JSON. The documented actions are:
+`POST /known-macs` accepts JSON. The `action` values are:
 
-| Action | Example payload | Result |
-|---|---|---|
-| `mark` (default) | `{"mac":"AA:BB:CC:DD:EE:FF","action":"mark"}` | Remember one valid MAC address |
-| `unmark` | `{"mac":"AA:BB:CC:DD:EE:FF","action":"unmark"}` | Remove one MAC address from the remembered list |
-| `reset` | `{"action":"reset"}` | Clear the remembered list |
-| `mark-reservations` | `{"action":"mark-reservations"}` | Remember currently detected DHCP reservations with valid MAC addresses |
+  -------------------------------------------------------------------------------------------------
+  Action                  Payload example                                   Result
+  ----------------------- ------------------------------------------------- -----------------------
+  `mark` (default)        `{"mac":"AA:BB:CC:DD:EE:FF","action":"mark"}`     Remember one valid MAC
+                                                                            address
 
-The `mark-reservations` response includes a `count` field. The web interface's **Mark all IPv4 reservations** button reads the configured hosts file directly; do not assume that this button corresponds to an API action. The API has no authentication.
+  `unmark`                `{"mac":"AA:BB:CC:DD:EE:FF","action":"unmark"}`   Remove one MAC address
+                                                                            from the remembered
+                                                                            list
+
+  `reset`                 `{"action":"reset"}`                              Clear the remembered
+                                                                            list
+
+  `mark-reservations`     `{"action":"mark-reservations"}`                  Remember all currently
+                                                                            detected DHCP
+                                                                            reservations with valid
+                                                                            MAC addresses
+  -------------------------------------------------------------------------------------------------
+
+The `mark-reservations` response also includes a `count` field. The
+documented API actions are `mark`, `unmark`, `reset`, and
+`mark-reservations`; do not assume every web-interface bulk action has a
+matching API action. These endpoints do not provide authentication; keep
+the application on a trusted network and do not expose it directly to
+the public internet.
 
 ## Configuration
 
-| Environment variable | Default | Description |
-|---|---|---|
-| `CONFIG_FILE` | empty | Optional path to the YAML-style configuration file |
-| `HOST` | `0.0.0.0` | Web server listen address |
-| `PORT` | `5000` | Web server port |
-| `DNSMASQ_LEASES_FILE` | `/var/lib/dnsmasq/dnsmasq.leases` | DHCP lease file path |
-| `DNSMASQ_HOSTS_FILE` | `/var/lib/dnsmasq/dnsmasq.dhcphosts` | Optional DHCP hosts file path |
-| `KNOWN_MACS_FILE` | `/data/known-macs.json` | Persistent remembered-MAC list |
-| `UI_SETTINGS_FILE` | Application default | Optional path for legacy file-backed UI preferences |
-| `OUI_DATABASE_FILE` | Auto-detected | Optional path to a local IEEE OUI database; the image includes a database |
-| `LOG_LEVEL` | `INFO` | Minimum verbosity: `DEBUG`, `INFO`, `WARN`, or `ERROR` |
-| `WEB_UI_TIMEOUT` | `500ms` | Timeout for HTTP/HTTPS and hostname checks |
-| `PING_TIMEOUT` | `1200ms` | Timeout for ping checks |
-| `WEB_UI_MAX_WORKERS` | `16` | Maximum concurrent web-interface checks |
-| `APP_VERSION` | Build default | Version shown by the application |
-| `APP_RELEASE_DATE` | Build default | Build/release date shown by the application |
-| `REPO_URL` | `https://github.com/anonymous-writer/leaselens-dnsmasq` | Repository URL shown in the UI |
-| `SYSTEM_NAME` | `LeaseLens` | Optional custom label displayed in the header |
+  ---------------------------------------------------------------------------------------------------------
+  Environment variable    Default                                                   Description
+  ----------------------- --------------------------------------------------------- -----------------------
+  `CONFIG_FILE`           empty                                                     Optional path to the
+                                                                                    YAML-style
+                                                                                    configuration file
 
-The Docker image includes a local IEEE OUI database for manufacturer identification. No external lookup service is required. If manufacturer data cannot be loaded, leases still appear but the manufacturer may show as unknown.
+  `DNSMASQ_LEASES_FILE`   `/var/lib/dnsmasq/dnsmasq.leases`                         Path to the dnsmasq
+                                                                                    lease file
 
-Configuration-file keys and precedence are documented in the [main README](https://github.com/anonymous-writer/leaselens-dnsmasq#configuration). Docker deployments can use environment variables for runtime configuration. Do not assume native-only options are available in the container.
+  `DNSMASQ_HOSTS_FILE`    `/var/lib/dnsmasq/dnsmasq.dhcphosts`                      Path to the optional
+                                                                                    DHCP hosts file
 
-## Database backends
+  `DNSMASQ_INTERFACE`     empty                                                     Native-build DHCP
+                                                                                    interface for the
+                                                                                    optional IPv4
+                                                                                    lease-release action;
+                                                                                    requires
+                                                                                    `dnsmasq-utils` and
+                                                                                    limited sudo permission
 
-LeaseLens uses SQLite by default and also supports optional PostgreSQL. See the [PostgreSQL setup guide](https://github.com/anonymous-writer/leaselens-dnsmasq/blob/main/docs/postgresql.md) for configuration details.
+  `KNOWN_MACS_FILE`       `/data/known-macs.json`                                   Path to the persistent
+                                                                                    remembered-MAC list
 
-PostgreSQL starts with a fresh schema; it does not import SQLite data or legacy files. Back up your database before changing database configuration or upgrading.
+  `OUI_DATABASE_FILE`     auto-detected system path                                 Optional path to a
+                                                                                    local IEEE OUI text
+                                                                                    database used for MAC
+                                                                                    manufacturer lookup
+
+  `HOST`                  `0.0.0.0`                                                 Address the web server
+                                                                                    listens on
+
+  `PORT`                  `5000`                                                    Port the web server
+                                                                                    listens on
+
+  `WEB_UI_TIMEOUT`        `500ms`                                                   Timeout for an
+                                                                                    HTTP/HTTPS or
+                                                                                    hostname-resolution
+                                                                                    check; accepts Go
+                                                                                    durations such as
+                                                                                    `500ms` or seconds such
+                                                                                    as `0.5`
+
+  `PING_TIMEOUT`          `1200ms`                                                  Timeout for a ping
+                                                                                    probe; accepts Go
+                                                                                    durations or a number
+                                                                                    of seconds
+
+  `WEB_UI_MAX_WORKERS`    `16`                                                      Maximum concurrent IP
+                                                                                    web-interface checks
+
+  `APP_VERSION`           `dev`                                                     Version shown by the
+                                                                                    application
+
+  `APP_RELEASE_DATE`      empty                                                     Build/release date
+                                                                                    shown by the
+                                                                                    application
+
+  `REPO_URL`              `https://github.com/anonymous-writer/leaselens-dnsmasq`   Repository URL shown in
+                                                                                    the UI
+
+  `SYSTEM_NAME`           Native: auto-detected; Docker: `LeaseLens`                Optional custom system
+                                                                                    label displayed in the
+                                                                                    header,
+                                                                                    e.g. `Raspberry Pi 5`
+                                                                                    or `Homeserver`
+
+  `LOG_LEVEL`             `INFO`                                                    Minimum log level:
+                                                                                    `DEBUG`, `INFO`,
+                                                                                    `WARN`, or `ERROR`
+  ---------------------------------------------------------------------------------------------------------
+
+For native installs, manufacturer lookup uses an installed local OUI
+database when available (for example, Debian/Raspberry Pi OS package
+`ieee-data`). Set `OUI_DATABASE_FILE` to override its path. Docker
+images include a local IEEE OUI database. If no database is found,
+leases still load and the manufacturer column shows
+"Unknown".`\n`{=tex}`\nFor `{=tex}native builds, the system label is
+detected automatically from the hardware model (when available) and
+hostname. Set `SYSTEM_NAME` or `system_name` in the config file to
+override it. Docker keeps the generic `LeaseLens` label unless
+explicitly configured. The same runtime settings can be supplied in a
+flat YAML-style configuration file. Example:
+[`config.example.yaml`](config.example.yaml). To use it, copy it to a
+path of your choice and launch the binary with
+`--config /path/to/config.yaml` (the supplied systemd unit should point
+to the same path). `CONFIG_FILE` can also specify the file path.
+Supported keys are `host`, `port`, `leases_file`, `hosts_file`,
+`known_macs_file`, `ui_settings_file`, `dhcp_events_file`,
+`dhcp_interface`, `log_level`, `app_version`, `release_date`,
+`repo_url`, and `system_name`. The dashboard language and
+visible-control preferences are stored in `ui_settings_file` (default
+`/data/ui-settings.json`); `UI_SETTINGS_FILE` can override that path for
+Docker/Podman deployments.
+
+Precedence is **defaults \< environment variables \< config file \<
+command-line flags**. Available flags include `--config`, `--host`,
+`--port`, `--leases-file`, `--hosts-file`, `--known-macs-file`,
+`--dhcp-interface`, `--log-level`, `--app-version`, `--release-date`,
+and `--repo-url`.
+
+The native ARM64 and AMD64 builds query `dnsmasq --version` at startup
+and show the detected version in the page footer. This is enabled only
+in the standalone/native build workflow; Docker builds do not show the
+dnsmasq version. If the `dnsmasq` executable is not available in `PATH`,
+the footer omits that part.
+
+### Native version versus Docker version
+
+The native Linux binaries have capabilities that are intentionally not
+enabled in the Docker image. In particular, native builds can detect the
+installed dnsmasq version for the footer and can optionally offer
+**Remove IPv4 lease** when `dhcp_interface` is configured and the
+service account has narrowly scoped permission to run `dhcp_release`.
+These native-only features are described below; do not expect them in
+the Docker container. The normal dashboard, lease viewing, device
+reachability checks, remembered-device actions, and
+configured-reservation handling are available in the Docker version when
+the required files and permissions are provided.
+
+#### Optional native-only IPv4 lease release
+
+The native UI can show **Remove IPv4 lease** below the "Mark as new"
+action in device details. This action is available only when
+`dhcp_interface` (or `DNSMASQ_INTERFACE` / `--dhcp-interface`) is set.
+For example, set `dhcp_interface: "eth1"` in the native `config.yaml`.
+
+The app uses the `dhcp_release` utility from the `dnsmasq-utils`
+package. It asks dnsmasq to release the selected IPv4 lease; it does not
+edit the lease file by hand and does not block the device from
+reconnecting. A still-connected client may obtain a new lease
+immediately. IPv6 entries do not show this action.
+
+On Debian/Raspberry Pi OS, install the utility and grant the service
+user (shown here as `pi`) permission to run only this utility without a
+password:
+
+``` bash
+sudo apt-get install dnsmasq-utils
+sudo visudo -f /etc/sudoers.d/leaselens-dnsmasq
+```
+
+Add this line to the sudoers file:
+
+``` sudoers
+pi ALL=(root) NOPASSWD: /usr/bin/dhcp_release eth1 *
+```
+
+Then validate the file and set its permissions:
+
+``` bash
+sudo visudo -cf /etc/sudoers.d/leaselens-dnsmasq
+sudo chmod 0440 /etc/sudoers.d/leaselens-dnsmasq
+```
+
+Change `pi` to the account that runs the user service and replace `eth1`
+if your DHCP interface has another name. The application calls
+`sudo -n`, so it will never prompt for a password. Keep the web
+interface on localhost or a trusted network: the app's endpoints do not
+provide authentication. The button is not included in Docker builds. See
+[`docs/native-ipv4-lease-release.md`](docs/native-ipv4-lease-release.md)
+for the complete native setup.
+
+The `dnsmasq.dhcphosts` file is optional. Without it, the UI still
+works, but reservations defined only in that file cannot be identified.
+Leases with a lease time of `0` are displayed as `Never` and treated as
+reservations.
 
 ## Logging
 
-Set `LOG_LEVEL` to control the minimum verbosity:
+The application uses structured-by-level log messages with timestamps.
+Configure the minimum verbosity with the `LOG_LEVEL` environment
+variable:
 
-| Level | Messages shown | Typical use |
-|---|---|---|
-| `DEBUG` | Debug, info, warnings, and errors | Temporary troubleshooting |
-| `INFO` | Info, warnings, and errors | Normal operation (default) |
-| `WARN` | Warnings and errors | Quieter operation |
-| `ERROR` | Errors only | Important failures only |
+  -----------------------------------------------------------------------
+  `LOG_LEVEL`             Messages shown          Typical use
+  ----------------------- ----------------------- -----------------------
+  `DEBUG`                 Debug, info, warnings,  Temporary
+                          and errors              troubleshooting
 
-If `LOG_LEVEL` is unset or contains an unknown value, the application uses `INFO`.
+  `INFO`                  Info, warnings, and     Recommended for normal
+                          errors                  operation (default)
 
-Example:
+  `WARN`                  Warnings and errors     Quieter operation
 
-```yaml
+  `ERROR`                 Errors only             Only important failures
+  -----------------------------------------------------------------------
+
+If `LOG_LEVEL` is unset or contains an unknown value, the application
+uses `INFO`.
+
+Example in `compose.yaml`:
+
+``` yaml
+services:
+  leaselens-dnsmasq:
+    environment:
+      PORT: "3008"
+      LOG_LEVEL: "INFO"
+```
+
+Use `DEBUG` temporarily when troubleshooting:
+
+``` yaml
 environment:
   PORT: "3008"
   LOG_LEVEL: "DEBUG"
 ```
 
-View container logs:
+View the container logs with Docker or Podman:
 
-```bash
+``` bash
 docker logs -f leaselens-dnsmasq
+# or
+podman logs -f leaselens-dnsmasq
 ```
 
-Routine refreshes and individual device details are intentionally not logged by default to avoid noisy logs and unnecessary exposure of network information.
+Example messages:
 
-## Image tags and releases
-
-**Docker Hub — stable releases**
-
-```bash
-docker pull 1968michael1968/leaselens-dnsmasq:latest
+``` text
+2026/10/10 16:53:38 [INFO] server listening on 0.0.0.0:3008 version=2.1.0-beta.1
+2026/10/10 16:53:39 [WARN] optional DHCP hosts file is unavailable
+2026/10/10 16:53:40 [ERROR] cannot read DHCP leases: permission denied
 ```
 
-**GitHub Container Registry — beta and development**
+These lines illustrate the intended format. A message appears only where
+the corresponding logging function (`LogDebugf`, `LogInfof`, `LogWarnf`,
+or `LogErrorf`) is called in the source code. The application does not
+automatically log every HTTP request or every lease. Routine refreshes
+and individual device details are intentionally not logged by default to
+avoid noisy logs and unnecessary exposure of network information.
 
-```bash
-docker pull ghcr.io/anonymous-writer/leaselens-dnsmasq:go-beta
+Keep `INFO` for everyday operation and switch to `DEBUG` temporarily
+when extra diagnostic detail is needed.
+
+## Standalone binary
+
+The Go executable embeds `templates/index.html` and all files in
+`static/`. After building, those files do not need to be copied
+alongside the executable.
+
+``` bash
+go test ./...
+go build -trimpath -o leaselens-dnsmasq .
 ```
 
-The `go-beta` tag tracks the latest published pre-release. Stable GHCR releases use version tags and `latest`; pre-releases do not update the GHCR `latest` tag.
+Run the standalone executable with command-line options:
 
-Publishing a GitHub Release publishes a GHCR image through the repository's Docker workflow. It does not publish a Docker Hub image unless a separate Docker Hub publishing workflow is configured. Use a version-specific tag when you need a fixed version, and check the [Docker Hub tags page](https://hub.docker.com/r/1968michael1968/leaselens-dnsmasq/tags) to confirm which versions have actually been published there.
+``` bash
+./leaselens-dnsmasq \
+  --host 0.0.0.0 \
+  --port 3008 \
+  --leases-file /var/lib/dnsmasq/dnsmasq.leases \
+  --hosts-file /var/lib/dnsmasq/dnsmasq.dhcphosts \
+  --known-macs-file ./data/known-macs.json \
+  --log-level INFO
+```
 
-## Security
+All options are optional. `./leaselens-dnsmasq --help` lists them.
+Command-line flags override their matching environment variables;
+environment-variable configuration remains supported. Only the dnsmasq
+input files and the remembered-device JSON file must exist outside the
+executable. The directory holding `known-macs.json` must be writable by
+the app.
 
-LeaseLens does not provide built-in authentication for its web interface or API. Keep it on a trusted network and do not expose it directly to the public internet. Host networking improves LAN reachability but does not add access control.
+### Prebuilt native Linux binaries (ARM64 and AMD64)
 
-If you put LeaseLens behind a reverse proxy, configure the proxy and application security settings according to the [HTTPS-secure mode documentation in the main README](https://github.com/anonymous-writer/leaselens-dnsmasq#https-secure-mode-behind-a-reverse-proxy). In proxy-secure mode, bind LeaseLens to loopback (`HOST=127.0.0.1`) unless the application port is otherwise firewalled. Keep your authentication layer (for example, Authelia) configured on the reverse proxy; the proxy-token mechanism is not a replacement for authentication.
+The native workflow supports two modes:
 
-## Source code and license
+-   **Manual run:** Go tests and `go vet` run first; ARM64 and AMD64
+    binaries are then uploaded as temporary GitHub Actions artifacts
+    (retained for 30 days). This does not build or publish a Docker
+    image.
+-   **Published GitHub Release or Pre-release:** the same native builds
+    run automatically and attach both `.tar.gz` archives plus
+    `SHA256SUMS` to the matching release.
 
-- Source code: https://github.com/anonymous-writer/leaselens-dnsmasq
-- License: MIT — see [LICENSE](https://github.com/anonymous-writer/leaselens-dnsmasq/blob/main/LICENSE).
+For a manual build, run **GitHub → Actions → Build leaselens-dnsmasq
+native binaries → Run workflow**. For a published pre-release or stable
+release, download the files directly from that release's **Assets**
+section. Choose the artifact or release asset matching the target
+machine:
 
-For native installation, standalone binaries, DHCP event history, ntfy notifications, and the full project configuration reference, see the [main GitHub README](https://github.com/anonymous-writer/leaselens-dnsmasq).
+  ---------------------------------------------------------------------------------
+  Artifact                          Target architecture     Typical systems
+  --------------------------------- ----------------------- -----------------------
+  `leaselens-dnsmasq-linux-arm64`   ARM64 / AArch64         64-bit Raspberry Pi OS
+                                                            and other 64-bit ARM
+                                                            Linux systems
+
+  `leaselens-dnsmasq-linux-amd64`   AMD64 / x86_64          64-bit Intel/AMD Linux
+                                                            PCs and servers
+  ---------------------------------------------------------------------------------
+
+GitHub downloads each artifact as a ZIP containing a `.tar.gz` archive.
+Extract the downloaded ZIP first, then extract the matching `.tar.gz`
+file. For ARM64, for example:
+
+``` bash
+tar -xzf leaselens-dnsmasq-linux-arm64.tar.gz
+chmod +x leaselens-dnsmasq-linux-arm64
+./leaselens-dnsmasq-linux-arm64 --config /home/pi/Dnsmasq-Leases-UI/config.yaml
+```
+
+For an AMD64 Linux host, use the `leaselens-dnsmasq-linux-amd64.tar.gz`
+archive and run `./leaselens-dnsmasq-linux-amd64` instead. The archive
+contains only the executable; the HTML, JavaScript, and other web assets
+are embedded in it. The downloaded artifacts are retained by GitHub
+Actions for 30 days.
+
+For published GitHub Releases and Pre-releases, the native build embeds
+the release tag (without the leading `v`) and the release publication
+date, so the footer shows the correct version and date instead of
+`vdev`. A manual workflow run from a branch with the `release_tag` input
+left empty uses `dev` and the source commit date. To rebuild an existing
+release using the latest source, run the workflow from the updated
+branch and set `release_tag` to the existing tag (for example
+`v2.1.1-Beta.2`); the workflow embeds the right version/date and
+replaces the native assets on that release. When you manually run the
+workflow against an existing release tag, it embeds that tag and looks
+up the actual GitHub publication date (falling back to the tagged commit
+date if no published release exists). These embedded values are
+defaults; `APP_VERSION`, `APP_RELEASE_DATE`, the configuration file, and
+command-line flags can still override them according to the normal
+precedence. The native executable also checks for `dnsmasq --version` at
+startup and displays the detected version in the interface footer,
+provided `dnsmasq` is installed and available through `PATH`. This
+native-only dnsmasq version display is not enabled in Docker builds. The
+external dnsmasq lease file, optional DHCP hosts file, and writable
+remembered-device JSON file still need to be accessible at the
+configured paths.
+
+### Build the Docker image locally
+
+The Dockerfile must copy all Go source files and build the package with
+`go build .` (or equivalent). Do not use `go build ./main.go`, because
+that compiles only the named file and omits the other source files.
+
+``` bash
+docker build -t leaselens-dnsmasq:local .
+docker run --rm --network host \
+  -e PORT=3008 \
+  -v /var/lib/dnsmasq:/var/lib/dnsmasq:ro \
+  -v ./data:/data \
+  leaselens-dnsmasq:local
+```
+
+## Docker image publishing
+
+Publishing a GitHub Pre-release or stable Release triggers the Docker
+publishing workflow after the release is published. It builds and pushes
+a multi-architecture image (`linux/amd64` and `linux/arm64`) to GitHub
+Container Registry (GHCR).
+
+  -----------------------------------------------------------------------
+  Release type            Tags published to GHCR  Effect on `latest`
+  ----------------------- ----------------------- -----------------------
+  Pre-release,            `2.2.1-beta.1` and      Does not change
+  e.g. `v2.2.1-beta.1`    `go-beta`               `latest`
+
+  Stable release,         `2.2.1`, `2.2`, `2`,    Updates `latest` to the
+  e.g. `v2.2.1`           and `latest`            stable release
+  -----------------------------------------------------------------------
+
+Use the version-specific tag when you need a fixed version. The moving
+`go-beta` tag is intended for testing the most recent pre-release. The
+Docker release workflow pushes to GHCR; it does not publish Docker Hub
+images.
+
+## Pre-release and stable release flow
+
+Use distinct SemVer tags for a pre-release and its later stable release.
+For example, publish `v2.2.1-beta.1` as a pre-release first, then
+publish `v2.2.1` as the stable release when ready. Do not reuse or move
+the pre-release tag for the stable release.
+
+When a release is **published** (not merely saved as a draft), the
+workflows build and attach these assets:
+
+-   `leaselens-dnsmasq-linux-arm64.tar.gz`
+-   `leaselens-dnsmasq-linux-amd64.tar.gz`
+-   `SHA256SUMS`
+
+The native workflow builds the matching source at the release tag. The
+Docker workflow publishes a prerelease-specific version tag and
+`go-beta` for pre-releases, while stable releases receive SemVer aliases
+and `latest`. GitHub documents `release: types: [published]` as the
+event that catches both stable and pre-release publication, including
+pre-releases published from drafts. See [GitHub's release event
+documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
+
+### Release Please token
+
+The `release-please.yml` workflow uses the repository secret
+`RELEASE_PLEASE_TOKEN`. Create this under **Settings → Secrets and
+variables → Actions → New repository secret**. It should be a
+fine-grained token or GitHub App token with permission to create/update
+pull requests, contents, and releases. This lets the release created by
+Release Please trigger the release build workflows; GitHub suppresses
+most new workflow runs caused by events created with the default
+`GITHUB_TOKEN`. If you create and publish releases manually in the
+GitHub UI, this secret is not needed for that manual publishing path,
+but the current Release Please workflow will still need it to operate.
+
+## Source layout
+
+The executable entry point is `main.go`. Application code is grouped by
+responsibility under `internal/app/`. The embedded web assets live in
+`templates/` and `static/`; Docker builds and standalone binaries
+include these files during compilation, so they are not required at
+runtime beside the executable.
+
+## IPv6 notes
+
+IPv6 leases are displayed when present in the dnsmasq lease file. The
+app encloses IPv6 literals in brackets when used in HTTP URLs, as
+required by URL syntax. Detection of web interfaces requires the
+container to reach the relevant LAN IPv6 addresses; host networking is
+one option when bridge networking lacks the required IPv6 route. IPv6
+entries without valid MAC addresses are not marked as new.
+
+## Credits
+
+-   Theme-toggle icons: [Feather Icons](https://feathericons.com/) (MIT)
+-   Favicon: [Lucide](https://lucide.dev/) (ISC)
+
+See [NOTICE](NOTICE) for attribution details.
+
+## Contributing
+
+Issues and pull requests are welcome. Please include reproduction steps
+for bugs and add tests where practical.
+
+## License
+
+MIT --- see [LICENSE](LICENSE).
+
+### UI settings
+
+The **Ansicht & Einstellungen** dialog stores supported dashboard
+preferences centrally in the configured database in versions with
+database-backed UI settings. This is intended to keep preferences such
+as language, theme, visible controls, filters, sorting, and group
+selection consistent across browsers and devices. Persistence of each
+preference depends on the deployed application version; verify
+group-filter persistence after upgrading.
+
+Use **Alle Ansichtseinstellungen zurücksetzen** to restore default
+dashboard preferences. The reset is intended to affect presentation
+settings only. It must not delete DHCP leases, reservations, remembered
+devices, DHCP event history, or ntfy configuration.
+
+Older builds may store some UI preferences in `/data/ui-settings.json`.
+For those builds, keep `/data` mounted persistently and set
+`UI_SETTINGS_FILE` if you use a non-default path. UI preferences are
+separate from `KNOWN_MACS_FILE`, which stores remembered-device state.
+Unsupported runtime-specific features are shown disabled in the feature
+list.
+
+## Database backends
+
+LeaseLens supports SQLite by default and optional PostgreSQL. See
+[docs/postgresql.md](docs/postgresql.md) for configuration. PostgreSQL
+starts with a fresh schema; it does not import SQLite or legacy files.
+
+## Optional ntfy notifications (native install)
+
+The native Go executable can send ntfy notifications directly.
+Notification decisions use the `known_devices` table in the configured
+SQLite or PostgreSQL database; `known-macs.json` is not the source of
+truth for this notification decision. Add these flat keys to your
+existing `config.yaml`:
+
+``` yaml
+ntfy_enabled: true
+ntfy_url: "https://ntfy.sh/your-private-topic"
+ntfy_token: ""
+ntfy_notify_unknown_ipv4: true
+ntfy_priority: "high"
+ntfy_timeout_seconds: 10
+```
+
+Protect the config file if it contains a token (`chmod 600`). Configure
+dnsmasq separately with a DHCP event hook, for example:
+
+``` ini
+dhcp-script=/home/pi/leaselens-dnsmasq/dnsmasq-ntfy-dhcp-ipv4.sh
+```
+
+The script path must match the installed file, be executable, and be
+configured in dnsmasq itself; a YAML setting alone does not change
+`dnsmasq.conf`. In the Raspberry Pi setup described in this project, the
+script is located at
+`/home/pi/leaselens-dnsmasq/dnsmasq-ntfy-dhcp-ipv4.sh`. If your paths
+differ, adjust the dnsmasq configuration and LeaseLens config for your
+version. Set `LEASELENS_BINARY` and `LEASELENS_CONFIG` if the defaults
+(`/usr/bin/leaselens-dnsmasq` and
+`/home/pi/leaselens-dnsmasq/config.yaml`) differ.
+
+**Intended behavior:** setting a device's status to `NEW` by itself
+should not send a notification. A notification should be sent when a
+device whose status is `NEW` subsequently announces itself through DHCP.
+Ordinary lease renewals should not cause repeated alerts. DHCP event
+types can vary (`add` and `old`), so verify this behavior with the exact
+release deployed; do not assume every build implements the intended
+trigger identically. Notification failures should be logged and must not
+block dnsmasq processing.
+
+### DHCP-Ereignishistorie in der Datenbank
+
+DHCP-Ereignisse werden in `dhcp_events` gespeichert. Eine vorhandene
+`dhcp-events.log` wird beim Öffnen der Datenbank importiert; wiederholte
+Importe erzeugen aufgrund des Event-Hashes keine Duplikate. Die
+Datenbankhistorie ist standardmäßig auf 100 Einträge begrenzt. Der
+Grenzwert kann in `config.yaml` angepasst werden:
+
+``` yaml
+dhcp_events_max_entries: 100
+```
+
+Erlaubt sind Werte von 1 bis 100000. Die ältesten Datenbankeinträge
+werden entfernt, wenn der Grenzwert überschritten ist. Die ursprüngliche
+Logdatei wird nicht gelöscht.
+
+
+## HTTPS-secure mode behind a reverse proxy
+
+LeaseLens can optionally reject requests unless they arrive from a local reverse
+proxy that marks the original request as HTTPS and supplies a shared secret.
+
+Set `https_secure: true` and configure `https_secure_token_file`, `https_secure_token_validity` and `https_secure_token_grace` in the config file, or use `HTTPS_SECURE=true`, `HTTPS_SECURE_TOKEN_FILE`, `HTTPS_SECURE_TOKEN_VALIDITY` and `HTTPS_SECURE_TOKEN_GRACE`. The app generates and rotates its own 100-character token. Include `nginx/proxy-token.lua.conf` in the OpenResty proxied location to read the current token on every request; no NGINX reload is needed. Ensure NGINX can read the file (mode `0640`, shared group) and LeaseLens can write it. The previous token remains accepted during the grace period. In proxy-secure mode, bind LeaseLens to loopback (`HOST=127.0.0.1`) unless the application port is otherwise firewalled.
+The Lua snippet sets `X-LeaseLens-Proxy-Token` dynamically. Keep `proxy_set_header X-Forwarded-Proto $scheme;` in the protected location. Ensure the token directory has a shared group (for example setgid) so the app-created `0640` file is readable by the NGINX worker. Requests still require a loopback peer and `X-Forwarded-Proto: https`. This is not a replacement for Authelia: keep Authelia configured on the reverse proxy.
+
+### Shared token directory on a native Linux installation
+
+For a native LeaseLens service running as `pi` and an NGINX worker running as
+`www-data`, use a setgid directory so atomically replaced token files inherit
+the `www-data` group. For example:
+
+```sh
+sudo install -d -o pi -g www-data -m 2750 /etc/nginx/secrets
+```
+
+Configure `https_secure_token_file` as
+`/etc/nginx/secrets/leaselens-proxy-token.json`. The application creates the
+file as mode `0640`; the directory's setgid bit makes its group `www-data`.
+NGINX can read it, and the `pi` owner can atomically replace it during rotation.
+Do not pre-create an empty file as root. If an empty file already exists, the
+application initializes it automatically at startup. Non-empty invalid JSON
+continues to fail closed and must be investigated rather than silently replaced.
