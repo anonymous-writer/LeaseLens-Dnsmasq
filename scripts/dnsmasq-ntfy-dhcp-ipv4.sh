@@ -11,7 +11,7 @@ HOSTNAME=${4:-}
 # Pass all actions to Go so it can log and decide which events merit a notification.
 echo "leaselens-ntfy: DHCP event action=$ACTION mac=$MAC ip=$IP hostname=$HOSTNAME" >&2
 
-BINARY=${LEASELENS_BINARY:-/usr/bin/leaselens-dnsmasq}
+BINARY=${LEASELENS_BINARY:-/home/pi/.local/bin/leaselens-dnsmasq}
 CONFIG=${LEASELENS_CONFIG:-/home/pi/leaselens-dnsmasq/config.yaml}
 
 if [ ! -x "$BINARY" ]; then
