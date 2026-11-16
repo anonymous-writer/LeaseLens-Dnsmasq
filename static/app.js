@@ -851,6 +851,10 @@ async function load() {
 document.querySelector('#refresh-button').addEventListener('click', load);
 window.addEventListener('app-language-change', () => {
   render();
+  // Translation updates static labels; restore the live multi-select summaries
+  // from the currently selected options after every language change.
+  syncMultiFilter('status-filter');
+  syncMultiFilter('group-filter');
   updateRefreshMeta();
   const dialog = document.querySelector('#device-details');
   if (dialog.open) refreshOpenDetails(dialog.dataset.mac || '');
@@ -1038,8 +1042,10 @@ window.setInterval(updateLeaseCountdowns, COUNTDOWN_RENDER_INTERVAL_MS);
       settings = { language: loaded.language || 'de', visible: loaded.visible || {}, preferences: { ...DEFAULT_VIEW_PREFERENCES, ...(loaded.preferences || {}), ...localPreferenceChanges } };
       // If the user changed a preference while the initial GET was in flight,
       // retain that newer local value rather than replacing it with stale data.
-      applyViewPreferences(settings.preferences);
+      // Apply the language first: setLanguage translates static data-i18n
+      // nodes and would otherwise overwrite the dynamic multi-filter labels.
       if (window.DnsmasqI18n) window.DnsmasqI18n.setLanguage(settings.language);
+      applyViewPreferences(settings.preferences);
     } catch (err) {
       // The UI remains usable with defaults if the settings API is unavailable.
       settings = { language: (window.DnsmasqI18n && window.DnsmasqI18n.language) || 'de', visible: {}, preferences: { ...DEFAULT_VIEW_PREFERENCES, ...localPreferenceChanges } };
