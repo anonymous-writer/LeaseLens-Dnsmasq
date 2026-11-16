@@ -338,7 +338,10 @@ function render() {
   groupSelect.replaceChildren(new Option(t('allGroups'), 'all'));
   groups.forEach(group => groupSelect.add(new Option(group, group)));
   // Preserve valid selections as the lease/group data refreshes.
-  groupFilter = selectedGroups.includes('all') ? ['all'] : selectedGroups.filter(group => groups.includes(group));
+  // Keep saved selections even while lease data is temporarily empty or a
+  // selected group is not present in the current refresh. Otherwise an early
+  // render could silently reset the user's persisted multi-selection.
+  groupFilter = selectedGroups.includes('all') ? ['all'] : selectedGroups;
   if (groupFilter.length === 0) groupFilter = ['all'];
   [...groupSelect.options].forEach(option => { option.selected = groupFilter.includes(option.value); });
   syncMultiFilter('group-filter');
@@ -906,13 +909,32 @@ window.setInterval(updateLeaseCountdowns, COUNTDOWN_RENDER_INTERVAL_MS);
   const list = document.querySelector('#settings-feature-list');
   const visible = {};
   let settings = { language: 'de', visible: {}, preferences: { ...DEFAULT_VIEW_PREFERENCES } };
-  let savePreferencesTimer = null;
+  // Serialize writes so rapid filter changes cannot overwrite a newer state
+  // with an older request. keepalive lets the small settings request finish
+  // when the user immediately refreshes or navigates away.
+  let settingsSaveQueue = Promise.resolve();
+  let settingsLoaded = false;
+  const localPreferenceChanges = {};
+  function queueSettingsSave() {
+    const payload = JSON.stringify(settings);
+    const request = settingsSaveQueue.catch(() => {}).then(async () => {
+      const response = await fetch(API, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    });
+    settingsSaveQueue = request;
+    return request;
+  }
   persistViewPreferences = patch => {
+    Object.assign(localPreferenceChanges, patch);
     settings.preferences = { ...(settings.preferences || DEFAULT_VIEW_PREFERENCES), ...patch };
-    window.clearTimeout(savePreferencesTimer);
-    savePreferencesTimer = window.setTimeout(async () => {
-      try { await fetch(API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) }); } catch (_) { /* Saved again when settings are explicitly saved. */ }
-    }, 300);
+    if (settingsLoaded) {
+      queueSettingsSave().catch(error => console.error('LeaseLens: view preferences could not be saved:', error));
+    }
   };
   const settingsText = {
     de: { title:'Ansicht & Einstellungen', button:'Einstellungen', description:'Wähle, welche Bedienelemente angezeigt werden. Grau markierte Funktionen werden von dieser Installation nicht unterstützt.', language:'Sprache', functions:'Buttons und Menüpunkte', save:'Speichern', reset:'Alle Ansichtseinstellungen zurücksetzen', resetConfirm:'Alle Ansichtseinstellungen auf Standard zurücksetzen? Gerätedaten bleiben erhalten.', saving:'Speichere…', saved:'Gespeichert', failed:'Speichern fehlgeschlagen – Datenbankverbindung prüfen.', unavailable:'In dieser Installation nicht verfügbar.', features:{'summary-total-card':['Leases gesamt','Gesamtzahl aller erkannten Leases anzeigen.'],'summary-online-card':['Online · Web erreichbar','Anzahl der Geräte mit erreichbarer Weboberfläche anzeigen.'],'summary-ping-card':['Ping erreichbar','Anzahl der per Ping erreichbaren Geräte anzeigen.'],'summary-offline-card':['Keine Antwort','Anzahl der Geräte ohne Antwort anzeigen.'],'summary-expiring-card':['Läuft in 24 Stunden ab','Anzahl der in den nächsten 24 Stunden auslaufenden Leases anzeigen.'],'search':['Lease-Suche','Geräte anhand der Lease-Daten filtern.'],'ip-filter':['IP-Filter','Alle IPs, IPv4 oder IPv6 anzeigen.'],'reservation-filter':['Lease-Filter','Reservierungen oder dynamische Leases auswählen.'],'status-filter':['Status-Filter','Nach Online-, Ping- oder Offline-Status filtern.'],'group-filter':['Gruppenfilter','Geräte nach Gruppe filtern.'],'status-column':['Statusspalte','Status und Erreichbarkeit der Geräte anzeigen.'],'ip-column':['IP-Adresse','Die IP-Adresse anzeigen.'],'mac-column':['MAC-Adresse','Die MAC-Adresse anzeigen.'],'vendor-column':['Hersteller','Den ermittelten Gerätehersteller anzeigen.'],'name-column':['Name','Den Gerätenamen anzeigen.'],'group-column':['Gruppenspalte','Die Gruppenspalte in der Lease-Tabelle anzeigen.'],'reservation-column':['DHCP-Reservierung','Anzeigen, ob eine DHCP-Reservierung besteht.'],'lease-expiry-column':['Lease läuft ab','Die verbleibende Lease-Laufzeit anzeigen.'],'dhcp-event-column':['Letztes DHCP-Ereignis','Das letzte DHCP-Ereignis anzeigen.'],'mark-reservations-button':['Reservierungen merken','Erkannte DHCP-Reservierungen als bekannt markieren.'],'mark-all-ipv4-reservations-button':['Alle IPv4-Reservierungen merken','Reservierungen aus der DHCP-Hosts-Datei übernehmen.'],'reset-known-button':['Merkliste zurücksetzen','Alle gespeicherten bekannten Geräte vergessen.'],'theme-toggle':['Design umschalten','Zwischen hellem und dunklem Design wechseln.'],'release-lease':['IPv4-Lease freigeben','Native Funktion; benötigt Native-Build und konfigurierte DHCP-Schnittstelle.'],'dhcp-events':['DHCP-Ereignisprotokoll','Zeigt die letzten DHCP-Ereignisse aus der Datenbank.']} },
@@ -1005,8 +1027,7 @@ window.setInterval(updateLeaseCountdowns, COUNTDOWN_RENDER_INTERVAL_MS);
   }
 
   async function saveSettingsToDatabase() {
-    const response = await fetch(API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    await queueSettingsSave();
   }
 
   async function loadSettings() {
@@ -1014,12 +1035,18 @@ window.setInterval(updateLeaseCountdowns, COUNTDOWN_RENDER_INTERVAL_MS);
       const response = await fetch(API, { cache: 'no-store' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const loaded = await response.json();
-      settings = { language: loaded.language || 'de', visible: loaded.visible || {}, preferences: { ...DEFAULT_VIEW_PREFERENCES, ...(loaded.preferences || {}) } };
+      settings = { language: loaded.language || 'de', visible: loaded.visible || {}, preferences: { ...DEFAULT_VIEW_PREFERENCES, ...(loaded.preferences || {}), ...localPreferenceChanges } };
+      // If the user changed a preference while the initial GET was in flight,
+      // retain that newer local value rather than replacing it with stale data.
       applyViewPreferences(settings.preferences);
       if (window.DnsmasqI18n) window.DnsmasqI18n.setLanguage(settings.language);
     } catch (err) {
-      // The UI remains usable with defaults if the settings file is read-only/unavailable.
-      settings = { language: (window.DnsmasqI18n && window.DnsmasqI18n.language) || 'de', visible: {}, preferences: { ...DEFAULT_VIEW_PREFERENCES } };
+      // The UI remains usable with defaults if the settings API is unavailable.
+      settings = { language: (window.DnsmasqI18n && window.DnsmasqI18n.language) || 'de', visible: {}, preferences: { ...DEFAULT_VIEW_PREFERENCES, ...localPreferenceChanges } };
+    }
+    settingsLoaded = true;
+    if (Object.keys(localPreferenceChanges).length > 0) {
+      queueSettingsSave().catch(error => console.error('LeaseLens: pending view preferences could not be saved:', error));
     }
     document.querySelector('#settings-language').value = settings.language;
     applySettingsLanguage(); renderFeatures(); applyVisibility(); applyColumnVisibility();
