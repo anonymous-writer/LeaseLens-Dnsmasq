@@ -334,15 +334,21 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
     </select>
 
     <!-- Filtert nach dem Ergebnis der letzten Statusprüfung. -->
-    <select id="status-filter" aria-label="Filter by device status" data-i18n-aria-label="statusFilterTitle" title="Filter by device status" data-i18n-title="statusFilterTitle">
+    <div class="multi-filter" id="status-filter-wrap">
+      <button class="multi-filter-trigger" id="status-filter-trigger" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="status-filter-menu"><span id="status-filter-label" data-i18n="allStatuses">All statuses</span><span class="multi-filter-caret" aria-hidden="true">▾</span></button>
+      <div class="multi-filter-menu" id="status-filter-menu" role="group" aria-label="Filter by device status" data-i18n-aria-label="statusFilterTitle"></div>
+    </div>
+    <select id="status-filter" multiple hidden aria-hidden="true" tabindex="-1" aria-label="Filter by device status" data-i18n-aria-label="statusFilterTitle" title="Filter by device status">
       <option value="all" data-i18n="allStatuses">All statuses</option>
       <option value="online" data-i18n="webOnlineFilter">HTTP/HTTPS responds</option>
       <option value="reachable" data-i18n="pingOnlyFilter">Ping responds, no web UI</option>
       <option value="offline" data-i18n="noResponseFilter">No ping or web response</option>
     </select>
-    <select id="group-filter" multiple size="4" aria-label="Filter by group (multiple selection)" title="Mehrere Gruppen mit Strg (Windows/Linux) bzw. Cmd (macOS) auswählen; ohne Auswahl werden alle angezeigt." hidden>
-      <option value="all">All groups</option>
-    </select>
+    <div class="multi-filter" id="group-filter-wrap" hidden>
+      <button class="multi-filter-trigger" id="group-filter-trigger" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="group-filter-menu"><span id="group-filter-label" data-i18n="allGroups">All groups</span><span class="multi-filter-caret" aria-hidden="true">▾</span></button>
+      <div class="multi-filter-menu" id="group-filter-menu" role="group" aria-label="Filter by group"></div>
+    </div>
+    <select id="group-filter" multiple hidden aria-hidden="true" tabindex="-1" aria-label="Filter by group" title="Filter by group"><option value="all" data-i18n="allGroups">All groups</option></select>
 
     <!-- Refresh wird in app.js verdrahtet; es ist kein automatischer Polling-Timer. -->
     <button id="refresh-button" type="button" title="Refresh" data-i18n-title="refresh" aria-label="Refresh" data-i18n-aria-label="refresh"><span class="refresh-icon" aria-hidden="true">↻</span> <span data-i18n="refresh">Refresh</span></button>
@@ -473,3 +479,16 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
 
 </body>
 </html>
+/* Accessible checkbox dropdowns for multi-select filters. */
+.multi-filter { position:relative; min-width:0; width:100%; }
+.multi-filter-trigger { display:flex; align-items:center; justify-content:space-between; gap:.6rem; width:100%; min-width:0; text-align:left; }
+.multi-filter-trigger > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.multi-filter-caret { color:var(--muted); flex:0 0 auto; }
+.multi-filter-menu { display:none; position:absolute; top:calc(100% + .3rem); left:0; right:0; z-index:60; max-height:min(19rem,55vh); overflow-y:auto; padding:.3rem; background:var(--surface-raised); border:1px solid var(--border); border-radius:9px; box-shadow:var(--shadow); }
+.multi-filter.open .multi-filter-menu { display:block; }
+.multi-filter-option { display:flex; align-items:center; gap:.55rem; width:100%; min-height:2rem; padding:.38rem .5rem; border-radius:6px; color:var(--fg); cursor:pointer; font-size:.84rem; white-space:normal; }
+.multi-filter-option:hover { background:color-mix(in srgb,var(--accent) 13%,var(--surface)); }
+.multi-filter-option input { width:1rem; height:1rem; margin:0; accent-color:var(--accent); flex:0 0 auto; }
+.multi-filter-option.is-all { border-bottom:1px solid var(--border); margin-bottom:.2rem; padding-bottom:.5rem; }
+#status-filter[hidden],#group-filter[hidden] { display:none!important; }
+
