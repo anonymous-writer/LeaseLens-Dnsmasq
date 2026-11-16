@@ -37,7 +37,7 @@ function syncMultiFilter(selectId) {
     ? allText
     : chosen.length === 1
       ? ([...select.options].find(option => option.value === chosen[0])?.textContent || chosen[0])
-      : `${chosen.length} ausgewählt`;
+      : t('selectedCount', { count: chosen.length });
   menu.replaceChildren();
   [...select.options].forEach(option => {
     const row = document.createElement('label');
