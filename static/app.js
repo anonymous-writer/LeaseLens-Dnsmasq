@@ -12,14 +12,96 @@ const LANGUAGE_API = () => window.DnsmasqI18n;
 const t = (key, variables) => LANGUAGE_API().t(key, variables);
 const COUNTDOWN_RENDER_INTERVAL_MS = 1000;
 const DEFAULT_SORT = { column: 'ipAddress', dir: 'asc' };
-const DEFAULT_VIEW_PREFERENCES = { theme: 'dark', search: '', ipFilter: 'all', reservationFilter: 'all', statusFilter: 'all', groupFilter: 'all', sort: DEFAULT_SORT };
+const DEFAULT_VIEW_PREFERENCES = { theme: 'dark', search: '', ipFilter: 'all', reservationFilter: 'all', statusFilter: ['all'], groupFilter: ['all'], sort: DEFAULT_SORT };
 
 let leases = [];
 let filterQuery = '';
 let ipFilter = 'all';
 let reservationFilter = 'all';
-let statusFilter = 'all'; let groupFilter = 'all';
+let statusFilter = ['all']; let groupFilter = ['all'];
 let sort = loadSort();
+
+// Native multi-selects remain as the persistence/state source; users interact with
+// compact checkbox dropdowns so Ctrl/Cmd is never required.
+function syncMultiFilter(selectId) {
+  const select = document.querySelector(`#${selectId}`);
+  const wrap = document.querySelector(`#${selectId}-wrap`);
+  const menu = document.querySelector(`#${selectId}-menu`);
+  const label = document.querySelector(`#${selectId}-label`);
+  if (!select || !wrap || !menu || !label) return;
+  const selected = [...select.selectedOptions].map(option => option.value);
+  const allOption = [...select.options].find(option => option.value === 'all');
+  const allText = allOption?.textContent || (selectId === 'group-filter' ? 'All groups' : 'All statuses');
+  const chosen = selected.filter(value => value !== 'all');
+  label.textContent = selected.includes('all') || chosen.length === 0
+    ? allText
+    : chosen.length === 1
+      ? ([...select.options].find(option => option.value === chosen[0])?.textContent || chosen[0])
+      : t('selectedCount', { count: chosen.length });
+  menu.replaceChildren();
+  [...select.options].forEach(option => {
+    const row = document.createElement('label');
+    row.className = `multi-filter-option${option.value === 'all' ? ' is-all' : ''}`;
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = selected.includes(option.value) || (chosen.length === 0 && option.value === 'all');
+    checkbox.addEventListener('change', () => {
+      let next = selected.filter(value => value !== 'all');
+      if (option.value === 'all') {
+        next = checkbox.checked ? ['all'] : [];
+      } else if (checkbox.checked) {
+        next = next.filter(value => value !== option.value);
+        next.push(option.value);
+      } else {
+        next = next.filter(value => value !== option.value);
+      }
+      if (next.length === 0) next = ['all'];
+      [...select.options].forEach(item => { item.selected = next.includes(item.value); });
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      syncMultiFilter(selectId);
+    });
+    const text = document.createElement('span');
+    text.textContent = option.textContent;
+    row.append(checkbox, text);
+    menu.append(row);
+  });
+}
+
+function setupMultiFilter(selectId) {
+  const wrap = document.querySelector(`#${selectId}-wrap`);
+  const trigger = document.querySelector(`#${selectId}-trigger`);
+  if (!wrap || !trigger) return;
+  trigger.addEventListener('click', () => {
+    const open = !wrap.classList.contains('open');
+    document.querySelectorAll('.multi-filter.open').forEach(item => {
+      item.classList.remove('open');
+      item.querySelector('.multi-filter-trigger')?.setAttribute('aria-expanded', 'false');
+    });
+    if (open) {
+      syncMultiFilter(selectId);
+      wrap.classList.add('open');
+      trigger.setAttribute('aria-expanded', 'true');
+    }
+  });
+  syncMultiFilter(selectId);
+}
+setupMultiFilter('status-filter');
+setupMultiFilter('group-filter');
+document.addEventListener('click', event => {
+  if (event.target.closest('.multi-filter')) return;
+  document.querySelectorAll('.multi-filter.open').forEach(item => {
+    item.classList.remove('open');
+    item.querySelector('.multi-filter-trigger')?.setAttribute('aria-expanded', 'false');
+  });
+});
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape') return;
+  document.querySelectorAll('.multi-filter.open').forEach(item => {
+    item.classList.remove('open');
+    item.querySelector('.multi-filter-trigger')?.setAttribute('aria-expanded', 'false');
+    item.querySelector('.multi-filter-trigger')?.focus();
+  });
+});
 let refreshing = false;
 let lastLoadError = null;
 let lastSuccessfulRefresh = null;
@@ -193,8 +275,8 @@ function matchesFilters(lease) {
   if (ipFilter === 'ipv6' && !isIPv6) return false;
   if (reservationFilter === 'reserved' && !lease.staticIP) return false;
   if (reservationFilter === 'dynamic' && lease.staticIP) return false;
-  if (statusFilter !== 'all' && String(lease.status ?? 'unknown') !== statusFilter) return false;
-  if (groupFilter !== 'all' && String(lease.group ?? '') !== groupFilter) return false;
+  if (!statusFilter.includes('all') && statusFilter.length > 0 && !statusFilter.includes(String(lease.status ?? 'unknown'))) return false;
+  if (!groupFilter.includes('all') && groupFilter.length > 0 && !groupFilter.includes(String(lease.group ?? ''))) return false;
   return true;
 }
 
@@ -249,20 +331,17 @@ function updateStatusCards() {
 function render() {
   updateStatusCards();
   const groupSelect = document.querySelector('#group-filter');
-  const selectedGroup = groupFilter;
+  const selectedGroups = Array.isArray(groupFilter) ? groupFilter : [groupFilter || 'all'];
   const groups = [...new Set(leases.map(lease => String(lease.group || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
   const hasGroups = groups.length > 0;
-  groupSelect.hidden = !hasGroups;
+  document.querySelector('#group-filter-wrap').hidden = !hasGroups;
   groupSelect.replaceChildren(new Option(t('allGroups'), 'all'));
   groups.forEach(group => groupSelect.add(new Option(group, group)));
-  // Keep the persisted group selection while lease/group data is still loading.
-  // Only fall back to "all" once groups are available and the saved group no longer exists.
-  if (groups.length > 0) {
-    groupFilter = selectedGroup === 'all' || groups.includes(selectedGroup) ? selectedGroup : 'all';
-  } else {
-    groupFilter = selectedGroup || 'all';
-  }
-  groupSelect.value = groupFilter;
+  // Preserve valid selections as the lease/group data refreshes.
+  groupFilter = selectedGroups.includes('all') ? ['all'] : selectedGroups.filter(group => groups.includes(group));
+  if (groupFilter.length === 0) groupFilter = ['all'];
+  [...groupSelect.options].forEach(option => { option.selected = groupFilter.includes(option.value); });
+  syncMultiFilter('group-filter');
   document.body.dataset.hasGroups = String(hasGroups);
   // Keep header and body columns in sync, including when groups are hidden.
   const groupColumnEnabled = document.body.dataset.showGroupColumn !== 'false';
@@ -704,12 +783,20 @@ document.querySelector('#reservation-filter').addEventListener('change', event =
   render();
 });
 document.querySelector('#status-filter').addEventListener('change', event => {
-  statusFilter = event.target.value;
+  statusFilter = [...event.target.selectedOptions].map(option => option.value);
+  if (statusFilter.includes('all') && statusFilter.length > 1) statusFilter = statusFilter.filter(value => value !== 'all');
+  if (statusFilter.length === 0) statusFilter = ['all'];
+  [...event.target.options].forEach(option => { option.selected = statusFilter.includes(option.value); });
+  syncMultiFilter('status-filter');
   persistViewPreferences({ statusFilter });
   render();
 });
 document.querySelector('#group-filter').addEventListener('change', event => {
-  groupFilter = event.target.value;
+  groupFilter = [...event.target.selectedOptions].map(option => option.value);
+  if (groupFilter.includes('all') && groupFilter.length > 1) groupFilter = groupFilter.filter(value => value !== 'all');
+  if (groupFilter.length === 0) groupFilter = ['all'];
+  [...event.target.options].forEach(option => { option.selected = groupFilter.includes(option.value); });
+  syncMultiFilter('group-filter');
   persistViewPreferences({ groupFilter });
   render();
 });
@@ -900,14 +987,20 @@ window.setInterval(updateLeaseCountdowns, COUNTDOWN_RENDER_INTERVAL_MS);
     filterQuery = typeof prefs.search === 'string' ? prefs.search : '';
     ipFilter = ['all','ipv4','ipv6'].includes(prefs.ipFilter) ? prefs.ipFilter : 'all';
     reservationFilter = ['all','reserved','dynamic'].includes(prefs.reservationFilter) ? prefs.reservationFilter : 'all';
-    statusFilter = ['all','online','reachable','offline'].includes(prefs.statusFilter) ? prefs.statusFilter : 'all';
-    groupFilter = typeof prefs.groupFilter === 'string' ? prefs.groupFilter : 'all';
+    const savedStatuses = Array.isArray(prefs.statusFilter) ? prefs.statusFilter : [prefs.statusFilter || 'all'];
+    statusFilter = savedStatuses.filter(value => ['all','online','reachable','offline'].includes(value));
+    if (statusFilter.length === 0) statusFilter = ['all'];
+    const savedGroups = Array.isArray(prefs.groupFilter) ? prefs.groupFilter : [prefs.groupFilter || 'all'];
+    groupFilter = savedGroups.filter(value => typeof value === 'string' && value.length > 0);
+    if (groupFilter.length === 0) groupFilter = ['all'];
     if (prefs.sort && typeof prefs.sort.column === 'string' && ['asc','desc'].includes(prefs.sort.dir)) sort = prefs.sort;
     document.querySelector('#search').value = filterQuery;
     document.querySelector('#ip-filter').value = ipFilter;
     document.querySelector('#reservation-filter').value = reservationFilter;
-    document.querySelector('#status-filter').value = statusFilter;
-    document.querySelector('#group-filter').value = groupFilter;
+    [...document.querySelector('#status-filter').options].forEach(option => { option.selected = statusFilter.includes(option.value); });
+    [...document.querySelector('#group-filter').options].forEach(option => { option.selected = groupFilter.includes(option.value); });
+    syncMultiFilter('status-filter');
+    syncMultiFilter('group-filter');
     render();
   }
 
