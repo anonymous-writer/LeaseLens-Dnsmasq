@@ -26,6 +26,9 @@ body { margin:0; padding:1.25rem clamp(.75rem,2vw,2rem) 2rem; font:14px/1.45 sys
 #brand-subtitle { margin:.08rem 0 0; color:var(--muted); font-size:.8rem; }
 #toolbar { position:sticky; top:0; z-index:20; display:grid; grid-template-columns:minmax(14rem,1.5fr) repeat(4,minmax(8rem,.75fr)) auto auto; align-items:center; gap:.4rem; padding:.35rem 0; background:var(--bg); }
 #search,#ip-filter,#reservation-filter,#status-filter,#group-filter,#language-select,#toolbar button { min-height:2.2rem; padding:.42rem .65rem; font:inherit; color:var(--fg); background:var(--surface); border:1px solid var(--border); border-radius:8px; }
+#status-filter[multiple],#group-filter[multiple] { min-height:5.6rem; height:5.6rem; padding:.2rem .35rem; font-size:.78rem; }
+#status-filter[multiple] option,#group-filter[multiple] option { padding:.12rem .25rem; }
+
 #search { min-width:0; width:100%; }
 #search:focus,#toolbar select:focus-visible,#toolbar button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 #toolbar button { cursor:pointer; white-space:nowrap; font-weight:620; border-color:color-mix(in srgb,var(--border) 75%,var(--muted)); box-shadow:0 1px 2px #0001; transition:background .16s,border-color .16s,box-shadow .16s,transform .12s,filter .16s; }
@@ -337,7 +340,7 @@ tbody tr:hover { background:color-mix(in srgb,var(--accent) 10%,var(--surface))!
       <option value="reachable" data-i18n="pingOnlyFilter">Ping responds, no web UI</option>
       <option value="offline" data-i18n="noResponseFilter">No ping or web response</option>
     </select>
-    <select id="group-filter" aria-label="Filter by group" title="Filter by group" hidden>
+    <select id="group-filter" multiple size="4" aria-label="Filter by group (multiple selection)" title="Mehrere Gruppen mit Strg (Windows/Linux) bzw. Cmd (macOS) auswählen; ohne Auswahl werden alle angezeigt." hidden>
       <option value="all">All groups</option>
     </select>
 

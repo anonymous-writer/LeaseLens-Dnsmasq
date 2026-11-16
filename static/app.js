@@ -12,13 +12,13 @@ const LANGUAGE_API = () => window.DnsmasqI18n;
 const t = (key, variables) => LANGUAGE_API().t(key, variables);
 const COUNTDOWN_RENDER_INTERVAL_MS = 1000;
 const DEFAULT_SORT = { column: 'ipAddress', dir: 'asc' };
-const DEFAULT_VIEW_PREFERENCES = { theme: 'dark', search: '', ipFilter: 'all', reservationFilter: 'all', statusFilter: 'all', groupFilter: 'all', sort: DEFAULT_SORT };
+const DEFAULT_VIEW_PREFERENCES = { theme: 'dark', search: '', ipFilter: 'all', reservationFilter: 'all', statusFilter: ['all'], groupFilter: ['all'], sort: DEFAULT_SORT };
 
 let leases = [];
 let filterQuery = '';
 let ipFilter = 'all';
 let reservationFilter = 'all';
-let statusFilter = 'all'; let groupFilter = 'all';
+let statusFilter = ['all']; let groupFilter = ['all'];
 let sort = loadSort();
 let refreshing = false;
 let lastLoadError = null;
@@ -193,8 +193,8 @@ function matchesFilters(lease) {
   if (ipFilter === 'ipv6' && !isIPv6) return false;
   if (reservationFilter === 'reserved' && !lease.staticIP) return false;
   if (reservationFilter === 'dynamic' && lease.staticIP) return false;
-  if (statusFilter !== 'all' && String(lease.status ?? 'unknown') !== statusFilter) return false;
-  if (groupFilter !== 'all' && String(lease.group ?? '') !== groupFilter) return false;
+  if (!statusFilter.includes('all') && statusFilter.length > 0 && !statusFilter.includes(String(lease.status ?? 'unknown'))) return false;
+  if (!groupFilter.includes('all') && groupFilter.length > 0 && !groupFilter.includes(String(lease.group ?? ''))) return false;
   return true;
 }
 
@@ -249,20 +249,16 @@ function updateStatusCards() {
 function render() {
   updateStatusCards();
   const groupSelect = document.querySelector('#group-filter');
-  const selectedGroup = groupFilter;
+  const selectedGroups = Array.isArray(groupFilter) ? groupFilter : [groupFilter || 'all'];
   const groups = [...new Set(leases.map(lease => String(lease.group || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
   const hasGroups = groups.length > 0;
   groupSelect.hidden = !hasGroups;
-  groupSelect.replaceChildren(new Option(t('allGroups'), 'all'));
+  groupSelect.replaceChildren();
   groups.forEach(group => groupSelect.add(new Option(group, group)));
-  // Keep the persisted group selection while lease/group data is still loading.
-  // Only fall back to "all" once groups are available and the saved group no longer exists.
-  if (groups.length > 0) {
-    groupFilter = selectedGroup === 'all' || groups.includes(selectedGroup) ? selectedGroup : 'all';
-  } else {
-    groupFilter = selectedGroup || 'all';
-  }
-  groupSelect.value = groupFilter;
+  // Preserve valid selections as the lease/group data refreshes.
+  groupFilter = selectedGroups.filter(group => groups.includes(group));
+  if (groupFilter.length === 0 && selectedGroups.includes('all')) groupFilter = ['all'];
+  [...groupSelect.options].forEach(option => { option.selected = groupFilter.includes(option.value); });
   document.body.dataset.hasGroups = String(hasGroups);
   // Keep header and body columns in sync, including when groups are hidden.
   const groupColumnEnabled = document.body.dataset.showGroupColumn !== 'false';
@@ -704,12 +700,15 @@ document.querySelector('#reservation-filter').addEventListener('change', event =
   render();
 });
 document.querySelector('#status-filter').addEventListener('change', event => {
-  statusFilter = event.target.value;
+  statusFilter = [...event.target.selectedOptions].map(option => option.value);
+  if (statusFilter.includes('all') && statusFilter.length > 1) statusFilter = statusFilter.filter(value => value !== 'all');
+  if (statusFilter.length === 0) statusFilter = ['all'];
+  [...event.target.options].forEach(option => { option.selected = statusFilter.includes(option.value); });
   persistViewPreferences({ statusFilter });
   render();
 });
 document.querySelector('#group-filter').addEventListener('change', event => {
-  groupFilter = event.target.value;
+  groupFilter = [...event.target.selectedOptions].map(option => option.value);
   persistViewPreferences({ groupFilter });
   render();
 });
@@ -900,14 +899,18 @@ window.setInterval(updateLeaseCountdowns, COUNTDOWN_RENDER_INTERVAL_MS);
     filterQuery = typeof prefs.search === 'string' ? prefs.search : '';
     ipFilter = ['all','ipv4','ipv6'].includes(prefs.ipFilter) ? prefs.ipFilter : 'all';
     reservationFilter = ['all','reserved','dynamic'].includes(prefs.reservationFilter) ? prefs.reservationFilter : 'all';
-    statusFilter = ['all','online','reachable','offline'].includes(prefs.statusFilter) ? prefs.statusFilter : 'all';
-    groupFilter = typeof prefs.groupFilter === 'string' ? prefs.groupFilter : 'all';
+    const savedStatuses = Array.isArray(prefs.statusFilter) ? prefs.statusFilter : [prefs.statusFilter || 'all'];
+    statusFilter = savedStatuses.filter(value => ['all','online','reachable','offline'].includes(value));
+    if (statusFilter.length === 0) statusFilter = ['all'];
+    const savedGroups = Array.isArray(prefs.groupFilter) ? prefs.groupFilter : [prefs.groupFilter || 'all'];
+    groupFilter = savedGroups.filter(value => typeof value === 'string' && value.length > 0);
+    if (groupFilter.length === 0) groupFilter = ['all'];
     if (prefs.sort && typeof prefs.sort.column === 'string' && ['asc','desc'].includes(prefs.sort.dir)) sort = prefs.sort;
     document.querySelector('#search').value = filterQuery;
     document.querySelector('#ip-filter').value = ipFilter;
     document.querySelector('#reservation-filter').value = reservationFilter;
-    document.querySelector('#status-filter').value = statusFilter;
-    document.querySelector('#group-filter').value = groupFilter;
+    [...document.querySelector('#status-filter').options].forEach(option => { option.selected = statusFilter.includes(option.value); });
+    [...document.querySelector('#group-filter').options].forEach(option => { option.selected = groupFilter.includes(option.value); });
     render();
   }
 
