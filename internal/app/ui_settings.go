@@ -3,12 +3,13 @@ package app
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
 )
 
-// UISettings stores browser-independent preferences in SQLite.
+// UISettings stores browser-independent preferences in the configured database.
 type UISettings struct {
 	Language    string                     `json:"language"`
 	Visible     map[string]bool            `json:"visible"`
@@ -20,32 +21,49 @@ type uiSettingsStore struct {
 }
 
 func newUISettingsStore(db *sql.DB) *uiSettingsStore { return &uiSettingsStore{db: db} }
-func (s *uiSettingsStore) read() UISettings {
+func (s *uiSettingsStore) read() (UISettings, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	out := UISettings{Language: "de", Visible: map[string]bool{}, Preferences: map[string]json.RawMessage{}}
 	var lang, raw, prefs string
 	err := s.db.QueryRow(adaptSQL(`SELECT language,visible_json,preferences_json FROM ui_settings WHERE id=1`)).Scan(&lang, &raw, &prefs)
 	if err != nil {
-		return out
+		if err == sql.ErrNoRows {
+			return out, nil
+		}
+		return out, fmt.Errorf("read UI settings: %w", err)
 	}
 	if lang == "de" || lang == "en" || lang == "es" {
 		out.Language = lang
 	}
-	if json.Unmarshal([]byte(raw), &out.Visible) != nil || out.Visible == nil {
+	if err := json.Unmarshal([]byte(raw), &out.Visible); err != nil {
+		return out, fmt.Errorf("decode UI visibility settings: %w", err)
+	}
+	if out.Visible == nil {
 		out.Visible = map[string]bool{}
 	}
-	if json.Unmarshal([]byte(prefs), &out.Preferences) != nil || out.Preferences == nil {
+	if err := json.Unmarshal([]byte(prefs), &out.Preferences); err != nil {
+		return out, fmt.Errorf("decode UI preferences: %w", err)
+	}
+	if out.Preferences == nil {
 		out.Preferences = map[string]json.RawMessage{}
 	}
-	return out
+	return out, nil
 }
 func (s *uiSettingsStore) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		switch r.Method {
 		case http.MethodGet:
-			_ = json.NewEncoder(w).Encode(s.read())
+			settings, err := s.read()
+			if err != nil {
+				LogErrorf("cannot read UI settings: %v", err)
+				http.Error(w, "cannot read settings", http.StatusInternalServerError)
+				return
+			}
+			if err := json.NewEncoder(w).Encode(settings); err != nil {
+				LogWarnf("cannot write UI settings response: %v", err)
+			}
 		case http.MethodPut, http.MethodPost:
 			var settings UISettings
 			if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64*1024)).Decode(&settings); err != nil {

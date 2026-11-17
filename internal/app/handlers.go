@@ -248,7 +248,15 @@ func leasesHandler(cfg Config, db *sql.DB, known *KnownMACs) http.HandlerFunc {
 				leases[i].IsNew = false
 				continue
 			}
-			leases[i].IsNew = !known.has(mac)
+			isKnown, err := known.has(mac)
+			if err != nil {
+				LogErrorf("database: cannot check remembered device mac=%s: %v", mac, err)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusServiceUnavailable)
+				_, _ = w.Write([]byte(`{"error":"device database unavailable"}`))
+				return
+			}
+			leases[i].IsNew = !isKnown
 		}
 		if strings.TrimSpace(cfg.DHCPEventsPath) != "" {
 			if err := importLegacyDHCPEvents(db, cfg.DHCPEventsPath); err != nil {

@@ -2,6 +2,7 @@ package app
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -14,12 +15,18 @@ type KnownMACs struct {
 }
 
 func newKnownMACs(db *sql.DB) *KnownMACs { return &KnownMACs{db: db} }
-func (k *KnownMACs) has(mac string) bool {
+func (k *KnownMACs) has(mac string) (bool, error) {
 	k.mu.Lock()
 	defer k.mu.Unlock()
 	var found int
 	err := k.db.QueryRow(adaptSQL(`SELECT 1 FROM known_devices WHERE mac=? COLLATE NOCASE`), strings.ToUpper(strings.TrimSpace(mac))).Scan(&found)
-	return err == nil
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("check remembered device %q: %w", mac, err)
+	}
+	return true, nil
 }
 func (k *KnownMACs) mark(mac string) error {
 	mac = strings.ToUpper(strings.TrimSpace(mac))

@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/tls"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -43,7 +44,10 @@ func hostnameCandidates(name string) []string {
 	if name == "" || name == "*" {
 		return nil
 	}
-	name = strings.TrimSuffix(name, ".")
+	name = strings.TrimSuffix(strings.TrimSpace(name), ".")
+	if name == "" {
+		return nil
+	}
 	if strings.Contains(name, ".") {
 		return []string{name}
 	}
@@ -63,32 +67,27 @@ func hostnameCandidates(name string) []string {
 
 func resolvesToIP(host, ip string, timeout time.Duration) bool {
 	target := net.ParseIP(ip)
-	if target == nil {
+	if target == nil || strings.TrimSpace(host) == "" {
 		return false
 	}
+	if timeout <= 0 {
+		timeout = 500 * time.Millisecond
+	}
 
-	ch := make(chan bool, 1)
-	go func() {
-		addrs, err := net.LookupIP(host)
-		if err != nil {
-			ch <- false
-			return
-		}
-		for _, a := range addrs {
-			if a.Equal(target) {
-				ch <- true
-				return
-			}
-		}
-		ch <- false
-	}()
-
-	select {
-	case ok := <-ch:
-		return ok
-	case <-time.After(timeout):
+	// Use the context-aware resolver instead of wrapping net.LookupIP in a
+	// goroutine. The DNS request can now be cancelled when its deadline expires.
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	addrs, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+	if err != nil {
 		return false
 	}
+	for _, addr := range addrs {
+		if addr.IP.Equal(target) {
+			return true
+		}
+	}
+	return false
 }
 
 func checkWebHostname(ip, name, webURL string, timeout time.Duration) string {
@@ -130,22 +129,40 @@ func checkWebUI(ip string, timeout time.Duration) string {
 		requestHost = "[" + ip + "]"
 	}
 
+	if timeout <= 0 {
+		timeout = 500 * time.Millisecond
+	}
 	for _, scheme := range []string{"http", "https"} {
-		client := &http.Client{Timeout: timeout}
+		transport := &http.Transport{}
 		if scheme == "https" {
-			client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+			// Many local device web interfaces use self-signed certificates.
+			// This probe only detects whether the management endpoint responds;
+			// it does not establish trust in the device certificate.
+			transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec
+		}
+		client := &http.Client{
+			Timeout:   timeout,
+			Transport: transport,
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 		}
 		req, err := http.NewRequest(http.MethodGet, scheme+"://"+requestHost+"/", nil)
 		if err != nil {
+			transport.CloseIdleConnections()
 			continue
 		}
-		req.Header.Set("Connection", "close")
 		req.Header.Set("User-Agent", "leaselens-dnsmasq")
 		resp, err := client.Do(req)
 		if err != nil {
+			transport.CloseIdleConnections()
 			continue
 		}
-		resp.Body.Close()
+		// Drain only a small amount: this permits connection cleanup without
+		// downloading potentially large device pages during a reachability scan.
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 32*1024))
+		_ = resp.Body.Close()
+		transport.CloseIdleConnections()
 		if resp.StatusCode >= 100 && resp.StatusCode <= 599 {
 			return formatWebURL(scheme, ip)
 		}
@@ -161,11 +178,15 @@ func pingReachable(ip string, timeout time.Duration) bool {
 	if net.ParseIP(ip) == nil {
 		return false
 	}
+	if timeout <= 0 {
+		timeout = 1200 * time.Millisecond
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	// BusyBox and iputils support -c 1 and -W; the container image already
 	// provides ping in the deployment environment.
-	cmd := exec.CommandContext(ctx, "ping", "-c", "1", "-W", strconv.Itoa(max(1, int(timeout.Seconds()))), ip)
+	waitSeconds := int((timeout + time.Second - 1) / time.Second)
+	cmd := exec.CommandContext(ctx, "ping", "-c", "1", "-W", strconv.Itoa(max(1, waitSeconds)), ip)
 	return cmd.Run() == nil
 }
 
